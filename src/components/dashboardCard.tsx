@@ -1,5 +1,5 @@
-const dashboardCard = () => {
-  return <div></div>;
+const DashboardCard = () => {
+  return <div className="bg-black h-[25%] w-[70%] my-10"></div>;
 };
 
-export default dashboardCard;
+export default DashboardCard;
