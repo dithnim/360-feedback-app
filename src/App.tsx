@@ -3,7 +3,7 @@ import Sidebar from "./components/Sidebar";
 
 function App() {
   return (
-    <div className="bg-white">
+    <div className="bg-white h-screen w-screen">
       <Navbar />
       <Sidebar />
     </div>
