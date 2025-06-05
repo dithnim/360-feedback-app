@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.10",
     "@tailwindcss/vite": "^4.1.8",
     "autoprefixer": "^10.4.17",
+    "class-variance-authority": "^0.7.1",
+    "lucide-react": "^0.513.0",
     "postcss": "^8.4.35",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
