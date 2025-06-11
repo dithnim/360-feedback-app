@@ -4,7 +4,8 @@ import Footer from "./components/Footer";
 import { Card, CardContent, CardFooter } from "./components/ui/Card";
 import { Avatar } from "./components/ui/Avatar";
 import { Button } from "./components/ui/Button";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, Menu, X } from "lucide-react";
+import { useState } from "react";
 
 const organizations = [
   {
@@ -71,21 +72,36 @@ const organizations = [
 ];
 
 function Home() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
-    <div className="bg-white h-screen w-screen">
-      <Navbar />
+    <div className="bg-white w-screen">
+      {/* Navbar with menu button for mobile */}
+      <div className="relative">
+        <Navbar />
+        <button
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 block md:hidden bg-white rounded p-2 shadow"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="w-7 h-7 text-[#ed3f41]" />
+        </button>
+      </div>
       <div className="body flex">
-        <Sidebar />
-        <div className="py-4 px-20 w-full h-50vh">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <Sidebar />
+        </div>
+        {/* Main Content */}
+        <div className="py-4 ps-40 overflow-y-auto w-full">
           <h1 className="text-[#ed3f41] text-2xl font-semibold">
             360° Feedback Current Organizations
           </h1>
 
-          <div className="w-full grid grid-cols-4 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-30%)]">
+          <div className="w-full grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-370px)]">
             {organizations.map((org) => (
               <Card
                 key={org.id}
-                className="w-[321px] h-[266px] rounded-[10px] overflow-hidden p-0 relative"
+                className="w-full md:w-[321px] h-[266px] rounded-[10px] overflow-hidden p-0 relative"
                 style={{
                   backgroundImage: `url(${org.image})`,
                   backgroundSize: "cover",
@@ -124,7 +140,7 @@ function Home() {
             ))}
 
             {/* Create New Organization Card */}
-            <Card className="w-[321px] h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center">
+            <Card className="w-full md:w-[321px] h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center">
               <CardContent className="flex flex-col items-center justify-center h-full p-0">
                 <div className="w-10 h-10 flex items-center justify-center mb-6">
                   <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%_100%]" />
@@ -136,6 +152,23 @@ function Home() {
             </Card>
           </div>
         </div>
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 bg-black bg-opacity-40 flex md:hidden">
+            <div className="relative w-[220px] max-w-[80vw] h-full bg-[#ed3f41] shadow-lg animate-slideInLeft">
+              <button
+                className="absolute top-4 right-4 z-50 text-white"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close menu"
+              >
+                <X className="w-7 h-7" />
+              </button>
+              <Sidebar />
+            </div>
+            {/* Click outside to close */}
+            <div className="flex-1" onClick={() => setSidebarOpen(false)} />
+          </div>
+        )}
       </div>
       <Footer />
     </div>
