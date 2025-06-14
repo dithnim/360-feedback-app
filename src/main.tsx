@@ -9,6 +9,7 @@ import Info from "./pages/info.tsx";
 import Users from "./pages/Users.tsx";
 import Review from "./pages/Review.tsx";
 import CreateSurvay from "./pages/CreateSurvay.tsx";
+import CreateCompetencies from "./pages/CreateCompetencies.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/users" element={<Users />} />
         <Route path="/review" element={<Review />} />
         <Route path="/create-survay" element={<CreateSurvay />} />
+        <Route path="/create-from-scratch" element={<CreateCompetencies />} />
         {/* Add more routes here as needed */}
       </Routes>
     </BrowserRouter>
