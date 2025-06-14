@@ -6,6 +6,7 @@ import { Avatar } from "./components/ui/Avatar";
 import { Button } from "./components/ui/Button";
 import { PlusIcon, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Createorg from "../imgs/SVGRepo_iconCarrier.png";
 
 const organizations = [
@@ -37,43 +38,18 @@ const organizations = [
   {
     id: 7,
     name: "Dash",
-  },
-  {
-    id: 8,
-    name: "Dash",
-  },
-  {
-    id: 9,
-    name: "Dash",
-  },
-  {
-    id: 10,
-    name: "Dash",
-  },
-  {
-    id: 11,
-    name: "Dash",
-  },
-  {
-    id: 12,
-    name: "Dash",
-  },
-  {
-    id: 13,
-    name: "Dash",
-  },
-  {
-    id: 14,
-    name: "Dash",
-  },
-  {
-    id: 15,
-    name: "Dash",
-  },
+  }
 ];
 
 function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navigate = useNavigate();
+
+  const navigateToCompany = () => {
+    navigate("/create-company");
+  };
+
   return (
     <div className="bg-white w-screen">
       {/* Navbar with menu button for mobile */}
@@ -142,7 +118,10 @@ function Home() {
 
             {/* Create New Organization Card */}
             <Card className="w-full md:w-[321px] h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center">
-              <CardContent className="flex flex-col items-center justify-center h-full p-0">
+              <CardContent
+                className="flex flex-col items-center justify-center h-full p-0 cursor-pointer"
+                onClick={navigateToCompany}
+              >
                 <img src={Createorg} alt="create-org" />
                 <div className="w-10 h-6 flex items-center justify-center mb-0">
                   <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%]" />

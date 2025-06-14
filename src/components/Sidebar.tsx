@@ -5,6 +5,7 @@ import insights from "../../imgs/insight.png";
 import resource from "../../imgs/resource.png";
 import team from "../../imgs/team.png";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import homeVector from "../../imgs/Home-Vector.png";
 
 interface MenuItem {
@@ -14,6 +15,12 @@ interface MenuItem {
 
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const navigate = useNavigate();
+
+  const navigateToCompany = () => {
+    navigate("/create-company");
+  };
 
   const menuItems: MenuItem[] = [
     { icon: business, label: "Business" },
@@ -38,56 +45,69 @@ const Sidebar = () => {
         </div>
         {isExpanded ? (
           <div className="expanded-menu text-white w-full flex flex-col items-center h-full mt-2 justify-between">
-            <div className="border-y-1 border-gray-200/50 py-4 w-full">
+            <div className="border-y-1 border-gray-200/50 py-4 w-full cursor-pointer">
               <label htmlFor="dash" className="ms-8 font-semibold text-lg">
                 Dashboard
               </label>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
               <label htmlFor="org" className="ms-8 font-semibold text-lg">
                 Organization
               </label>
               <div className="ms-4 flex flex-col">
-                <label htmlFor="org" className="ms-10 text-sm mb-1">
+                <label
+                  htmlFor="org"
+                  className="ms-10 text-sm mb-1 cursor-pointer"
+                >
                   Current Organizations
                 </label>
-                <label htmlFor="org" className="ms-10 text-sm">
+                <label
+                  htmlFor="org"
+                  className="ms-10 text-sm cursor-pointer"
+                  onClick={navigateToCompany}
+                >
                   Create New Organization
                 </label>
               </div>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
               <label htmlFor="org" className="ms-8 font-semibold text-lg">
                 Template
               </label>
               <div className="ms-4 flex flex-col">
-                <label htmlFor="org" className="ms-10 text-sm mb-1">
+                <label
+                  htmlFor="org"
+                  className="ms-10 text-sm mb-1 cursor-pointer"
+                >
                   Create Template
                 </label>
-                <label htmlFor="org" className="ms-10 text-sm">
+                <label htmlFor="org" className="ms-10 text-sm cursor-pointer">
                   View All Templates
                 </label>
               </div>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
               <label htmlFor="org" className="ms-8 font-semibold text-lg">
                 Teams
               </label>
               <div className="ms-4 flex flex-col">
-                <label htmlFor="org" className="ms-10 text-sm mb-1">
+                <label
+                  htmlFor="org"
+                  className="ms-10 text-sm mb-1 cursor-pointer"
+                >
                   Create New Team
                 </label>
-                <label htmlFor="org" className="ms-10 text-sm">
+                <label htmlFor="org" className="ms-10 text-sm cursor-pointer">
                   View All Teams
                 </label>
               </div>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
               <label htmlFor="settings" className="ms-8 font-semibold text-lg">
                 Settings
               </label>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full text-gray-200/50">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full text-gray-200/50 cursor-pointer">
               <label htmlFor="insights" className="ms-8 font-semibold text-lg">
                 Insights
               </label>
