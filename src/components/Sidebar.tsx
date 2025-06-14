@@ -7,10 +7,15 @@ import team from "../../imgs/team.png";
 import { useState } from "react";
 import homeVector from "../../imgs/Home-Vector.png";
 
+interface MenuItem {
+  icon: string;
+  label: string;
+}
+
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { icon: business, label: "Business" },
     { icon: company, label: "Company" },
     { icon: checklist, label: "Checklist" },
@@ -31,19 +36,73 @@ const Sidebar = () => {
         <div className="bg-[#ed3f41] flex items-center justify-center">
           <img src={homeVector} alt="home-vector" className="" />
         </div>
-        {menuItems.map((item, index) => (
-          <div
-            key={index}
-            className="flex items-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
-          >
-            <img src={item.icon} alt={item.label} className="w-10 h-10" />
-            {isExpanded && (
-              <span className="text-white font-medium whitespace-nowrap">
-                {item.label}
-              </span>
-            )}
+        {isExpanded ? (
+          <div className="expanded-menu text-white w-full flex flex-col items-center h-full mt-2 justify-between">
+            <div className="border-y-1 border-gray-200/50 py-4 w-full">
+              <label htmlFor="dash" className="ms-8 font-semibold text-lg">
+                Dashboard
+              </label>
+            </div>
+            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+              <label htmlFor="org" className="ms-8 font-semibold text-lg">
+                Organization
+              </label>
+              <div className="ms-4 flex flex-col">
+                <label htmlFor="org" className="ms-10 text-sm mb-1">
+                  Current Organizations
+                </label>
+                <label htmlFor="org" className="ms-10 text-sm">
+                  Create New Organization
+                </label>
+              </div>
+            </div>
+            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+              <label htmlFor="org" className="ms-8 font-semibold text-lg">
+                Template
+              </label>
+              <div className="ms-4 flex flex-col">
+                <label htmlFor="org" className="ms-10 text-sm mb-1">
+                  Create Template
+                </label>
+                <label htmlFor="org" className="ms-10 text-sm">
+                  View All Templates
+                </label>
+              </div>
+            </div>
+            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+              <label htmlFor="org" className="ms-8 font-semibold text-lg">
+                Teams
+              </label>
+              <div className="ms-4 flex flex-col">
+                <label htmlFor="org" className="ms-10 text-sm mb-1">
+                  Create New Team
+                </label>
+                <label htmlFor="org" className="ms-10 text-sm">
+                  View All Teams
+                </label>
+              </div>
+            </div>
+            <div className="border-b-1 border-gray-200/50 py-4 w-full">
+              <label htmlFor="settings" className="ms-8 font-semibold text-lg">
+                Settings
+              </label>
+            </div>
+            <div className="border-b-1 border-gray-200/50 py-4 w-full text-gray-200/50">
+              <label htmlFor="insights" className="ms-8 font-semibold text-lg">
+                Insights
+              </label>
+            </div>
           </div>
-        ))}
+        ) : (
+          menuItems.map((item: MenuItem, index: number) => (
+            <div
+              key={index}
+              className="flex items-center justify-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
+            >
+              <img src={item.icon} alt={item.label} className="w-10 h-10" />
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

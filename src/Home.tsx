@@ -6,6 +6,7 @@ import { Avatar } from "./components/ui/Avatar";
 import { Button } from "./components/ui/Button";
 import { PlusIcon, Menu, X } from "lucide-react";
 import { useState } from "react";
+import Createorg from "../imgs/SVGRepo_iconCarrier.png";
 
 const organizations = [
   {
@@ -142,8 +143,9 @@ function Home() {
             {/* Create New Organization Card */}
             <Card className="w-full md:w-[321px] h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center">
               <CardContent className="flex flex-col items-center justify-center h-full p-0">
-                <div className="w-10 h-10 flex items-center justify-center mb-6">
-                  <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%_100%]" />
+                <img src={Createorg} alt="create-org" />
+                <div className="w-10 h-6 flex items-center justify-center mb-0">
+                  <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%]" />
                 </div>
                 <span className="font-['Poppins',Helvetica] font-semibold text-white text-xl">
                   Create New Organization
