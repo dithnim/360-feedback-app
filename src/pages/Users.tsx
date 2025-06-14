@@ -92,7 +92,7 @@ const Users = () => {
 
   const handleNext = () => {
     // Implement next page navigation if needed
-    console.log("Next button clicked");
+    navigate("/review");
   };
 
   const handleRoleChange = (id: number, newRole: string) => {
