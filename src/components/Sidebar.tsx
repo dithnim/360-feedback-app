@@ -22,6 +22,14 @@ const Sidebar = () => {
     navigate("/create-company");
   };
 
+  const navigateToTemplateView = () => {
+    navigate("/view-templates");
+  };
+
+  const navigateToCreateTemplate = () => {
+    navigate("/create-template");
+  };
+
   const menuItems: MenuItem[] = [
     { icon: business, label: "Business" },
     { icon: company, label: "Company" },
@@ -78,10 +86,15 @@ const Sidebar = () => {
                 <label
                   htmlFor="org"
                   className="ms-10 text-sm mb-1 cursor-pointer"
+                  onClick={navigateToCreateTemplate}
                 >
                   Create Template
                 </label>
-                <label htmlFor="org" className="ms-10 text-sm cursor-pointer">
+                <label
+                  htmlFor="org"
+                  className="ms-10 text-sm cursor-pointer"
+                  onClick={navigateToTemplateView}
+                >
                   View All Templates
                 </label>
               </div>
