@@ -60,7 +60,6 @@ const CreateTemplate = () => {
                 id="description"
                 rows={4}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem."
               ></textarea>
             </div>
           </div>
@@ -75,7 +74,6 @@ const CreateTemplate = () => {
               <input
                 type="text"
                 className="flex-1 border border-gray-300 rounded-md shadow-sm p-2"
-                placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo?"
               />
               <button className="p-2 rounded-md hover:bg-gray-200">
                 <svg
@@ -120,7 +118,6 @@ const CreateTemplate = () => {
               <input
                 type="text"
                 className="flex-1 border border-gray-300 rounded-md shadow-sm p-2"
-                placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo?"
               />
               <button className="p-2 rounded-md hover:bg-gray-200">
                 <svg
@@ -237,14 +234,12 @@ const CreateTemplate = () => {
                 <textarea
                   rows={3}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem."
                 ></textarea>
               </div>
               <div className="mb-4">
                 <textarea
                   rows={3}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo?"
                 ></textarea>
               </div>
               {/* Question 1 in Leadership */}
@@ -418,14 +413,12 @@ const CreateTemplate = () => {
                 <textarea
                   rows={3}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem."
                 ></textarea>
               </div>
               <div className="mb-4">
                 <textarea
                   rows={3}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  placeholder="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo? Lorem ipsum dolor sit amet, consectetuer adipiscing elit, Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem."
                 ></textarea>
               </div>
               {/* Question 1 in Communication */}

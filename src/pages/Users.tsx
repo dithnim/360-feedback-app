@@ -208,23 +208,23 @@ const Users = () => {
         </div>
 
         <div className="mt-10">
-          <table className="min-w-full bg-white">
-            <thead>
+          <table className="min-w-full border-1 border-gray-200 rounded-full ">
+            <thead className="">
               <tr>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600"></th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600"></th>
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Participant Name
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Email Address
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Designation
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Appraisee/Appraiser
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Role
                 </th>
               </tr>
@@ -232,25 +232,25 @@ const Users = () => {
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id}>
-                  <td className="py-2 px-4 border-b border-gray-200">
+                  <td className="py-5 px-4 border-b border-gray-200">
                     <input
                       type="checkbox"
                       className="form-checkbox h-5 w-5 text-red-600"
                     />
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.name}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.email}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.designation}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.type}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200">
+                  <td className="py-5 px-4 border-b border-gray-200">
                     <select
                       className="block w-full bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 px-2.5 py-1.5"
                       value={user.role}

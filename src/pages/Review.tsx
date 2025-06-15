@@ -1,7 +1,8 @@
 import Navbar from "../components/Navbar";
 import { Button } from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import ApprovedSVG from "../../imgs/approved.png";
 
 interface UserData {
   id: number;
@@ -15,6 +16,27 @@ interface UserData {
 const Review = () => {
   const navigate = useNavigate();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(event.target as Node)
+      ) {
+        setShowSuccessMessage(false);
+        navigate("/");
+      }
+    };
+
+    if (showSuccessMessage) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSuccessMessage, navigate]);
 
   // Dummy data for participants (you can replace this with actual data)
   const participants: UserData[] = [
@@ -96,22 +118,38 @@ const Review = () => {
   return (
     <div>
       {showSuccessMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-10 rounded-lg shadow-lg text-center">
-            <svg
-              className="w-16 h-16 text-green-500 mx-auto mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div
+            ref={popupRef}
+            className="bg-white py-20 px-10 rounded-lg shadow-lg text-center relative"
+          >
+            <button
+              onClick={() => {
+                setShowSuccessMessage(false);
+                navigate("/");
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <img
+              src={ApprovedSVG}
+              alt="approved-img"
+              className="w-16 h-16 text-green-500 mx-auto mb-4"
+            />
             <h2 className="text-2xl font-semibold mb-2">
               Completed Feedback Plan!
             </h2>
@@ -151,22 +189,22 @@ const Review = () => {
         </div>
 
         <div className="mt-10">
-          <table className="min-w-full bg-white">
+          <table className="min-w-full bg-white border-1 border-gray-200 rounded-full">
             <thead>
               <tr>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Participant Name
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Email Address
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Designation
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Appraisee/Appraiser
                 </th>
-                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
                   Role
                 </th>
               </tr>
@@ -174,19 +212,19 @@ const Review = () => {
             <tbody>
               {participants.map((user) => (
                 <tr key={user.id}>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.name}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.email}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.designation}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.type}
                   </td>
-                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                  <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
                     {user.role}
                   </td>
                 </tr>
