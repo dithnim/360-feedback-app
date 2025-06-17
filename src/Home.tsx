@@ -38,7 +38,7 @@ const organizations = [
   {
     id: 7,
     name: "Dash",
-  }
+  },
 ];
 
 function Home() {
@@ -106,10 +106,7 @@ function Home() {
                     </Avatar>
                   </div>
 
-                  <Button
-                    variant="ghost"
-                    className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0"
-                  >
+                  <Button className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0">
                     View
                   </Button>
                 </CardFooter>

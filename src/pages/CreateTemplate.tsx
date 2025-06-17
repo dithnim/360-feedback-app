@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import { Button } from "../components/ui/Button";
 
 const CreateTemplate = () => {
   return (
@@ -11,12 +12,15 @@ const CreateTemplate = () => {
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
           {/* Header for Create Template */}
           <div className="flex items-center justify-between border-b pb-4 mb-6">
-            <h1 className="text-xl font-semibold text-red-600">
+            <h1 className="text-3xl font-semibold text-red-600">
               Create Template
             </h1>
-            <button className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+            <Button
+              variant="next"
+              className="font-semibold text-xl flex items-center justify-center p-6"
+            >
               Next
-            </button>
+            </Button>
           </div>
 
           {/* Template Details Section */}
@@ -170,9 +174,9 @@ const CreateTemplate = () => {
                 <span>Disagree</span>
               </label>
             </div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+            <Button variant="save" className="px-4 py-2">
               Add
-            </button>
+            </Button>
           </div>
 
           {/* New Section Button */}
@@ -346,9 +350,9 @@ const CreateTemplate = () => {
                   </label>
                 </div>
               </div>
-              <button className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+              <Button variant="next" className="px-6 py-2">
                 Next
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -540,20 +544,23 @@ const CreateTemplate = () => {
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                 />
               </div>
-              <button className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+              <Button variant="next" className="px-6 py-2">
                 Next
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Save and Preview Buttons */}
           <div className="flex justify-end space-x-4 mt-8">
-            <button className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+            <Button variant="save" className="px-6 py-2">
               Save Template
-            </button>
-            <button className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-gray-700 hover:bg-gray-50">
+            </Button>
+            <Button
+              variant="default"
+              className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-gray-700 hover:bg-gray-50"
+            >
               Preview
-            </button>
+            </Button>
           </div>
         </div>
       </main>

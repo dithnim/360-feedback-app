@@ -172,25 +172,13 @@ const Users = () => {
             </div>
           </div>
           <Button
-            variant="outline"
-            className={`me-3 p-3 ${
-              filterType === "Appraisee"
-                ? "bg-green-500 text-white"
-                : "border border-green-500 text-green-500"
-            }`}
+            variant="success"
+            className="me-3 h-13"
             onClick={() => setFilterType("Appraisee")}
           >
             Appraisee
           </Button>
-          <Button
-            variant="outline"
-            className={`me-3 p-3 ${
-              filterType === "Appraiser"
-                ? "bg-red-500 text-white"
-                : "border border-red-500 text-red-500"
-            }`}
-            onClick={() => setFilterType("Appraiser")}
-          >
+          <Button variant="save" onClick={() => setFilterType("Appraiser")} className="me-3 h-13">
             Appraiser
           </Button>
           <select

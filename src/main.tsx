@@ -12,6 +12,7 @@ import CreateSurvay from "./pages/CreateSurvay.tsx";
 import CreateCompetencies from "./pages/CreateCompetencies.tsx";
 import Templates from "./pages/Templates.tsx";
 import CreateTemplate from "./pages/CreateTemplate.tsx";
+import CreateTeam from "./pages/CreateTeam.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -27,6 +28,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/create-from-scratch" element={<CreateCompetencies />} />
         <Route path="/view-templates" element={<Templates />} />
         <Route path="/create-template" element={<CreateTemplate />} />
+        <Route path="/create-team" element={<CreateTeam />} />
         {/* Add more routes here as needed */}
       </Routes>
     </BrowserRouter>
