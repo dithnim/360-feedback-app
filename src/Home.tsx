@@ -13,7 +13,6 @@ const organizations = [
   {
     id: 1,
     name: "Maliban",
-    image: "./imgs/Qrio-retouched-final.jpg",
   },
   {
     id: 2,

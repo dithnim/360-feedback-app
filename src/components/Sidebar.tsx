@@ -52,13 +52,13 @@ const Sidebar = () => {
           <img src={homeVector} alt="home-vector" className="" />
         </div>
         {isExpanded ? (
-          <div className="expanded-menu text-white w-full flex flex-col items-center h-full mt-2 justify-between">
-            <div className="border-y-1 border-gray-200/50 py-4 w-full cursor-pointer">
+          <div className="expanded-menu text-white w-full flex flex-col items-center h-full justify-between mt-2">
+            <div className="border-y-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
               <label htmlFor="dash" className="ms-8 font-semibold text-lg">
                 Dashboard
               </label>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
               <label htmlFor="org" className="ms-8 font-semibold text-lg">
                 Organization
               </label>
