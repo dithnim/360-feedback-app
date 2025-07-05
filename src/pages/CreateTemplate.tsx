@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
+import { set } from "react-hook-form";
 
 const defaultOptions = [
   "Strongly Agree",
@@ -22,32 +23,43 @@ const CreateTemplate = () => {
   const [editText, setEditText] = useState("");
 
   // For preview edit
-  const [isEditingPreview, setIsEditingPreview] = useState(true);
+  const [isEditingPreview, setIsEditingPreview] = useState(false);
+  const [templatePreview, setTemplatePreview] = useState({
+    templateName: "",
+    competency: "",
+    description: "",
+    questions: [] as Question[],
+  });
 
-  // Store the last submitted data for preview
-  const [previewData, setPreviewData] = useState<{
-    competency: string;
-    templateName: string;
-    description: string;
-    questions: Question[];
-  } | null>(null);
-
-  const handleAdd = () => {
+  const handleQuestionAdd = () => {
     if (input.trim() === "") return;
-    const newQuestions = [
+    setQuestions([
       ...questions,
       { id: Date.now(), text: input, options: [...defaultOptions] },
-    ];
-    setQuestions(newQuestions);
+    ]);
     setInput("");
-    // Update preview data after add
-    setPreviewData({
-      competency,
+  };
+
+  const handleAdd = () => {
+    if (!templateName.trim() || !competency.trim()) return;
+
+    const newTemplate = {
       templateName,
+      competency,
       description,
-      questions: newQuestions,
-    });
-    setIsEditingPreview(false);
+      questions,
+    };
+
+    setTemplatePreview((prev) => ({
+      ...prev,
+      ...newTemplate,
+    }));
+
+    // Clear the form fields
+    setCompetency("");
+    setDescription("");
+    setQuestions([]);
+    setInput("");
   };
 
   const handleDelete = (id: number) => {
@@ -96,6 +108,13 @@ const CreateTemplate = () => {
     setEditOptsValues([]);
   };
 
+  const handleClear = () => {
+    setCompetency("");
+    setDescription("");
+    setQuestions([]);
+    setInput("");
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Navbar */}
@@ -122,7 +141,6 @@ const CreateTemplate = () => {
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 required
-                disabled={isEditingPreview}
               />
             </div>
             <div>
@@ -139,7 +157,6 @@ const CreateTemplate = () => {
                 value={competency}
                 onChange={(e) => setCompetency(e.target.value)}
                 required
-                disabled={isEditingPreview}
               />
             </div>
           </div>
@@ -157,7 +174,6 @@ const CreateTemplate = () => {
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={isEditingPreview}
             ></textarea>
           </div>
 
@@ -176,14 +192,12 @@ const CreateTemplate = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Enter question..."
-                disabled={isEditingPreview}
               />
               <button
                 type="button"
                 className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-2"
-                onClick={handleAdd}
+                onClick={handleQuestionAdd}
                 aria-label="Add question"
-                disabled={isEditingPreview}
               >
                 Add
               </button>
@@ -306,32 +320,38 @@ const CreateTemplate = () => {
               type="button"
               className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold"
               onClick={handleAdd}
-              disabled={isEditingPreview || input.trim() === ""}
               style={{ minWidth: 80 }}
             >
               Add
+            </button>
+            <button
+              type="button"
+              className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 ml-4 text-lg font-semibold"
+              onClick={handleClear}
+              aria-label="Clear form"
+              style={{ minWidth: 80 }}
+            >
+              Clear
             </button>
           </div>
 
           {/* Preview Section */}
           <div className="mt-12 border-t pt-8">
             <h2 className="text-xl font-bold mb-4">Preview</h2>
-            {previewData && previewData.templateName && (
+            {templatePreview.templateName && (
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-semibold">
-                    {previewData.competency || "Competency"}
+                    {templatePreview.competency || "Competency"}
                   </span>
                   <button
                     className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center"
                     style={{ width: 32, height: 32 }}
                     onClick={() => {
-                      setCompetency(previewData.competency);
-                      setTemplateName(previewData.templateName);
-                      setDescription(previewData.description);
-                      setQuestions(
-                        previewData.questions.map((q) => ({ ...q }))
-                      );
+                      setTemplateName(templatePreview.templateName);
+                      setCompetency(templatePreview.competency);
+                      setDescription(templatePreview.description);
+                      setQuestions(templatePreview.questions);
                       setIsEditingPreview(true);
                     }}
                     title="Edit"
@@ -340,12 +360,12 @@ const CreateTemplate = () => {
                   </button>
                 </div>
                 <div className="mb-2 text-sm font-medium text-black">
-                  {previewData.description || (
+                  {templatePreview.description || (
                     <span className="text-gray-400">No description</span>
                   )}
                 </div>
                 <ul className="list-disc ml-6">
-                  {previewData.questions.map((q) => (
+                  {templatePreview.questions.map((q) => (
                     <li key={q.id} className="mb-1">
                       {q.text}
                     </li>
@@ -358,15 +378,11 @@ const CreateTemplate = () => {
 
         {/* Example CompetencySection below, not changed */}
         <CompetencySection
-          title="Communication"
-          questions={[
-            {
-              id: "1",
-              text: "What is your opinion on the candidate's performance?",
-            },
-            { id: "2", text: "How well does the candidate communicate?" },
-            { id: "3", text: "What are the candidate's strengths?" },
-          ]}
+          title={templatePreview.competency || "Competency"}
+          questions={templatePreview.questions.map((q) => ({
+            id: q.id.toString(),
+            text: q.text,
+          }))}
           commentLabel="Additional Comments"
         />
       </main>
