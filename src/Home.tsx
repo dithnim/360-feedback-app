@@ -13,30 +13,37 @@ const organizations = [
   {
     id: 1,
     name: "Maliban",
+    image: "https://via.placeholder.com/321x266?text=Maliban",
   },
   {
     id: 2,
     name: "Dash",
+    image: "https://via.placeholder.com/321x266?text=Dash",
   },
   {
     id: 3,
     name: "Dash",
+    image: "https://via.placeholder.com/321x266?text=Dash",
   },
   {
     id: 4,
     name: "Dash",
+    image: "https://via.placeholder.com/321x266?text=Dash",
   },
   {
     id: 5,
     name: "Dash",
+    image: "https://via.placeholder.com/321x266?text=Dash",
   },
   {
     id: 6,
     name: "Dash",
+    image: "https://via.placeholder.com/321x266?text=Dash",
   },
   {
     id: 7,
     name: "Dash",
+    image: "https://via.placeholder.com/321x266?text=Dash",
   },
 ];
 
@@ -50,7 +57,7 @@ function Home() {
   };
 
   return (
-    <div className="bg-white w-screen">
+    <div className="bg-white w-full h-full relative">
       {/* Navbar with menu button for mobile */}
       <div className="relative">
         <Navbar />
@@ -147,7 +154,9 @@ function Home() {
           </div>
         )}
       </div>
-      <Footer />
+      <div className="fixed bottom-0 left-0 w-full">
+        <Footer />
+      </div>
     </div>
   );
 }

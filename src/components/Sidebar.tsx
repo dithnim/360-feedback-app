@@ -41,7 +41,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`h-[calc(100vh)] bg-[#ed3f41] flex justify-center py-10 z-1000 transition-all duration-300 ease-in-out absolute top-0 ${
+      className={`h-[100vh] bg-[#ed3f41] flex justify-center py-10 z-1000 transition-all duration-300 ease-in-out absolute top-0 ${
         isExpanded ? "w-[240px]" : "w-[120px]"
       }`}
       onMouseEnter={() => setIsExpanded(true)}
