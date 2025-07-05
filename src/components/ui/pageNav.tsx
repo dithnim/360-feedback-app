@@ -11,7 +11,7 @@ const pageNav: React.FC<PageNavProps> = ({ name, position, title }) => {
     <nav className="flex items-center justify-between pe-6 bg-[#F8F6F7] rounded-t-lg border-b-2 border-[#E0E0E0]">
       {/* Left: Menu icon and page title */}
       <div className="flex">
-        <div className="bg-[#ee3e41] w-26 h-26 flex items-center justify-center me-6">
+        <div className="bg-[#ee3e41] w-20 h-20 flex items-center justify-center me-6">
           <i className="bx bx-menu font-bold text-3xl text-white"></i>{" "}
         </div>
         <div className="flex items-center justify-between">
