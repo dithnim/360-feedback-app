@@ -47,12 +47,12 @@ const Sidebar = () => {
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
-      <div className="flex flex-col justify-between items-center w-full">
+      <div className="flex flex-col justify-between items-center w-full h-screen">
         <div className="bg-[#ed3f41] flex items-center justify-center">
           <img src={homeVector} alt="home-vector" className="" />
         </div>
         {isExpanded ? (
-          <div className="expanded-menu text-white w-full flex flex-col items-center h-full justify-between mt-2">
+          <div className="expanded-menu text-white w-full flex flex-col h-screen mt-2 ">
             <div className="border-y-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
               <label htmlFor="dash" className="ms-8 font-semibold text-lg">
                 Dashboard
@@ -78,7 +78,7 @@ const Sidebar = () => {
                 </label>
               </div>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
               <label htmlFor="org" className="ms-8 font-semibold text-lg">
                 Template
               </label>
@@ -99,7 +99,7 @@ const Sidebar = () => {
                 </label>
               </div>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
               <label htmlFor="org" className="ms-8 font-semibold text-lg">
                 Teams
               </label>
@@ -115,7 +115,7 @@ const Sidebar = () => {
                 </label>
               </div>
             </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer">
+            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
               <label htmlFor="settings" className="ms-8 font-semibold text-lg">
                 Settings
               </label>
