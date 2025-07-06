@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
-import { set } from "react-hook-form";
 
 const defaultOptions = [
   "Strongly Agree",
@@ -23,7 +22,6 @@ const CreateTemplate = () => {
   const [editText, setEditText] = useState("");
 
   // For preview edit
-  const [isEditingPreview, setIsEditingPreview] = useState(false);
   const [templatePreview, setTemplatePreview] = useState({
     templateName: "",
     competency: "",
@@ -52,7 +50,10 @@ const CreateTemplate = () => {
 
     setTemplatePreview((prev) => ({
       ...prev,
-      ...newTemplate,
+      questions: [...prev.questions, ...newTemplate.questions],
+      templateName: newTemplate.templateName,
+      competency: newTemplate.competency,
+      description: newTemplate.description,
     }));
 
     // Clear the form fields
@@ -114,6 +115,45 @@ const CreateTemplate = () => {
     setQuestions([]);
     setInput("");
   };
+
+  const PreviewCompetency = ({
+    competency,
+    description,
+    questions,
+  }: {
+    competency: string;
+    description: string;
+    questions: Question[];
+  }) => (
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="font-semibold">{competency || "Competency"}</span>
+        <button
+          className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center"
+          style={{ width: 32, height: 32 }}
+          onClick={() => {
+            setTemplateName(templatePreview.templateName);
+            setCompetency(competency);
+            setDescription(description);
+            setQuestions(questions);
+          }}
+          title="Edit"
+        >
+          <span style={{ fontSize: 16 }}>✎</span>
+        </button>
+      </div>
+      <div className="mb-2 text-sm font-medium text-black">
+        {description || <span className="text-gray-400">No description</span>}
+      </div>
+      <ul className="list-disc ml-6">
+        {questions.map((q) => (
+          <li key={q.id} className="mb-1">
+            {q.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
@@ -338,39 +378,16 @@ const CreateTemplate = () => {
           {/* Preview Section */}
           <div className="mt-12 border-t pt-8">
             <h2 className="text-xl font-bold mb-4">Preview</h2>
-            {templatePreview.templateName && (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-semibold">
-                    {templatePreview.competency || "Competency"}
-                  </span>
-                  <button
-                    className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center"
-                    style={{ width: 32, height: 32 }}
-                    onClick={() => {
-                      setTemplateName(templatePreview.templateName);
-                      setCompetency(templatePreview.competency);
-                      setDescription(templatePreview.description);
-                      setQuestions(templatePreview.questions);
-                      setIsEditingPreview(true);
-                    }}
-                    title="Edit"
-                  >
-                    <span style={{ fontSize: 16 }}>✎</span>
-                  </button>
-                </div>
-                <div className="mb-2 text-sm font-medium text-black">
-                  {templatePreview.description || (
-                    <span className="text-gray-400">No description</span>
-                  )}
-                </div>
-                <ul className="list-disc ml-6">
-                  {templatePreview.questions.map((q) => (
-                    <li key={q.id} className="mb-1">
-                      {q.text}
-                    </li>
-                  ))}
-                </ul>
+            {templatePreview.questions.length > 0 && (
+              <div>
+                {templatePreview.questions.map((q) => (
+                  <PreviewCompetency
+                    key={q.id}
+                    competency={templatePreview.competency}
+                    description={templatePreview.description}
+                    questions={[q]}
+                  />
+                ))}
               </div>
             )}
           </div>
