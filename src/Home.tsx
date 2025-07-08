@@ -7,43 +7,46 @@ import { Button } from "./components/ui/Button";
 import { PlusIcon, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Createorg from "../imgs/SVGRepo_iconCarrier.png";
+
+import Img1 from "../imgs/image 1.png";
+import Img2 from "../imgs/image 2.png";
+import Img3 from "../imgs/image 3.png";
 
 const organizations = [
   {
     id: 1,
     name: "Maliban",
-    image: { Createorg },
+    image: Img1,
   },
   {
     id: 2,
-    name: "Dash",
-    image: "https://via.placeholder.com/321x266?text=Dash",
+    name: "Uniliver",
+    image: Img2,
   },
   {
     id: 3,
-    name: "Dash",
-    image: "https://via.placeholder.com/321x266?text=Dash",
+    name: "Nestle",
+    image: Img3,
   },
   {
     id: 4,
-    name: "Dash",
-    image: "https://via.placeholder.com/321x266?text=Dash",
+    name: "Uniliver",
+    image: Img1,
   },
   {
     id: 5,
-    name: "Dash",
-    image: "https://via.placeholder.com/321x266?text=Dash",
+    name: "Hayleys",
+    image: Img3,
   },
   {
     id: 6,
-    name: "Dash",
-    image: "https://via.placeholder.com/321x266?text=Dash",
+    name: "Munchee",
+    image: Img2,
   },
   {
     id: 7,
-    name: "Dash",
-    image: "https://via.placeholder.com/321x266?text=Dash",
+    name: "Nestle",
+    image: Img1,
   },
 ];
 
@@ -100,7 +103,7 @@ function Home() {
                 </div>
 
                 {/* Card footer */}
-                <CardFooter className="absolute bottom-0 left-0 w-full h-[45px] bg-white rounded-[0px_0px_10px_10px] border-r border-b border-l border-[#acacac] flex justify-between items-center px-4">
+                <CardFooter className="absolute bottom-0 left-0 w-full h-[40px] bg-white rounded-[0px_0px_10px_10px] border-r border-b border-l border-[#acacac] flex justify-between items-center px-4 py-0">
                   <div className="flex">
                     {/* User avatars */}
                     <Avatar className="w-[30px] h-[30px] bg-[#d9d9d9] rounded-[15px]" />
@@ -112,9 +115,9 @@ function Home() {
                     </Avatar>
                   </div>
 
-                  <Button className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0">
+                  <label className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0 cursor-pointer">
                     View
-                  </Button>
+                  </label>
                 </CardFooter>
               </Card>
             ))}
@@ -125,7 +128,6 @@ function Home() {
                 className="flex flex-col items-center justify-center h-full p-0 cursor-pointer"
                 onClick={navigateToCompany}
               >
-                <img src={Createorg} alt="create-org" />
                 <div className="w-10 h-6 flex items-center justify-center mb-0">
                   <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%]" />
                 </div>

@@ -1,7 +1,8 @@
-import Navbar from "../components/Navbar";
 import { Button } from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+
+import PageNav from "../components/ui/pageNav";
 
 interface CompanyFormData {
   companyName: string;
@@ -32,7 +33,7 @@ const Company = () => {
   return (
     <div>
       <div className="">
-        <Navbar />
+        <PageNav name="Jese Leos" position="CEO" title="Create New Company" />
       </div>
       <div className="h-(calc[100vh-120px]) px-50 pt-10">
         <div className="flex justify-between">
