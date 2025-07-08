@@ -129,7 +129,7 @@ const Sidebar = () => {
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
-      <div className="flex flex-col justify-between items-center w-full  h-[90vh]">
+      <div className="flex flex-col justify-between items-center w-full  h-[93vh]">
         <div className="bg-[#ed3f41] flex items-center justify-center">
           <img src={homeVector} alt="home-vector" className="" />
         </div>
@@ -143,14 +143,15 @@ const Sidebar = () => {
             ))}
           </div>
         ) : (
-          menuItems.map((item: MenuItem, index: number) => (
-            <div
-              key={index}
-              className="flex items-center justify-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
-            >
-              <img src={item.icon} alt={item.label} className="w-10 h-10" />
-            </div>
-          ))
+          menuItems.map((item: MenuItem, index: number) =>(
+              <div
+                key={index}
+                className="flex items-center justify-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
+              >
+                <img src={item.icon} alt={item.label} className="w-10 h-10" />
+              </div>
+            )
+          )
         )}
       </div>
     </div>

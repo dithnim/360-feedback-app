@@ -13,7 +13,7 @@ const organizations = [
   {
     id: 1,
     name: "Maliban",
-    image: "https://via.placeholder.com/321x266?text=Maliban",
+    image: { Createorg },
   },
   {
     id: 2,
