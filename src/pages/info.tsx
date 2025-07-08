@@ -166,59 +166,59 @@ const ParticipantInformation = () => {
             Add
           </Button>
         </form>
-
-        {participants.length > 0 && (
-          <div className="mt-10">
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                    Participant Name
-                  </th>
-                  <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                    Email Address
-                  </th>
-                  <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                    Designation
-                  </th>
-                  <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {participants.map((participant, index) => (
-                  <tr key={index}>
-                    <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
-                      {participant.participantName}
-                    </td>
-                    <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
-                      {participant.email}
-                    </td>
-                    <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
-                      {participant.designation}
-                    </td>
-                    <td className="py-2 px-4 border-b border-gray-200">
-                      <button
-                        onClick={() => handleEdit(index)}
-                        className="text-blue-500 hover:text-blue-700 me-2"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
+      {/* User Preview Section at the very bottom */}
+      {participants.length > 0 && (
+        <div className="mt-10 px-50 pb-10">
+          <table className="min-w-full bg-white">
+            <thead>
+              <tr>
+                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                  Participant Name
+                </th>
+                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                  Email Address
+                </th>
+                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                  Designation
+                </th>
+                <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {participants.map((participant, index) => (
+                <tr key={index}>
+                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                    {participant.participantName}
+                  </td>
+                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                    {participant.email}
+                  </td>
+                  <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                    {participant.designation}
+                  </td>
+                  <td className="py-2 px-4 border-b border-gray-200">
+                    <button
+                      onClick={() => handleEdit(index)}
+                      className="text-blue-500 hover:text-blue-700 me-2"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

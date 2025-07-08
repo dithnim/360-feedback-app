@@ -250,11 +250,11 @@ const CreateCompetencies = () => {
                       required: "Question text is required",
                     })}
                   />
-                  <Button variant="secondary" className="p-2 me-2">
+                  <Button variant="default" className="p-2 me-2">
                     ✏️
                   </Button>
                   <Button
-                    variant="destructive"
+                    variant="default"
                     className="p-2"
                     onClick={() => handleRemoveGeneralQuestion(index)}
                   >
@@ -308,7 +308,7 @@ const CreateCompetencies = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">{section.title}</h3>
                 <Button
-                  variant="destructive"
+                  variant="default"
                   className="p-2"
                   onClick={() => handleRemoveSection(sectionIndex)}
                 >

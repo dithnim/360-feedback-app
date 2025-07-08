@@ -39,6 +39,88 @@ const Sidebar = () => {
     { icon: insights, label: "Insights" },
   ];
 
+  const Hr = () => (
+    <div
+      className="border-b border-gray-200/50 w-full flex-shrink-0"
+      style={{ minHeight: 0 }}
+    ></div>
+  );
+
+  // Sidebar section data
+  const sidebarSections = [
+    {
+      label: "Dashboard",
+      htmlFor: "dash",
+      children: null,
+      className: "",
+    },
+    {
+      label: "Organization",
+      htmlFor: "org",
+      children: [
+        { label: "Current Organizations", onClick: undefined },
+        { label: "Create New Organization", onClick: navigateToCompany },
+      ],
+      className: "",
+    },
+    {
+      label: "Template",
+      htmlFor: "org",
+      children: [
+        { label: "Create Template", onClick: navigateToCreateTemplate },
+        { label: "View All Templates", onClick: navigateToTemplateView },
+      ],
+      className: "",
+    },
+    {
+      label: "Teams",
+      htmlFor: "org",
+      children: [
+        { label: "Create New Team", onClick: undefined },
+        { label: "View All Teams", onClick: undefined },
+      ],
+      className: "",
+    },
+    {
+      label: "Settings",
+      htmlFor: "settings",
+      children: null,
+      className: "",
+    },
+    {
+      label: "Insights",
+      htmlFor: "insights",
+      children: null,
+      className: "text-gray-200/50",
+    },
+  ];
+
+  // Sidebar section component
+  const SidebarSection = ({ label, htmlFor, children, className }: any) => (
+    <div
+      className={`border-gray-200/50 w-full cursor-pointer flex flex-col justify-center flex-1 min-h-0 ${className || ""}`.trim()}
+      style={{ minHeight: 0 }}
+    >
+      <label htmlFor={htmlFor} className="ms-8 font-semibold text-lg">
+        {label}
+      </label>
+      {Array.isArray(children) && (
+        <div className="ms-4 flex flex-col">
+          {children.map((child, idx) => (
+            <label
+              key={idx}
+              htmlFor={htmlFor}
+              className={`ms-10 text-sm${child.onClick ? " cursor-pointer" : " mb-1 cursor-pointer"}`}
+              onClick={child.onClick}
+            >
+              {child.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       className={`h-[100vh] bg-[#ed3f41] flex justify-center py-10 z-1000 transition-all duration-300 ease-in-out absolute top-0 ${
@@ -47,84 +129,18 @@ const Sidebar = () => {
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
-      <div className="flex flex-col justify-between items-center w-full h-screen">
+      <div className="flex flex-col justify-between items-center w-full  h-[90vh]">
         <div className="bg-[#ed3f41] flex items-center justify-center">
           <img src={homeVector} alt="home-vector" className="" />
         </div>
         {isExpanded ? (
-          <div className="expanded-menu text-white w-full flex flex-col h-screen mt-2 ">
-            <div className="border-y-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
-              <label htmlFor="dash" className="ms-8 font-semibold text-lg">
-                Dashboard
-              </label>
-            </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
-              <label htmlFor="org" className="ms-8 font-semibold text-lg">
-                Organization
-              </label>
-              <div className="ms-4 flex flex-col">
-                <label
-                  htmlFor="org"
-                  className="ms-10 text-sm mb-1 cursor-pointer"
-                >
-                  Current Organizations
-                </label>
-                <label
-                  htmlFor="org"
-                  className="ms-10 text-sm cursor-pointer"
-                  onClick={navigateToCompany}
-                >
-                  Create New Organization
-                </label>
-              </div>
-            </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
-              <label htmlFor="org" className="ms-8 font-semibold text-lg">
-                Template
-              </label>
-              <div className="ms-4 flex flex-col">
-                <label
-                  htmlFor="org"
-                  className="ms-10 text-sm mb-1 cursor-pointer"
-                  onClick={navigateToCreateTemplate}
-                >
-                  Create Template
-                </label>
-                <label
-                  htmlFor="org"
-                  className="ms-10 text-sm cursor-pointer"
-                  onClick={navigateToTemplateView}
-                >
-                  View All Templates
-                </label>
-              </div>
-            </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
-              <label htmlFor="org" className="ms-8 font-semibold text-lg">
-                Teams
-              </label>
-              <div className="ms-4 flex flex-col">
-                <label
-                  htmlFor="org"
-                  className="ms-10 text-sm mb-1 cursor-pointer"
-                >
-                  Create New Team
-                </label>
-                <label htmlFor="org" className="ms-10 text-sm cursor-pointer">
-                  View All Teams
-                </label>
-              </div>
-            </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full cursor-pointer flex flex-col justify-center">
-              <label htmlFor="settings" className="ms-8 font-semibold text-lg">
-                Settings
-              </label>
-            </div>
-            <div className="border-b-1 border-gray-200/50 py-4 w-full text-gray-200/50 cursor-pointer">
-              <label htmlFor="insights" className="ms-8 font-semibold text-lg">
-                Insights
-              </label>
-            </div>
+          <div className="expanded-menu text-white w-full flex flex-col h-screen mt-2">
+            {sidebarSections.map((section, idx) => (
+              <>
+                <SidebarSection key={section.label} {...section} />
+                {idx !== sidebarSections.length - 1 && <Hr />}
+              </>
+            ))}
           </div>
         ) : (
           menuItems.map((item: MenuItem, index: number) => (
