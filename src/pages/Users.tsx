@@ -178,7 +178,11 @@ const Users = () => {
           >
             Appraisee
           </Button>
-          <Button variant="save" onClick={() => setFilterType("Appraiser")} className="me-3 h-13">
+          <Button
+            variant="save"
+            onClick={() => setFilterType("Appraiser")}
+            className="me-3 h-13"
+          >
             Appraiser
           </Button>
           <select
