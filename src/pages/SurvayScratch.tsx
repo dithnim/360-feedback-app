@@ -163,26 +163,7 @@ const SurvayScratch = () => {
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto bg-white">
         <div className="mx-auto rounded-lg">
-          <div className="flex justify-end mb-6">
-            <Button variant="next">Next</Button>
-          </div>
           <div className="grid grid-cols-2 gap-16 mb-6">
-            <div>
-              <label
-                htmlFor="templateName"
-                className="mb-2 block text-md font-medium text-gray-700"
-              >
-                Template Name*
-              </label>
-              <input
-                type="text"
-                id="templateName"
-                className="border border-gray-300 rounded-lg p-2 w-full"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                required
-              />
-            </div>
             <div>
               <label
                 htmlFor="competency"
@@ -235,11 +216,11 @@ const SurvayScratch = () => {
               />
               <button
                 type="button"
-                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-2"
+                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center"
                 onClick={handleQuestionAdd}
                 aria-label="Add question"
               >
-                Add
+                <i className="bxr  bx-plus"></i>
               </button>
             </div>
           </div>
