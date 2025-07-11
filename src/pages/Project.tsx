@@ -601,15 +601,10 @@ const Project = () => {
                 type="submit"
                 variant="save"
                 className="mt-5 p-6 text-lg cursor-pointer"
-                onClick={() => {
-                  const participantData = {
-                    participantName: watch("participantName"),
-                    email: watch("email"),
-                    designation: watch("designation"),
-                  };
-                  setParticipants([...participants, participantData]);
+                onClick={handleSubmitInfo((data) => {
+                  setParticipants([...participants, data]);
                   resetInfo();
-                }}
+                })}
               >
                 Add
               </Button>
