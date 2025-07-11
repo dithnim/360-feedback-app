@@ -19,7 +19,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   const navigateToCompany = () => {
-    navigate("/create-company");
+    navigate("/project");
   };
 
   const navigateToTemplateView = () => {
@@ -143,15 +143,14 @@ const Sidebar = () => {
             ))}
           </div>
         ) : (
-          menuItems.map((item: MenuItem, index: number) =>(
-              <div
-                key={index}
-                className="flex items-center justify-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
-              >
-                <img src={item.icon} alt={item.label} className="w-10 h-10" />
-              </div>
-            )
-          )
+          menuItems.map((item: MenuItem, index: number) => (
+            <div
+              key={index}
+              className="flex items-center justify-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
+            >
+              <img src={item.icon} alt={item.label} className="w-10 h-10" />
+            </div>
+          ))
         )}
       </div>
     </div>

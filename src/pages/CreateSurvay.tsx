@@ -1,20 +1,31 @@
-import Navbar from "../components/Navbar";
 import Draglogo from "../../imgs/drag-logo.png";
 import WebisteLogo from "../../imgs/website-template-logo.png";
+import { useNavigate } from "react-router-dom";
+import PageNav from "../components/ui/pageNav";
 
 const CreateSurvay = () => {
+  const navigate = useNavigate();
+
+  const navigateToScratch = () => {
+    // Logic to navigate to the Create Competencies page
+    navigate("/create-from-scratch");
+  };
+
   return (
-    <div>
-      <div>
-        <Navbar />
+    <div className="h-screen">
+      <div className="">
+        <PageNav name="Jese Leos" position="CEO" title="Create Survey" />
       </div>
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)]">
-        <h2 className="text-4xl font-semibold mb-20">
+      <div className="flex flex-col items-center justify-center mt-30">
+        <h2 className="text-4xl text-gray-600 font-semibold mb-30">
           How do you want to build your Survey ?
         </h2>
 
-        <div className="flex space-x-10">
-          <div className="flex flex-col items-center p-8 border border-gray-300 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-80 h-96">
+        <div
+          className="flex space-x-40 cursor-pointer"
+          onClick={navigateToScratch}
+        >
+          <div className="flex flex-col items-center justify-center p-8 border border-gray-400 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-96 h-96 bg-neutral-100">
             <div className="mb-6">
               {/* Placeholder for icon */}
               <img src={Draglogo} alt="drag-logo" />
@@ -26,7 +37,7 @@ const CreateSurvay = () => {
             </p>
           </div>
 
-          <div className="flex flex-col items-center p-8 border border-gray-300 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-80 h-96">
+          <div className="flex flex-col items-center justify-center p-8 border border-gray-400 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-96 h-96 bg-neutral-100">
             <div className="mb-6">
               {/* Placeholder for icon */}
               <img src={WebisteLogo} alt="WebLogo" />

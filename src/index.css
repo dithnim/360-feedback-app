@@ -3,3 +3,7 @@
 body {
   font-family: "Poppins", sans-serif;
 }
+
+.user-table tbody tr:last-child td {
+  border-bottom: none !important;
+}

@@ -3,7 +3,6 @@ import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import { Card, CardContent, CardFooter } from "./components/ui/Card";
 import { Avatar } from "./components/ui/Avatar";
-import { Button } from "./components/ui/Button";
 import { PlusIcon, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";

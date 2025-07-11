@@ -1,7 +1,10 @@
 import { Button } from "../components/ui/Button";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import ApprovedSVG from "../../imgs/approved.png";
+import { Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ProjectFormData {
   projectName: string;
@@ -37,6 +40,8 @@ const Project = () => {
     watch,
   } = useForm<ProjectFormData>();
 
+  const navigate = useNavigate();
+
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(1);
 
@@ -50,80 +55,65 @@ const Project = () => {
     reset: resetInfo,
     formState: { errors: errorsInfo },
   } = useForm<ParticipantFormData>();
+  const [editIndex, setEditIndex] = useState<number | null>(null);
 
   //!User states
   const [users, setUsers] = useState<UserData[]>([
-      {
-        id: 1,
-        name: "Lorraine Christine Evans",
-        email: "lorraineevans85@gmail.com",
-        designation: "HR Assistance",
-        type: "Appraisee",
-        role: "Peer",
-      },
-      {
-        id: 2,
-        name: "Niro Yin",
-        email: "niroyinsh7459@gmail.com",
-        designation: "HR Manager",
-        type: "Appraiser",
-        role: "Manager",
-      },
-      {
-        id: 3,
-        name: "Lorraine Christine Evans",
-        email: "lorraineevans85@gmail.com",
-        designation: "CEO",
-        type: "Appraisee",
-        role: "Boss",
-      },
-      {
-        id: 4,
-        name: "Niro Yin",
-        email: "niroyinsh7459@gmail.com",
-        designation: "HR Manager",
-        type: "Appraiser",
-        role: "Subordinate",
-      },
-      {
-        id: 5,
-        name: "Lorraine Christine Evans",
-        email: "lorraineevans85@gmail.com",
-        designation: "HR Assistance",
-        type: "Appraiser",
-        role: "Subordinate",
-      },
-      {
-        id: 6,
-        name: "Niro Yin",
-        email: "niroyinsh7459@gmail.com",
-        designation: "HR Manager",
-        type: "Appraiser",
-        role: "Manager",
-      },
-      {
-        id: 7,
-        name: "Niro Yin",
-        email: "niroyinsh7459@gmail.com",
-        designation: "HR Manager",
-        type: "Appraiser",
-        role: "Manager",
-      },
-      {
-        id: 8,
-        name: "Lorraine Christine Evans",
-        email: "lorraineevans85@gmail.com",
-        designation: "HR Assistance",
-        type: "Appraiser",
-        role: "Subordinate",
-      },
-    ]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filterType, setFilterType] = useState<
-      "Appraisee" | "Appraiser" | "All"
-    >("All");
+    {
+      id: 1,
+      name: "Lorraine Christine Evans",
+      email: "lorraineevans85@gmail.com",
+      designation: "HR Assistance",
+      type: "Appraisee",
+      role: "Peer",
+    },
+    {
+      id: 2,
+      name: "Niro Yin",
+      email: "niroyinsh7459@gmail.com",
+      designation: "HR Manager",
+      type: "Appraiser",
+      role: "Manager",
+    },
+    {
+      id: 3,
+      name: "Lorraine Christine Evans",
+      email: "lorraineevans85@gmail.com",
+      designation: "CEO",
+      type: "Appraisee",
+      role: "Boss",
+    },
+    {
+      id: 4,
+      name: "Niro Yin",
+      email: "niroyinsh7459@gmail.com",
+      designation: "HR Manager",
+      type: "Appraiser",
+      role: "Subordinate",
+    },
+    {
+      id: 5,
+      name: "Lorraine Christine Evans",
+      email: "lorraineevans85@gmail.com",
+      designation: "HR Assistance",
+      type: "Appraiser",
+      role: "Subordinate",
+    },
+    {
+      id: 6,
+      name: "Niro Yin",
+      email: "niroyinsh7459@gmail.com",
+      designation: "HR Manager",
+      type: "Appraiser",
+      role: "Manager",
+    },
+  ]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<
+    "Appraisee" | "Appraiser" | "All"
+  >("All");
   const [filterDesignation, setFilterDesignation] = useState("");
-  
+
   const handleRoleChange = (id: number, newRole: string) => {
     setUsers(
       users.map((user) => (user.id === id ? { ...user, role: newRole } : user))
@@ -152,18 +142,46 @@ const Project = () => {
     setPageCase((prev) => prev - 1);
   };
 
+  const handleFinish = () => {
+    navigate("/create");
+  };
+
   const handleEdit = (index: number) => {
     // Implement edit logic here, e.g., populate form with data for editing
-    console.log("Edit participant at index:", index);
+    setEditIndex(index);
+    const participant = participants[index];
+    resetInfo({
+      participantName: participant.participantName,
+      email: participant.email,
+      designation: participant.designation,
+    });
   };
 
   const handleDelete = (index: number) => {
     setParticipants(participants.filter((_, i) => i !== index));
+    if (editIndex === index) {
+      setEditIndex(null);
+      resetInfo({ participantName: "", email: "", designation: "" });
+    }
   };
 
   const onSubmit = (data: ProjectFormData) => {
     console.log(data);
     // Handle form submission here
+  };
+
+  const handleParticipantSubmit = (data: ParticipantFormData) => {
+    if (editIndex !== null) {
+      // Update existing participant
+      const updated = [...participants];
+      updated[editIndex] = data;
+      setParticipants(updated);
+      setEditIndex(null);
+    } else {
+      // Add new participant
+      setParticipants([...participants, data]);
+    }
+    resetInfo({ participantName: "", email: "", designation: "" });
   };
 
   let pageContent;
@@ -398,7 +416,6 @@ const Project = () => {
                   <label
                     htmlFor="startDate"
                     className="block mb-2 text-lg text-gray-500 sr-only md:not-sr-only"
-                    
                   >
                     Project Start Date*
                   </label>
@@ -523,7 +540,7 @@ const Project = () => {
                     errorsInfo.participantName
                       ? "border-red-500"
                       : "border-gray-300"
-                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
                   {...registerInfo("participantName", {
                     required: "Participant name is required",
                     minLength: {
@@ -551,9 +568,9 @@ const Project = () => {
                     type="email"
                     id="email"
                     className={`bg-gray-50 border ${
-                      errors.email ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
-                    {...register("email", {
+                      errorsInfo.email ? "border-red-500" : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("email", {
                       required: "Email is required",
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -561,9 +578,9 @@ const Project = () => {
                       },
                     })}
                   />
-                  {errors.email && (
+                  {errorsInfo.email && (
                     <p className="mt-1 text-sm text-red-500">
-                      {errors.email.message}
+                      {errorsInfo.email.message}
                     </p>
                   )}
                 </div>
@@ -579,9 +596,11 @@ const Project = () => {
                     type="text"
                     id="designation"
                     className={`bg-gray-50 border ${
-                      errors.designation ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
-                    {...register("designation", {
+                      errorsInfo.designation
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("designation", {
                       required: "Designation is required",
                       minLength: {
                         value: 2,
@@ -589,9 +608,9 @@ const Project = () => {
                       },
                     })}
                   />
-                  {errors.designation && (
+                  {errorsInfo.designation && (
                     <p className="mt-1 text-sm text-red-500">
-                      {errors.designation.message}
+                      {errorsInfo.designation.message}
                     </p>
                   )}
                 </div>
@@ -601,60 +620,61 @@ const Project = () => {
                 type="submit"
                 variant="save"
                 className="mt-5 p-6 text-lg cursor-pointer"
-                onClick={handleSubmitInfo((data) => {
-                  setParticipants([...participants, data]);
-                  resetInfo();
-                })}
+                onClick={handleSubmitInfo(handleParticipantSubmit)}
               >
-                Add
+                {editIndex !== null ? "Update" : "Add"}
               </Button>
+              {editIndex !== null && (
+                <Button
+                  type="button"
+                  variant="previous"
+                  className="mt-5 ms-3 p-6 text-lg cursor-pointer rounded-lg"
+                  onClick={() => {
+                    setEditIndex(null);
+                    resetInfo({
+                      participantName: "",
+                      email: "",
+                      designation: "",
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
             </form>
           </div>
+          <div className="h-[1px] bg-gray-300 w-[80%] mx-auto mt-15"></div>
           {/* User Preview Section at the very bottom */}
           {participants.length > 0 && (
             <div className="mt-10 px-50 pb-10">
               <table className="min-w-full bg-white">
-                <thead>
-                  <tr>
-                    <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                      Participant Name
-                    </th>
-                    <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                      Email Address
-                    </th>
-                    <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                      Designation
-                    </th>
-                    <th className="py-2 px-4 border-b border-gray-200 text-left text-gray-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
                 <tbody>
                   {participants.map((participant, index) => (
                     <tr key={index}>
-                      <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-2 px-4  text-gray-900">
                         {participant.participantName}
                       </td>
-                      <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-2 px-4  text-gray-900">
                         {participant.email}
                       </td>
-                      <td className="py-2 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-2 px-4  text-gray-900">
                         {participant.designation}
                       </td>
-                      <td className="py-2 px-4 border-b border-gray-200">
-                        <button
+                      <td className="py-2 px-4 ">
+                        <Button
+                          variant="edit"
                           onClick={() => handleEdit(index)}
-                          className="text-blue-500 hover:text-blue-700 me-2"
+                          className="me-2 p-2"
                         >
-                          ✏️
-                        </button>
-                        <button
+                          <i className="bx bxs-pencil"></i>
+                        </Button>
+                        <Button
+                          variant="delete"
                           onClick={() => handleDelete(index)}
-                          className="text-red-500 hover:text-red-700"
+                          className="me-2 p-2"
                         >
-                          🗑️
-                        </button>
+                          <i className="bx bxs-trash"></i>
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -669,11 +689,7 @@ const Project = () => {
       pageContent = (
         <div>
           <div>
-            <PageNav
-              name="Jese Leos"
-              position="CEO"
-              title="All Users"
-            />
+            <PageNav name="Jese Leos" position="CEO" title="All Users" />
           </div>
           <div className="h-full px-50 pt-10">
             <div className="flex justify-between items-center mb-10">
@@ -699,12 +715,12 @@ const Project = () => {
               </div>
             </div>
 
-            <div className="flex items-center mb-5">
-              <div className="relative me-3 w-64">
+            <div className="flex items-center mb-5 justify-between">
+              <div className="relative flex">
                 <input
                   type="text"
                   placeholder="Name"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold ps-10"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 ps-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -725,23 +741,27 @@ const Project = () => {
                     />
                   </svg>
                 </div>
+
+                <div className="flex ms-3">
+                  <Button
+                    variant="success"
+                    className="me-3 h-13"
+                    onClick={() => setFilterType("Appraisee")}
+                  >
+                    Appraisee
+                  </Button>
+                  <Button
+                    variant="save"
+                    onClick={() => setFilterType("Appraiser")}
+                    className="me-3 h-13"
+                  >
+                    Appraiser
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="success"
-                className="me-3 h-13"
-                onClick={() => setFilterType("Appraisee")}
-              >
-                Appraisee
-              </Button>
-              <Button
-                variant="save"
-                onClick={() => setFilterType("Appraiser")}
-                className="me-3 h-13"
-              >
-                Appraiser
-              </Button>
+
               <select
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-3.5 font-bold"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-3.5"
                 value={filterDesignation}
                 onChange={(e) => setFilterDesignation(e.target.value)}
               >
@@ -754,24 +774,24 @@ const Project = () => {
               </select>
             </div>
 
-            <div className="mt-10">
-              <table className="min-w-full border-1 border-gray-200 rounded-full ">
-                <thead className="">
+            <div className="mt-10 border-1 border-gray-300 rounded-xl overflow-hidden">
+              <table className="min-w-full ">
+                <thead className="user-table" style={{}}>
                   <tr>
-                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600"></th>
-                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600"></th>
+                    <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600">
                       Participant Name
                     </th>
-                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600">
                       Email Address
                     </th>
-                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600">
                       Designation
                     </th>
-                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600">
                       Appraisee/Appraiser
                     </th>
-                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600">
                       Role
                     </th>
                   </tr>
@@ -779,25 +799,25 @@ const Project = () => {
                 <tbody>
                   {filteredUsers.map((user) => (
                     <tr key={user.id}>
-                      <td className="py-5 px-4 border-b border-gray-200">
+                      <td className="py-5 px-4 border-b border-gray-300">
                         <input
                           type="checkbox"
                           className="form-checkbox h-5 w-5 text-red-600"
                         />
                       </td>
-                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-5 px-4 border-b border-gray-300 text-gray-900">
                         {user.name}
                       </td>
-                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-5 px-4 border-b border-gray-300 text-gray-900">
                         {user.email}
                       </td>
-                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-5 px-4 border-b border-gray-300 text-gray-900">
                         {user.designation}
                       </td>
-                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                      <td className="py-5 px-4 border-b border-gray-300 text-gray-900">
                         {user.type}
                       </td>
-                      <td className="py-5 px-4 border-b border-gray-200">
+                      <td className="py-5 px-4 border-b border-gray-300">
                         <select
                           className="block w-full bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 px-2.5 py-1.5"
                           value={user.role}
@@ -820,6 +840,84 @@ const Project = () => {
             <Button variant="save" className="mt-10 p-6 text-lg cursor-pointer">
               Add
             </Button>
+          </div>
+        </div>
+      );
+      break;
+    case 4:
+      pageContent = (
+        <div>
+          <div>
+            <PageNav name="Jese Leos" position="CEO" title="Review Users" />
+          </div>
+          <div className="h-full px-50 pt-10">
+            <div className="flex justify-between items-center mb-10">
+              <label htmlFor="review users" className="text-3xl font-semibold">
+                Review Users
+              </label>
+
+              <div className="flex">
+                <Button
+                  variant="previous"
+                  className="font-semibold text-xl flex items-center justify-center p-6 me-3"
+                  onClick={handlePrev}
+                >
+                  previous
+                </Button>
+                <Button
+                  variant="next"
+                  className="font-semibold text-xl flex items-center justify-center p-6"
+                  onClick={handleFinish}
+                >
+                  Finish
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-10">
+              <table className="min-w-full bg-white border-1 border-gray-200 rounded-full">
+                <thead>
+                  <tr>
+                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                      Participant Name
+                    </th>
+                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                      Email Address
+                    </th>
+                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                      Designation
+                    </th>
+                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                      Appraisee/Appraiser
+                    </th>
+                    <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">
+                      Role
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                        {user.name}
+                      </td>
+                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                        {user.email}
+                      </td>
+                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                        {user.designation}
+                      </td>
+                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                        {user.type}
+                      </td>
+                      <td className="py-5 px-4 border-b border-gray-200 text-gray-900">
+                        {user.role}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       );

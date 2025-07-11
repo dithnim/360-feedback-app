@@ -17,6 +17,9 @@ const buttonVariants = cva(
           "bg-[#636565] text-white font-semibold rounded-full cursor-pointer",
         success:
           "bg-[#008b24] text-white font-semibold rounded-lg cursor-pointer",
+        edit: "bg-[#ed3f41] text-white text-lg font-semibold rounded-lg cursor-pointer",
+        delete:
+          "bg-[#ed3f41] text-white text-lg font-semibold rounded-lg cursor-pointer",
       },
       size: {
         default: "h-9 px-4 py-2",
