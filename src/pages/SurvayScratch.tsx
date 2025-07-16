@@ -150,15 +150,15 @@ const SurvayScratch = () => {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Navbar */}
       <PageNav name="John Doe" position="HR Manager" title="Create Template" />
 
       {/* Main Content Area */}
-      <main className="flex-1 py-8 px-26 overflow-y-auto bg-white">
-        <div className="mx-auto rounded-lg">
-          <div className="grid grid-cols-2 gap-16 mb-6">
-            <div className="w-[500px]">
+      <main className="flex flex-col py-6 px-2 sm:px-6 md:px-12 lg:px-24 xl:px-36 2xl:px-64 overflow-y-auto bg-white w-full">
+        <div className=" flex flex-col rounded-lg w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 mb-6 w-full">
+            <div className="w-full">
               <label
                 htmlFor="competency"
                 className="mb-2 block text-md font-medium text-gray-700"
@@ -199,7 +199,7 @@ const SurvayScratch = () => {
             >
               Questions*
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 id="questions"
@@ -210,7 +210,7 @@ const SurvayScratch = () => {
               />
               <button
                 type="button"
-                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center cursor-pointer"
+                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center cursor-pointer w-full sm:w-auto"
                 onClick={handleQuestionAdd}
                 aria-label="Add question"
               >
@@ -224,7 +224,7 @@ const SurvayScratch = () => {
             {questions.map((q) => (
               <div key={q.id} className="mb-2">
                 {editId === q.id ? (
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-1">
                     <input
                       type="text"
                       className="border border-gray-300 rounded-lg p-2 w-full"
@@ -232,36 +232,38 @@ const SurvayScratch = () => {
                       onChange={(e) => setEditText(e.target.value)}
                     />
                     <button
-                      className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-1 cursor-pointer"
+                      className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-1 cursor-pointer w-full sm:w-auto"
                       onClick={() => handleEditSave(q.id)}
                     >
                       Save
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-1">
                     <input
                       type="text"
                       className="border border-gray-300 rounded-lg p-2 w-full"
                       value={q.text}
                       readOnly
                     />
-                    <button
-                      className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
-                      style={{ width: 40, height: 40 }}
-                      onClick={() => handleDelete(q.id)}
-                      aria-label="Delete question"
-                    >
-                      <span style={{ fontSize: 24 }}>–</span>
-                    </button>
-                    <button
-                      className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
-                      style={{ width: 40, height: 40 }}
-                      onClick={() => handleEdit(q.id, q.text)}
-                      aria-label="Edit question"
-                    >
-                      <span style={{ fontSize: 18 }}>✎</span>
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
+                        style={{ width: 40, height: 40 }}
+                        onClick={() => handleDelete(q.id)}
+                        aria-label="Delete question"
+                      >
+                        <span style={{ fontSize: 24 }}>–</span>
+                      </button>
+                      <button
+                        className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
+                        style={{ width: 40, height: 40 }}
+                        onClick={() => handleEdit(q.id, q.text)}
+                        aria-label="Edit question"
+                      >
+                        <span style={{ fontSize: 18 }}>✎</span>
+                      </button>
+                    </div>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-4 ml-2 text-gray-700 text-md items-center">
@@ -284,7 +286,7 @@ const SurvayScratch = () => {
                     onClick={handleEditOptsCancel}
                   >
                     <div
-                      className="bg-white rounded-lg p-8 min-w-[350px] w-full max-w-xs flex flex-col items-center"
+                      className="bg-white rounded-lg p-8 min-w-[90vw] max-w-xs w-full flex flex-col items-center sm:min-w-[350px]"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {editOptsValues.map((val, idx) => (
@@ -308,15 +310,15 @@ const SurvayScratch = () => {
                         </div>
                       ))}
 
-                      <div className="flex w-full justify-start">
+                      <div className="flex w-full flex-col sm:flex-row justify-start gap-2">
                         <button
-                          className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 mt-2 cursor-pointer"
+                          className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 mt-2 cursor-pointer w-full sm:w-auto"
                           onClick={() => handleEditOptsSave(editOptsId)}
                         >
                           Save
                         </button>
                         <button
-                          className="ml-4 bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 mt-2 cursor-pointer"
+                          className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 mt-2 cursor-pointer w-full sm:w-auto"
                           onClick={handleEditOptsCancel}
                         >
                           Cancel
@@ -330,10 +332,10 @@ const SurvayScratch = () => {
           </div>
 
           {/* Add button after questions list */}
-          <div className="flex mt-6">
+          <div className="flex flex-col sm:flex-row mt-6 gap-2">
             <button
               type="button"
-              className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer"
+              className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer w-full sm:w-auto"
               onClick={handleAdd}
               style={{ minWidth: 80 }}
             >
@@ -341,7 +343,7 @@ const SurvayScratch = () => {
             </button>
             <button
               type="button"
-              className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 ml-4 text-lg font-semibold cursor-pointer"
+              className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer w-full sm:w-auto"
               onClick={handleClear}
               aria-label="Clear form"
               style={{ minWidth: 80 }}
@@ -377,6 +379,21 @@ const SurvayScratch = () => {
           }))}
           commentLabel="Additional Comments"
         />
+
+        <div className="flex flex-col sm:flex-row items-center mt-8 gap-2">
+          <Button
+            variant="edit"
+            className="bg-[#8B1C13] font-medium text-md w-full sm:w-auto"
+          >
+            Save Template
+          </Button>
+          <Button
+            className="bg-transparent border border-[#ed3f41] text-[#ed3f41] font-semibold px-2 py-1 rounded-lg text-md w-full sm:w-auto"
+            variant="next"
+          >
+            Preview
+          </Button>
+        </div>
       </main>
     </div>
   );
