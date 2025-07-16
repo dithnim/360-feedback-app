@@ -206,13 +206,6 @@ const Project = () => {
               </label>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <Button
-                  variant="previous"
-                  className="font-semibold text-base sm:text-xl flex items-center justify-center px-4 py-3 sm:p-6"
-                  onClick={handlePrev}
-                >
-                  previous
-                </Button>
-                <Button
                   variant="next"
                   className="font-semibold text-base sm:text-xl flex items-center justify-center px-4 py-3 sm:p-6"
                   onClick={handleNext}
@@ -501,7 +494,7 @@ const Project = () => {
               title="Participant Information"
             />
           </div>
-          <div className="h-full px-50 pt-10">
+          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label htmlFor="User details" className="text-3xl font-semibold">
                 User Details
@@ -691,7 +684,7 @@ const Project = () => {
           <div>
             <PageNav name="Jese Leos" position="CEO" title="All Users" />
           </div>
-          <div className="h-full px-50 pt-10">
+          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label htmlFor="participants" className="text-3xl font-semibold">
                 Participants
@@ -850,7 +843,7 @@ const Project = () => {
           <div>
             <PageNav name="Jese Leos" position="CEO" title="Review Users" />
           </div>
-          <div className="h-full px-50 pt-10">
+          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label htmlFor="review users" className="text-3xl font-semibold">
                 Review Users
@@ -874,8 +867,8 @@ const Project = () => {
               </div>
             </div>
 
-            <div className="mt-10">
-              <table className="min-w-full bg-white border-1 border-gray-200 rounded-full">
+            <div className="mt-10 border-1 border-gray-300 rounded-lg">
+              <table className="min-w-full bg-white">
                 <thead>
                   <tr>
                     <th className="py-5 px-4 border-b border-gray-200 text-left text-gray-600">

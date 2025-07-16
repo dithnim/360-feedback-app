@@ -21,7 +21,6 @@ const SurvayScratch = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
 
-  // For preview edit
   const [templatePreview, setTemplatePreview] = useState({
     templateName: "",
     competency: "",
@@ -39,24 +38,19 @@ const SurvayScratch = () => {
   };
 
   const handleAdd = () => {
-    if (!templateName.trim() || !competency.trim()) return;
-
-    const newTemplate = {
-      templateName,
-      competency,
-      description,
-      questions,
-    };
+    if (!competency.trim()) return;
+    // If no questions, don't add
+    if (questions.length === 0) return;
 
     setTemplatePreview((prev) => ({
       ...prev,
-      questions: [...prev.questions, ...newTemplate.questions],
-      templateName: newTemplate.templateName,
-      competency: newTemplate.competency,
-      description: newTemplate.description,
+      templateName,
+      competency,
+      description,
+      questions: [...prev.questions, ...questions],
     }));
 
-    // Clear the form fields
+    setTemplateName("");
     setCompetency("");
     setDescription("");
     setQuestions([]);
@@ -161,10 +155,10 @@ const SurvayScratch = () => {
       <PageNav name="John Doe" position="HR Manager" title="Create Template" />
 
       {/* Main Content Area */}
-      <main className="flex-1 p-8 overflow-y-auto bg-white">
+      <main className="flex-1 py-8 px-26 overflow-y-auto bg-white">
         <div className="mx-auto rounded-lg">
           <div className="grid grid-cols-2 gap-16 mb-6">
-            <div>
+            <div className="w-[500px]">
               <label
                 htmlFor="competency"
                 className="mb-2 block text-md font-medium text-gray-700"
@@ -216,7 +210,7 @@ const SurvayScratch = () => {
               />
               <button
                 type="button"
-                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center"
+                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center cursor-pointer"
                 onClick={handleQuestionAdd}
                 aria-label="Add question"
               >
@@ -238,7 +232,7 @@ const SurvayScratch = () => {
                       onChange={(e) => setEditText(e.target.value)}
                     />
                     <button
-                      className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-1"
+                      className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-1 cursor-pointer"
                       onClick={() => handleEditSave(q.id)}
                     >
                       Save
@@ -253,7 +247,7 @@ const SurvayScratch = () => {
                       readOnly
                     />
                     <button
-                      className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center"
+                      className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
                       style={{ width: 40, height: 40 }}
                       onClick={() => handleDelete(q.id)}
                       aria-label="Delete question"
@@ -261,7 +255,7 @@ const SurvayScratch = () => {
                       <span style={{ fontSize: 24 }}>–</span>
                     </button>
                     <button
-                      className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center"
+                      className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
                       style={{ width: 40, height: 40 }}
                       onClick={() => handleEdit(q.id, q.text)}
                       aria-label="Edit question"
@@ -275,7 +269,7 @@ const SurvayScratch = () => {
                     <span key={opt}>• {opt}</span>
                   ))}
                   <button
-                    className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center ml-2"
+                    className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center ml-2 cursor-pointer"
                     style={{ width: 32, height: 32 }}
                     onClick={() => handleEditOpts(q.id, q.options)}
                     aria-label="Edit options"
@@ -316,13 +310,13 @@ const SurvayScratch = () => {
 
                       <div className="flex w-full justify-start">
                         <button
-                          className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 mt-2"
+                          className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 mt-2 cursor-pointer"
                           onClick={() => handleEditOptsSave(editOptsId)}
                         >
                           Save
                         </button>
                         <button
-                          className="ml-4 bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 mt-2"
+                          className="ml-4 bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 mt-2 cursor-pointer"
                           onClick={handleEditOptsCancel}
                         >
                           Cancel
@@ -339,7 +333,7 @@ const SurvayScratch = () => {
           <div className="flex mt-6">
             <button
               type="button"
-              className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold"
+              className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer"
               onClick={handleAdd}
               style={{ minWidth: 80 }}
             >
@@ -347,7 +341,7 @@ const SurvayScratch = () => {
             </button>
             <button
               type="button"
-              className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 ml-4 text-lg font-semibold"
+              className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 ml-4 text-lg font-semibold cursor-pointer"
               onClick={handleClear}
               aria-label="Clear form"
               style={{ minWidth: 80 }}
