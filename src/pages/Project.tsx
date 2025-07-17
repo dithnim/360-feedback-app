@@ -1,9 +1,7 @@
 import { Button } from "../components/ui/Button";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
-import { useState, useEffect } from "react";
-import ApprovedSVG from "../../imgs/approved.png";
-import { Users } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface ProjectFormData {
@@ -32,32 +30,50 @@ interface UserData {
   role: string;
 }
 
+interface CompanyFormData {
+  companyName: string;
+  description: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  file?: FileList;
+}
+
 const Project = () => {
   const {
-    register,
-    handleSubmit,
+    register: registerProject,
+    handleSubmit: handleSubmitProject,
     formState: { errors },
     watch,
   } = useForm<ProjectFormData>();
 
   const navigate = useNavigate();
-
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(1);
 
-  //!Info states
   const [participants, setParticipants] = useState<
-    { participantName: string; email: string; designation: string }[]
+    {
+      id: number;
+      participantName: string;
+      email: string;
+      designation: string;
+    }[]
   >([]);
   const {
     register: registerInfo,
     handleSubmit: handleSubmitInfo,
     reset: resetInfo,
     formState: { errors: errorsInfo },
+    setValue,
   } = useForm<ParticipantFormData>();
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  //!User states
+  const {
+    register: registerCompany,
+    handleSubmit: handleSubmitCompany,
+    formState: { errors: errorsCompany },
+  } = useForm<CompanyFormData>();
+
   const [users, setUsers] = useState<UserData[]>([
     {
       id: 1,
@@ -114,108 +130,333 @@ const Project = () => {
   >("All");
   const [filterDesignation, setFilterDesignation] = useState("");
 
-  const handleRoleChange = (id: number, newRole: string) => {
-    setUsers(
-      users.map((user) => (user.id === id ? { ...user, role: newRole } : user))
+  const handleRoleChange = useCallback((id: number, newRole: string) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((user) =>
+        user.id === id ? { ...user, role: newRole } : user
+      )
     );
-  };
+  }, []);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "All" || user.type === filterType;
-    const matchesDesignation =
-      filterDesignation === "" || user.designation === filterDesignation;
-    return matchesSearch && matchesType && matchesDesignation;
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch = user.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesType = filterType === "All" || user.type === filterType;
+      const matchesDesignation =
+        filterDesignation === "" || user.designation === filterDesignation;
+      return matchesSearch && matchesType && matchesDesignation;
+    });
+  }, [users, searchTerm, filterType, filterDesignation]);
 
-  const uniqueDesignations = Array.from(
-    new Set(users.map((user) => user.designation))
+  const uniqueDesignations = useMemo(
+    () => Array.from(new Set(users.map((user) => user.designation))),
+    [users]
   );
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setPageCase((prev) => prev + 1);
-  };
+  }, []);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setPageCase((prev) => prev - 1);
-  };
+  }, []);
 
-  const handleFinish = () => {
+  const handleFinish = useCallback(() => {
     navigate("/create");
-  };
+  }, [navigate]);
 
-  const handleEdit = (index: number) => {
-    // Implement edit logic here, e.g., populate form with data for editing
-    setEditIndex(index);
-    const participant = participants[index];
-    resetInfo({
-      participantName: participant.participantName,
-      email: participant.email,
-      designation: participant.designation,
-    });
-  };
+  const handleEdit = useCallback(
+    (index: number) => {
+      const participant = participants[index];
+      setEditIndex(index);
+      setValue("participantName", participant.participantName);
+      setValue("email", participant.email);
+      setValue("designation", participant.designation);
+    },
+    [participants, setValue]
+  );
 
-  const handleDelete = (index: number) => {
-    setParticipants(participants.filter((_, i) => i !== index));
-    if (editIndex === index) {
-      setEditIndex(null);
-      resetInfo({ participantName: "", email: "", designation: "" });
-    }
-  };
+  const handleDelete = useCallback(
+    (index: number) => {
+      setParticipants((prev) => prev.filter((_, i) => i !== index));
+      if (editIndex === index) {
+        setEditIndex(null);
+        resetInfo({ participantName: "", email: "", designation: "" });
+      }
+    },
+    [editIndex, resetInfo]
+  );
 
-  const onSubmit = (data: ProjectFormData) => {
+  const onSubmitCompany = useCallback((data: CompanyFormData) => {
     console.log(data);
-    // Handle form submission here
+  }, []);
+
+  const onSubmitProject = useCallback((data: ProjectFormData) => {
+    console.log(data);
+  }, []);
+
+  const handleParticipantSubmit = useCallback(
+    (data: ParticipantFormData) => {
+      if (editIndex !== null) {
+        setParticipants((prev) =>
+          prev.map((p, i) => (i === editIndex ? { ...p, ...data } : p))
+        );
+        setEditIndex(null);
+      } else {
+        setParticipants((prev) => [...prev, { ...data, id: Date.now() }]);
+      }
+      resetInfo({ participantName: "", email: "", designation: "" });
+    },
+    [editIndex, resetInfo]
+  );
+
+  const debounce = (func: Function, delay: number) => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
   };
 
-  const handleParticipantSubmit = (data: ParticipantFormData) => {
-    if (editIndex !== null) {
-      // Update existing participant
-      const updated = [...participants];
-      updated[editIndex] = data;
-      setParticipants(updated);
-      setEditIndex(null);
-    } else {
-      // Add new participant
-      setParticipants([...participants, data]);
-    }
-    resetInfo({ participantName: "", email: "", designation: "" });
-  };
+  const handleSearchChange = useMemo(
+    () =>
+      debounce((value: string) => {
+        setSearchTerm(value);
+      }, 300),
+    []
+  );
 
   let pageContent;
   switch (pageCase) {
     case 1:
       pageContent = (
-        <div className="min-h-screen bg-white">
-          <div className="">
-            <PageNav
-              name="Jese Leos"
-              position="CEO"
-              title="Create New Project"
-            />
+        <div>
+          <PageNav name="Jese Leos" position="CEO" title="Create New Company" />
+          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            <div className="flex justify-between">
+              <label className="text-3xl font-semibold">Company Details</label>
+              <Button
+                variant="next"
+                className="font-semibold text-xl flex items-center justify-center p-6"
+                onClick={handleNext}
+              >
+                next
+              </Button>
+            </div>
+            <form
+              onSubmit={handleSubmitCompany(onSubmitCompany)}
+              className="mt-10"
+            >
+              <div className="mb-5">
+                <label
+                  htmlFor="companyName"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Company Name*
+                </label>
+                <input
+                  type="text"
+                  id="companyName"
+                  className={`bg-gray-50 border ${
+                    errorsCompany.companyName
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                  {...registerCompany("companyName", {
+                    required: "Company name is required",
+                    minLength: {
+                      value: 2,
+                      message: "Company name must be at least 2 characters",
+                    },
+                  })}
+                />
+                {errorsCompany.companyName && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsCompany.companyName.message}
+                  </p>
+                )}
+              </div>
+              <div className="mb-5">
+                <label
+                  htmlFor="description"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Description*
+                </label>
+                <textarea
+                  id="description"
+                  className={`bg-gray-50 border ${
+                    errorsCompany.description
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full font-bold p-2.5`}
+                  rows={7}
+                  {...registerCompany("description", {
+                    required: "Description is required",
+                    minLength: {
+                      value: 10,
+                      message: "Description must be at least 10 characters",
+                    },
+                  })}
+                ></textarea>
+                {errorsCompany.description && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsCompany.description.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-between items-center mb-5">
+                <div className="w-full me-10">
+                  <label
+                    htmlFor="contactPerson"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Contact Person*
+                  </label>
+                  <input
+                    type="text"
+                    id="contactPerson"
+                    className={`bg-gray-50 border ${
+                      errorsCompany.contactPerson
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                    {...registerCompany("contactPerson", {
+                      required: "Contact person is required",
+                      pattern: {
+                        value: /^[A-Za-z\s]+$/,
+                        message:
+                          "Contact person should only contain letters and spaces",
+                      },
+                    })}
+                  />
+                  {errorsCompany.contactPerson && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsCompany.contactPerson.message}
+                    </p>
+                  )}
+                </div>
+                <div className="w-full">
+                  <label
+                    htmlFor="email"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Email Address*
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    className={`bg-gray-50 border ${
+                      errorsCompany.email ? "border-red-500" : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                    {...registerCompany("email", {
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address",
+                      },
+                    })}
+                  />
+                  {errorsCompany.email && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsCompany.email.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="w-full me-10">
+                  <label
+                    htmlFor="phone"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Phone Number*
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    className={`bg-gray-50 border ${
+                      errorsCompany.phone ? "border-red-500" : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                    onKeyPress={(e) => {
+                      if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    maxLength={10}
+                    {...registerCompany("phone", {
+                      required: "Phone number is required",
+                      pattern: {
+                        value: /^[0-9]{10}$/,
+                        message: "Phone number must be 10 digits",
+                      },
+                    })}
+                  />
+                  {errorsCompany.phone && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsCompany.phone.message}
+                    </p>
+                  )}
+                </div>
+                <div className="cursor-pointer">
+                  <label
+                    className="block mb-2 text-lg text-gray-500 cursor-pointer"
+                    htmlFor="file_input"
+                  >
+                    Upload file
+                  </label>
+                  <input
+                    className="bg-gray-50 border border-gray-300 text-gray-800 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 cursor-pointer"
+                    id="user_avatar"
+                    type="file"
+                    {...registerCompany("file")}
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                variant="save"
+                className="mt-15 p-6 text-lg cursor-pointer"
+              >
+                Save
+              </Button>
+            </form>
           </div>
+        </div>
+      );
+      break;
+    case 2:
+      pageContent = (
+        <div className="min-h-screen bg-white">
+          <PageNav name="Jese Leos" position="CEO" title="Create New Project" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-              <label
-                htmlFor="project details"
-                className="text-2xl sm:text-3xl font-semibold"
-              >
+              <label className="text-2xl sm:text-3xl font-semibold">
                 Project Information
               </label>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+              <div className="flex">
+                <Button
+                  variant="previous"
+                  className="font-semibold text-xl flex items-center justify-center p-6 me-3"
+                  onClick={handlePrev}
+                >
+                  previous
+                </Button>
                 <Button
                   variant="next"
-                  className="font-semibold text-base sm:text-xl flex items-center justify-center px-4 py-3 sm:p-6"
+                  className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={handleNext}
                 >
                   next
                 </Button>
               </div>
             </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-8 sm:mt-10">
+            <form
+              onSubmit={handleSubmitProject(onSubmitProject)}
+              className="mt-8 sm:mt-10"
+            >
               <div className="mb-5">
                 <label
                   htmlFor="projectName"
@@ -230,7 +471,7 @@ const Project = () => {
                   className={`bg-gray-50 border ${
                     errors.projectName ? "border-red-500" : "border-gray-300"
                   } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                  {...register("projectName", {
+                  {...registerProject("projectName", {
                     required: "Project name is required",
                     minLength: {
                       value: 2,
@@ -244,7 +485,6 @@ const Project = () => {
                   </p>
                 )}
               </div>
-
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-0 md:gap-8 mb-5">
                 <div className="w-full md:me-10 mb-5 md:mb-0">
                   <label
@@ -262,7 +502,7 @@ const Project = () => {
                         ? "border-red-500"
                         : "border-gray-300"
                     } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                    {...register("contactPerson", {
+                    {...registerProject("contactPerson", {
                       required: "Contact person is required",
                       pattern: {
                         value: /^[A-Za-z\s]+$/,
@@ -277,7 +517,6 @@ const Project = () => {
                     </p>
                   )}
                 </div>
-
                 <div className="w-full">
                   <label
                     htmlFor="designation"
@@ -292,7 +531,7 @@ const Project = () => {
                     className={`bg-gray-50 border ${
                       errors.designation ? "border-red-500" : "border-gray-300"
                     } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                    {...register("designation", {
+                    {...registerProject("designation", {
                       required: "Designation is required",
                       minLength: {
                         value: 2,
@@ -307,7 +546,6 @@ const Project = () => {
                   )}
                 </div>
               </div>
-
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-0 md:gap-8 mb-5">
                 <div className="w-full md:me-10 mb-5 md:mb-0">
                   <label
@@ -323,7 +561,7 @@ const Project = () => {
                     className={`bg-gray-50 border ${
                       errors.email ? "border-red-500" : "border-gray-300"
                     } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                    {...register("email", {
+                    {...registerProject("email", {
                       required: "Email is required",
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -337,7 +575,6 @@ const Project = () => {
                     </p>
                   )}
                 </div>
-
                 <div className="w-full">
                   <label
                     htmlFor="phone"
@@ -358,7 +595,7 @@ const Project = () => {
                       }
                     }}
                     maxLength={10}
-                    {...register("phone", {
+                    {...registerProject("phone", {
                       required: "Phone number is required",
                       pattern: {
                         value: /^[0-9]{10}$/,
@@ -373,7 +610,6 @@ const Project = () => {
                   )}
                 </div>
               </div>
-
               <div className="mb-5 w-full md:w-1/2 md:pe-9">
                 <label
                   htmlFor="assigningTeam"
@@ -385,8 +621,8 @@ const Project = () => {
                   id="assigningTeam"
                   className={`bg-gray-50 border ${
                     errors.assigningTeam ? "border-red-500" : "border-gray-300"
-                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                  {...register("assigningTeam", {
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerProject("assigningTeam", {
                     required: "Assigning team is required",
                   })}
                 >
@@ -403,7 +639,6 @@ const Project = () => {
                   </p>
                 )}
               </div>
-
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-0 md:gap-8 mb-5">
                 <div className="w-full md:me-10 mb-5 md:mb-0">
                   <label
@@ -419,7 +654,7 @@ const Project = () => {
                     className={`bg-gray-50 border ${
                       errors.startDate ? "border-red-500" : "border-gray-300"
                     } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                    {...register("startDate", {
+                    {...registerProject("startDate", {
                       required: "Start date is required",
                       validate: (value) => {
                         const today = new Date();
@@ -437,7 +672,6 @@ const Project = () => {
                     </p>
                   )}
                 </div>
-
                 <div className="w-full">
                   <label
                     htmlFor="endDate"
@@ -452,7 +686,7 @@ const Project = () => {
                     className={`bg-gray-50 border ${
                       errors.endDate ? "border-red-500" : "border-gray-300"
                     } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
-                    {...register("endDate", {
+                    {...registerProject("endDate", {
                       required: "End date is required",
                       validate: (value) => {
                         if (!startDate) return true;
@@ -471,7 +705,6 @@ const Project = () => {
                   )}
                 </div>
               </div>
-
               <Button
                 type="submit"
                 variant="save"
@@ -484,22 +717,17 @@ const Project = () => {
         </div>
       );
       break;
-    case 2:
+    case 3:
       pageContent = (
         <div>
-          <div>
-            <PageNav
-              name="Jese Leos"
-              position="CEO"
-              title="Participant Information"
-            />
-          </div>
+          <PageNav
+            name="Jese Leos"
+            position="CEO"
+            title="Participant Information"
+          />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
-              <label htmlFor="User details" className="text-3xl font-semibold">
-                User Details
-              </label>
-
+              <label className="text-3xl font-semibold">User Details</label>
               <div className="flex">
                 <Button
                   variant="previous"
@@ -517,8 +745,10 @@ const Project = () => {
                 </Button>
               </div>
             </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-5">
+            <form
+              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
+              className="mt-5"
+            >
               <div className="mb-5">
                 <label
                   htmlFor="participantName"
@@ -548,7 +778,6 @@ const Project = () => {
                   </p>
                 )}
               </div>
-
               <div className="flex justify-between items-center mb-5">
                 <div className="w-full me-10">
                   <label
@@ -577,7 +806,6 @@ const Project = () => {
                     </p>
                   )}
                 </div>
-
                 <div className="w-full">
                   <label
                     htmlFor="designation"
@@ -608,12 +836,10 @@ const Project = () => {
                   )}
                 </div>
               </div>
-
               <Button
                 type="submit"
                 variant="save"
                 className="mt-5 p-6 text-lg cursor-pointer"
-                onClick={handleSubmitInfo(handleParticipantSubmit)}
               >
                 {editIndex !== null ? "Update" : "Add"}
               </Button>
@@ -637,23 +863,22 @@ const Project = () => {
             </form>
           </div>
           <div className="h-[1px] bg-gray-300 w-[80%] mx-auto mt-15"></div>
-          {/* User Preview Section at the very bottom */}
           {participants.length > 0 && (
             <div className="mt-10 px-50 pb-10">
               <table className="min-w-full bg-white">
                 <tbody>
                   {participants.map((participant, index) => (
-                    <tr key={index}>
-                      <td className="py-2 px-4  text-gray-900">
+                    <tr key={participant.id}>
+                      <td className="py-2 px-4 text-gray-900">
                         {participant.participantName}
                       </td>
-                      <td className="py-2 px-4  text-gray-900">
+                      <td className="py-2 px-4 text-gray-900">
                         {participant.email}
                       </td>
-                      <td className="py-2 px-4  text-gray-900">
+                      <td className="py-2 px-4 text-gray-900">
                         {participant.designation}
                       </td>
-                      <td className="py-2 px-4 ">
+                      <td className="py-2 px-4">
                         <Button
                           variant="edit"
                           onClick={() => handleEdit(index)}
@@ -678,18 +903,13 @@ const Project = () => {
         </div>
       );
       break;
-    case 3:
+    case 4:
       pageContent = (
         <div>
-          <div>
-            <PageNav name="Jese Leos" position="CEO" title="All Users" />
-          </div>
+          <PageNav name="Jese Leos" position="CEO" title="All Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
-              <label htmlFor="participants" className="text-3xl font-semibold">
-                Participants
-              </label>
-
+              <label className="text-3xl font-semibold">Participants</label>
               <div className="flex">
                 <Button
                   variant="previous"
@@ -707,15 +927,13 @@ const Project = () => {
                 </Button>
               </div>
             </div>
-
             <div className="flex items-center mb-5 justify-between">
               <div className="relative flex">
                 <input
                   type="text"
                   placeholder="Name"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 ps-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                 />
                 <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                   <svg
@@ -734,7 +952,6 @@ const Project = () => {
                     />
                   </svg>
                 </div>
-
                 <div className="flex ms-3">
                   <Button
                     variant="success"
@@ -752,7 +969,6 @@ const Project = () => {
                   </Button>
                 </div>
               </div>
-
               <select
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-2.5 py-3.5"
                 value={filterDesignation}
@@ -766,10 +982,9 @@ const Project = () => {
                 ))}
               </select>
             </div>
-
             <div className="mt-10 border-1 border-gray-300 rounded-xl overflow-hidden">
-              <table className="min-w-full ">
-                <thead className="user-table" style={{}}>
+              <table className="min-w-full">
+                <thead className="user-table">
                   <tr>
                     <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600"></th>
                     <th className="py-5 px-4 border-b border-gray-300 text-left text-gray-600">
@@ -829,7 +1044,6 @@ const Project = () => {
                 </tbody>
               </table>
             </div>
-
             <Button variant="save" className="mt-10 p-6 text-lg cursor-pointer">
               Add
             </Button>
@@ -837,18 +1051,13 @@ const Project = () => {
         </div>
       );
       break;
-    case 4:
+    case 5:
       pageContent = (
         <div>
-          <div>
-            <PageNav name="Jese Leos" position="CEO" title="Review Users" />
-          </div>
+          <PageNav name="Jese Leos" position="CEO" title="Review Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
-              <label htmlFor="review users" className="text-3xl font-semibold">
-                Review Users
-              </label>
-
+              <label className="text-3xl font-semibold">Review Users</label>
               <div className="flex">
                 <Button
                   variant="previous"
@@ -866,7 +1075,6 @@ const Project = () => {
                 </Button>
               </div>
             </div>
-
             <div className="mt-10 border-1 border-gray-300 rounded-lg">
               <table className="min-w-full bg-white">
                 <thead>

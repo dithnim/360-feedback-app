@@ -30,13 +30,17 @@ const Sidebar = () => {
     navigate("/create-template");
   };
 
-  const menuItems: MenuItem[] = [
-    { icon: business, label: "Business" },
-    { icon: company, label: "Company" },
-    { icon: checklist, label: "Checklist" },
-    { icon: team, label: "Team" },
-    { icon: resource, label: "Resource" },
-    { icon: insights, label: "Insights" },
+  const menuItems: (MenuItem & { onClick?: () => void })[] = [
+    { icon: business, label: "Business", onClick: () => navigate("/business") },
+    { icon: company, label: "Company", onClick: navigateToCompany },
+    {
+      icon: checklist,
+      label: "Checklist",
+      onClick: () => navigate("/create-template"),
+    },
+    { icon: team, label: "Team", onClick: () => navigate("/team") },
+    { icon: resource, label: "Resource", onClick: () => navigate("/resource") },
+    { icon: insights, label: "Insights", onClick: () => navigate("/insights") },
   ];
 
   const Hr = () => (
@@ -126,8 +130,6 @@ const Sidebar = () => {
       className={`h-[100vh] bg-[#ed3f41] flex justify-center py-10 z-1000 transition-all duration-300 ease-in-out absolute top-0 ${
         isExpanded ? "w-[240px]" : "w-[120px]"
       }`}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
     >
       <div className="flex flex-col justify-between items-center w-full  h-[93vh]">
         <div className="bg-[#ed3f41] flex items-center justify-center">
@@ -143,10 +145,11 @@ const Sidebar = () => {
             ))}
           </div>
         ) : (
-          menuItems.map((item: MenuItem, index: number) => (
+          menuItems.map((item, index) => (
             <div
               key={index}
-              className="flex items-center justify-center gap-4 w-full px-4 hover:bg-[#ff5254] transition-colors duration-200 cursor-pointer"
+              className="flex items-center justify-center gap-4 w-full px-4 transition-colors duration-200 cursor-pointer"
+              onClick={item.onClick}
             >
               <img src={item.icon} alt={item.label} className="w-10 h-10" />
             </div>
