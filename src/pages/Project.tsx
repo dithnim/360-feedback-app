@@ -1,8 +1,31 @@
 import { Button } from "../components/ui/Button";
+import { apiGet, apiPost, apiPut, apiDelete } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+
+//! Handler functions
+const handlerCompanyCreation = async (data: CompanyFormData) => {
+  // Map form data to backend JSON structure
+  const payload = {
+    name: data.companyName,
+    email: data.email,
+    contactNumber: data.phone,
+    contactPerson: data.contactPerson,
+    logoImg:
+      data.file && data.file[0] ? URL.createObjectURL(data.file[0]) : undefined,
+    createdAt: new Date().toISOString(),
+  };
+  try {
+    const response = await apiPost("/company", payload);
+    // Handle success (e.g., show notification, navigate, etc.)
+    console.log("Company created:", response);
+  } catch (error) {
+    // Handle error (e.g., show error message)
+    console.error("Error creating company:", error);
+  }
+};
 
 interface ProjectFormData {
   projectName: string;
@@ -190,7 +213,7 @@ const Project = () => {
   );
 
   const onSubmitCompany = useCallback((data: CompanyFormData) => {
-    console.log(data);
+    handlerCompanyCreation(data);
   }, []);
 
   const onSubmitProject = useCallback((data: ProjectFormData) => {
@@ -263,7 +286,7 @@ const Project = () => {
                     errorsCompany.companyName
                       ? "border-red-500"
                       : "border-gray-300"
-                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
                   {...registerCompany("companyName", {
                     required: "Company name is required",
                     minLength: {
@@ -291,7 +314,7 @@ const Project = () => {
                     errorsCompany.description
                       ? "border-red-500"
                       : "border-gray-300"
-                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full font-bold p-2.5`}
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5`}
                   rows={7}
                   {...registerCompany("description", {
                     required: "Description is required",
@@ -322,7 +345,7 @@ const Project = () => {
                       errorsCompany.contactPerson
                         ? "border-red-500"
                         : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
                     {...registerCompany("contactPerson", {
                       required: "Contact person is required",
                       pattern: {
@@ -350,7 +373,7 @@ const Project = () => {
                     id="email"
                     className={`bg-gray-50 border ${
                       errorsCompany.email ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
                     {...registerCompany("email", {
                       required: "Email is required",
                       pattern: {
@@ -379,7 +402,8 @@ const Project = () => {
                     id="phone"
                     className={`bg-gray-50 border ${
                       errorsCompany.phone ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 font-bold`}
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5
+`}
                     onKeyPress={(e) => {
                       if (!/[0-9]/.test(e.key)) {
                         e.preventDefault();
