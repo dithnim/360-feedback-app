@@ -15,6 +15,7 @@ import CreateTemplate from "./pages/CreateTemplate.tsx";
 import ViewTeam from "./pages/ViewTeam.tsx";
 import SurvayScratch from "./pages/SurvayScratch.tsx";
 import CreateTeam from "./pages/CreateTeam.tsx";
+import FeedbackReport from "../report/FeedbackReport/FeedbackReport.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -28,7 +29,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/create-template" element={<CreateTemplate />} />
         <Route path="/view-team" element={<ViewTeam />} />
         <Route path="/create-team" element={<CreateTeam />} />
-        {/* Add more routes here as needed */}
+        <Route path="/feedback-report" element={<FeedbackReport />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

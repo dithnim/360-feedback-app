@@ -1,0 +1,126 @@
+.panel {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  z-index: 10;
+}
+
+.editable-field {
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+
+  &.minimized {
+    width: auto;
+    min-width: 150px;
+  }
+
+  .edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f2f2f2;
+    padding: 8px 12px;
+    border-radius: 6px 6px 0 0;
+    user-select: none;
+    border-bottom: 1px solid #ddd;
+
+    span {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+    }
+  }
+
+  .edit-body {
+    padding: 12px;
+  }
+
+  .edit-controls {
+    display: flex;
+
+    .minimize-btn,
+    .drag-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .material-icons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+
+        &:hover {
+          color: #333;
+        }
+      }
+    }
+
+    .minimize-btn {
+      cursor: pointer;
+    }
+
+    .drag-btn {
+      cursor: move;
+    }
+  }
+
+  .edit-body {
+    padding: 12px;
+  }
+
+  .edit-row {
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+
+    &:focus {
+      outline: none;
+      border-color: #3949ab;
+      box-shadow: 0 0 0 2px rgba(57, 73, 171, 0.2);
+    }
+  }
+
+  textarea {
+    height: 60px;
+    resize: vertical;
+  }
+
+  .l-txt-field {
+    margin: 24px auto;
+    line-height: 1.6;
+    text-align: center;
+    max-width: 90%;
+  }
+}
