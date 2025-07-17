@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import * as Papa from "papaparse";
 import "./FeedbackReport.scss";
@@ -169,9 +169,6 @@ const FeedbackReport: React.FC = () => {
   const boundTouchEndRef = useRef<any>(null);
   const boundTouchCancelRef = useRef<any>(null);
 
-  // Popup state
-  const [showEditPopup, setShowEditPopup] = useState(true);
-
   //! States for questions
   const [leadershipQ1, setLeadershipQ1] = useState({
     question: "Inspires others with a clear and compelling vision",
@@ -190,6 +187,86 @@ const FeedbackReport: React.FC = () => {
       { rater: "Manager", rating: 4, color: "#089401" },
       { rater: "Peers", rating: 4.2, color: "#08d801" },
       { rater: "Direct Reports", rating: 3.5, color: "#ffbe01" },
+    ],
+  });
+
+  const [leadershipQ3, setLeadershipQ3] = useState({
+    question: "Comes up with innovative solutions to work-related problems",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#d08600" },
+      { rater: "Peers", rating: 4.2, color: "#01a73d" },
+      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+    ],
+  });
+
+  const [leadershipQ4, setLeadershipQ4] = useState({
+    question: "Executes decisions aligned with business strategy",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#d08600" },
+      { rater: "Peers", rating: 4.2, color: "#01a73d" },
+      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+    ],
+  });
+
+  const [leadershipQ5, setLeadershipQ5] = useState({
+    question: "Focuses on outcomes and meets deadlines",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#01a73d" },
+      { rater: "Peers", rating: 4.2, color: "#01c950" },
+      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+    ],
+  });
+
+  const [leadershipQ6, setLeadershipQ6] = useState({
+    question: "Demonstrates ownership of tasks and goals",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#d08600" },
+      { rater: "Peers", rating: 4.2, color: "#01c950" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+    ],
+  });
+
+  const [leadershipQ7, setLeadershipQ7] = useState({
+    question: "Clearly articulates ideas",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#03df73" },
+      { rater: "Peers", rating: 4.2, color: "#fee11e" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+    ],
+  });
+
+  const [leadershipQ8, setLeadershipQ8] = useState({
+    question: "Listens and responds empathetically",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#fafeff" },
+      { rater: "Manager", rating: 4, color: "#fef184" },
+      { rater: "Peers", rating: 4.2, color: "#fee11e" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+    ],
+  });
+
+  const [leadershipQ9, setLeadershipQ9] = useState({
+    question: "Supports and encourages team collaboration.",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#01c950" },
+      { rater: "Manager", rating: 4, color: "#03df73" },
+      { rater: "Peers", rating: 4.2, color: "#01a73d" },
+      { rater: "Direct Reports", rating: 3.5, color: "#018335" },
+    ],
+  });
+
+  const [leadershipQ10, setLeadershipQ10] = useState({
+    question: "Values team contributions and acknowledges efforts of others.",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#01c950" },
+      { rater: "Manager", rating: 4, color: "#03df73" },
+      { rater: "Peers", rating: 4.2, color: "#01c950" },
+      { rater: "Direct Reports", rating: 3.5, color: "#036630" },
     ],
   });
 
@@ -222,88 +299,88 @@ const FeedbackReport: React.FC = () => {
   };
 
   // Mouse drag handlers
-  const onMouseDrag = (key: string, event: MouseEvent) => {
-    event.preventDefault();
-    if (dragAnimationFrameRef.current) {
-      cancelAnimationFrame(dragAnimationFrameRef.current);
-    }
+  // const onMouseDrag = (key: string, event: MouseEvent) => {
+  //   event.preventDefault();
+  //   if (dragAnimationFrameRef.current) {
+  //     cancelAnimationFrame(dragAnimationFrameRef.current);
+  //   }
 
-    dragAnimationFrameRef.current = requestAnimationFrame(() => {
-      setEditStates((prev) => ({
-        ...prev,
-        [key]: {
-          ...prev[key],
-          position: {
-            x: event.clientX - prev[key].offset.x,
-            y: event.clientY - prev[key].offset.y,
-          },
-        },
-      }));
-    });
-  };
+  //   dragAnimationFrameRef.current = requestAnimationFrame(() => {
+  //     setEditStates((prev) => ({
+  //       ...prev,
+  //       [key]: {
+  //         ...prev[key],
+  //         position: {
+  //           x: event.clientX - prev[key].offset.x,
+  //           y: event.clientY - prev[key].offset.y,
+  //         },
+  //       },
+  //     }));
+  //   });
+  // };
 
-  const stopMouseDrag = (key: string, event: MouseEvent) => {
-    setEditStates((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        dragging: false,
-      },
-    }));
+  // const stopMouseDrag = (key: string, event: MouseEvent) => {
+  //   setEditStates((prev) => ({
+  //     ...prev,
+  //     [key]: {
+  //       ...prev[key],
+  //       dragging: false,
+  //     },
+  //   }));
 
-    if (boundMouseMoveRef.current) {
-      document.removeEventListener("mousemove", boundMouseMoveRef.current);
-      boundMouseMoveRef.current = null;
-    }
-    if (boundMouseUpRef.current) {
-      document.removeEventListener("mouseup", boundMouseUpRef.current);
-      boundMouseUpRef.current = null;
-    }
-  };
+  //   if (boundMouseMoveRef.current) {
+  //     document.removeEventListener("mousemove", boundMouseMoveRef.current);
+  //     boundMouseMoveRef.current = null;
+  //   }
+  //   if (boundMouseUpRef.current) {
+  //     document.removeEventListener("mouseup", boundMouseUpRef.current);
+  //     boundMouseUpRef.current = null;
+  //   }
+  // };
 
   // Touch drag handlers
-  const onTouchDrag = (key: string, event: TouchEvent) => {
-    event.preventDefault();
-    if (dragAnimationFrameRef.current) {
-      cancelAnimationFrame(dragAnimationFrameRef.current);
-    }
+  // const onTouchDrag = (key: string, event: TouchEvent) => {
+  //   event.preventDefault();
+  //   if (dragAnimationFrameRef.current) {
+  //     cancelAnimationFrame(dragAnimationFrameRef.current);
+  //   }
 
-    dragAnimationFrameRef.current = requestAnimationFrame(() => {
-      setEditStates((prev) => ({
-        ...prev,
-        [key]: {
-          ...prev[key],
-          position: {
-            x: event.touches[0].clientX - prev[key].offset.x,
-            y: event.touches[0].clientY - prev[key].offset.y,
-          },
-        },
-      }));
-    });
-  };
+  //   dragAnimationFrameRef.current = requestAnimationFrame(() => {
+  //     setEditStates((prev) => ({
+  //       ...prev,
+  //       [key]: {
+  //         ...prev[key],
+  //         position: {
+  //           x: event.touches[0].clientX - prev[key].offset.x,
+  //           y: event.touches[0].clientY - prev[key].offset.y,
+  //         },
+  //       },
+  //     }));
+  //   });
+  // };
 
-  const stopTouchDrag = (key: string, event: TouchEvent) => {
-    setEditStates((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        dragging: false,
-      },
-    }));
+  // const stopTouchDrag = (key: string, event: TouchEvent) => {
+  //   setEditStates((prev) => ({
+  //     ...prev,
+  //     [key]: {
+  //       ...prev[key],
+  //       dragging: false,
+  //     },
+  //   }));
 
-    if (boundTouchMoveRef.current) {
-      document.removeEventListener("touchmove", boundTouchMoveRef.current);
-      boundTouchMoveRef.current = null;
-    }
-    if (boundTouchEndRef.current) {
-      document.removeEventListener("touchend", boundTouchEndRef.current);
-      boundTouchEndRef.current = null;
-    }
-    if (boundTouchCancelRef.current) {
-      document.removeEventListener("touchcancel", boundTouchCancelRef.current);
-      boundTouchCancelRef.current = null;
-    }
-  };
+  //   if (boundTouchMoveRef.current) {
+  //     document.removeEventListener("touchmove", boundTouchMoveRef.current);
+  //     boundTouchMoveRef.current = null;
+  //   }
+  //   if (boundTouchEndRef.current) {
+  //     document.removeEventListener("touchend", boundTouchEndRef.current);
+  //     boundTouchEndRef.current = null;
+  //   }
+  //   if (boundTouchCancelRef.current) {
+  //     document.removeEventListener("touchcancel", boundTouchCancelRef.current);
+  //     boundTouchCancelRef.current = null;
+  //   }
+  // };
 
   // Pagination functions
   const paginateRatings = () => {
@@ -363,7 +440,9 @@ const FeedbackReport: React.FC = () => {
     setSeries(series);
   };
 
-  // PDF Export functionality
+  //! PDF Export functionality
+
+  // Existing exportPdf function stays the same
   const exportPdf = async () => {
     if (!pdfSectionRef.current) return;
 
@@ -381,7 +460,6 @@ const FeedbackReport: React.FC = () => {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
 
-        // Wait for any animations to complete
         await delay(100);
         await idle();
 
@@ -492,6 +570,56 @@ const FeedbackReport: React.FC = () => {
 
   return (
     <div className="content-wrapper">
+      {/* Progress Overley */}
+      {isExporting && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.9)",
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div style={{ marginBottom: 24 }}>
+            <svg
+              width="64"
+              height="64"
+              viewBox="0 0 50 50"
+              style={{ animation: "spin 1s linear infinite" }}
+            >
+              <circle
+                cx="25"
+                cy="25"
+                r="20"
+                fill="none"
+                stroke="#d50001"
+                strokeWidth="5"
+                strokeDasharray="31.4 31.4"
+              />
+            </svg>
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 600, color: "#fff" }}>
+            Exporting PDF...
+          </div>
+          <div style={{ marginTop: 12, fontSize: 18, color: "#fff" }}>
+            {Math.round(exportProgress)}%
+          </div>
+          <style>
+            {`
+        @keyframes spin {
+          100% { transform: rotate(360deg); }
+        }
+      `}
+          </style>
+        </div>
+      )}
       {/* Tailwind CSS Test Block - Remove after confirming Tailwind works */}
       <div className="warning-overlay">
         <div className="warning">
@@ -1816,7 +1944,7 @@ const FeedbackReport: React.FC = () => {
                                   max={5}
                                   onChange={(e) => {
                                     const newRatings = [
-                                      ...leadershipQ1.ratings,
+                                      ...leadershipQ2.ratings,
                                     ];
                                     newRatings[idx].rating = parseFloat(
                                       e.target.value
@@ -1900,118 +2028,220 @@ const FeedbackReport: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ3.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ3.question}
+                              onChange={(e) =>
+                                setLeadershipQ3((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ3.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ3.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ3((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ3.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ3((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
                 {/* Row 1 */}
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Comes up with innovative solutions to work-related problems
+                    {leadershipQ3.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ3.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-800"
-                            style={{ width: "100%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">5.0</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-600"
-                            style={{ width: "80%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.0</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-600"
-                            style={{ width: "90%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.5</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-400"
-                            style={{ width: "84%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.2</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ3.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
                 </tr>
+
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ4.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ4.question}
+                              onChange={(e) =>
+                                setLeadershipQ4((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ4.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ4.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ4((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ4.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ4((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 2 */}
-                <tr>
+                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Executes decisions aligned with business strategy
+                    {leadershipQ4.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ4.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-600"
-                            style={{ width: "80%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.0</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-600"
-                            style={{ width: "80%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.0</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-500"
-                            style={{ width: "86%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.3</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-400"
-                            style={{ width: "82%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.1</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ4.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
@@ -2047,118 +2277,221 @@ const FeedbackReport: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ5.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ5.question}
+                              onChange={(e) =>
+                                setLeadershipQ5((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ5.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ5.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ5((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ5.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ5((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 1 */}
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Focuses on outcomes and meets deadlines
+                    {leadershipQ5.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ5.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-800"
-                            style={{ width: "100%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">5.0</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-600"
-                            style={{ width: "90%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.5</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-500"
-                            style={{ width: "86%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.3</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-400"
-                            style={{ width: "84%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.2</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ5.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
                 </tr>
+
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ6.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ6.question}
+                              onChange={(e) =>
+                                setLeadershipQ6((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ6.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ6.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ6((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ6.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ6((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 2 */}
-                <tr>
+                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Demonstrates ownership of tasks and goals
+                    {leadershipQ6.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ6.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-700"
-                            style={{ width: "96%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.8</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-600"
-                            style={{ width: "80%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.0</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-500"
-                            style={{ width: "82%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.1</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-400"
-                            style={{ width: "78%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">3.9</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ6.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
@@ -2192,118 +2525,221 @@ const FeedbackReport: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ7.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ7.question}
+                              onChange={(e) =>
+                                setLeadershipQ7((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ7.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ7.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ7((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ7.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ7((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 1 */}
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Clearly articulates ideas
+                    {leadershipQ7.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ7.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-900"
-                            style={{ width: "100%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">5.0</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-400"
-                            style={{ width: "84%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.2</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-300"
-                            style={{ width: "80%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.0</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-400"
-                            style={{ width: "78%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">3.9</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ7.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
                 </tr>
+
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ8.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ8.question}
+                              onChange={(e) =>
+                                setLeadershipQ8((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ8.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ8.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ8((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ8.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ8((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 2 */}
-                <tr>
+                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Listens and responds empathetically
+                    {leadershipQ8.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ8.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-400"
-                            style={{ width: "84%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.2</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-200"
-                            style={{ width: "70%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">3.5</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-300"
-                            style={{ width: "78%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">3.9</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-yellow-400"
-                            style={{ width: "80%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.0</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ8.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
@@ -2338,119 +2774,221 @@ const FeedbackReport: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ9.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ9.question}
+                              onChange={(e) =>
+                                setLeadershipQ7((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ9.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ9.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ9((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ9.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ9((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 1 */}
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Supports and encourages team collaboration.
+                    {leadershipQ9.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ9.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-500"
-                            style={{ width: "88%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.4</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-400"
-                            style={{ width: "84%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.2</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-600"
-                            style={{ width: "90%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.5</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-700"
-                            style={{ width: "92%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.6</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ9.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>
                 </tr>
+
+                {isEditMode && (
+                  <div style={{ position: "relative" }}>
+                    <DraggableComp title={leadershipQ10.question}>
+                      <div className="p-4">
+                        <div className="drg-wrapper">
+                          <div className="flex flex-col mb-2">
+                            <label htmlFor="edit-question">Question:</label>
+                            <input
+                              id="edit-question"
+                              type="text"
+                              className="border border-gray-300 rounded-md mb-2 px-1.5"
+                              value={leadershipQ10.question}
+                              onChange={(e) =>
+                                setLeadershipQ8((q) => ({
+                                  ...q,
+                                  question: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          {leadershipQ10.ratings.map((r, idx) => (
+                            <div
+                              className="flex items-center justify-between"
+                              key={idx}
+                            >
+                              <div className="me-4 flex flex-col">
+                                <label>Rater:</label>
+                                <input
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rater}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ10.ratings,
+                                    ];
+                                    newRatings[idx].rater = e.target.value;
+                                    setLeadershipQ10((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div className="me-4 flex flex-col">
+                                <label>Rating:</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                  value={r.rating}
+                                  max={5}
+                                  onChange={(e) => {
+                                    const newRatings = [
+                                      ...leadershipQ10.ratings,
+                                    ];
+                                    newRatings[idx].rating = parseFloat(
+                                      e.target.value
+                                    );
+                                    setLeadershipQ10((q) => ({
+                                      ...q,
+                                      ratings: newRatings,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DraggableComp>
+                  </div>
+                )}
+
                 {/* Row 2 */}
-                <tr>
+                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td className="py-4 align-top w-1/3">
-                    Values team contributions and acknowledges efforts of
-                    others.
+                    {leadershipQ10.question}
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <span>Self</span>
-                      <span>Manager</span>
-                      <span>Peers</span>
-                      <span>Direct Reports</span>
+                      {leadershipQ10.ratings.map((r, idx) => (
+                        <span key={idx}>{r.rater}</span>
+                      ))}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {/* Self */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-600"
-                            style={{ width: "90%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.5</span>
-                      </div>
-                      {/* Manager */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-700"
-                            style={{ width: "92%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.6</span>
-                      </div>
-                      {/* Peers */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-500"
-                            style={{ width: "88%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.4</span>
-                      </div>
-                      {/* Direct Reports */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full rounded bg-gray-200">
-                          <div
-                            className="h-2 rounded bg-green-800"
-                            style={{ width: "94%" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold">4.7</span>
+                      <div className="flex flex-col gap-2">
+                        {leadershipQ10.ratings.map((r, idx) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </td>

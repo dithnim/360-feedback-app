@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Brute-force override to prevent oklch color errors for html2canvas PDF export */
 body {
   font-family: "Poppins", sans-serif;
 }
