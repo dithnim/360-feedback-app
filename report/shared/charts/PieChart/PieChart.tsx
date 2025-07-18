@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 
 import DraggableComp from "../../../Draggable/DraggableComp";
 
-
 // Helper functions for pie chart arc calculations
 const polarToCartesian = (
   centerX: number,
@@ -59,6 +58,8 @@ interface CompetencyData {
   labelX?: number;
   labelY?: number;
   anchor?: string;
+  circleX?: number; // custom X position for circle
+  circleY?: number; // custom Y position for circle
 }
 
 interface PieChartProps {
@@ -81,12 +82,10 @@ const PieChart: React.FC<PieChartProps> = ({
   datasetIndex = 0,
   data = [],
   title = "",
-  radius = 150,
+  radius = 180,
   isEditMode = false,
   onUpdateData,
 }) => {
-  
-
   const total = useMemo(() => {
     return data.reduce((sum, d) => sum + d.value, 0);
   }, [data]);
@@ -114,6 +113,23 @@ const PieChart: React.FC<PieChartProps> = ({
     });
   }, [data, total, radius]);
 
+  // Custom positions for each circle (by index)
+  const customPositions: Record<number, { x: number; y: number }> = {
+    0: { x: 30, y: -30 },
+    1: { x: 40, y: 10 },
+    2: { x: 5, y: 40 },
+    3: { x: -40, y: 15 },
+    4: { x: -20, y: -30 },
+    // Add more as needed
+  };
+
+  // Map slices to assign custom positions if available
+  const slicesWithCustom = slices.map((slice, i) => ({
+    ...slice,
+    circleX: customPositions[i]?.x + slice.labelX,
+    circleY: customPositions[i]?.y + slice.labelY,
+  }));
+
   // const toggleMinimize = (index: number) => {
   //   setEditStates((prev) => {
   //     const newStates = [...prev];
@@ -138,66 +154,11 @@ const PieChart: React.FC<PieChartProps> = ({
   };
 
   return (
-    <div className="pie-chart-wrapper">
-      <div
-        className="pie-chart"
-        style={{
-          width: `${radius * 2 + 100}px`,
-          height: `${radius * 2 + 100}px`,
-        }}
-      >
-        <svg width={radius * 2 + 100} height={radius * 2 + 150}>
-          <g transform={`translate(${radius + 50},${radius + 50})`}>
-            {slices.map((slice, index) => (
-              <React.Fragment key={index}>
-                <path
-                  d={describeArc(
-                    0,
-                    0,
-                    radius,
-                    slice.startAngle!,
-                    slice.endAngle!
-                  )}
-                  fill={slice.color}
-                  stroke="#fff"
-                  strokeWidth="2"
-                />
-                <line
-                  x1={polarToCartesian(0, 0, radius, slice.midAngle!).x}
-                  y1={polarToCartesian(0, 0, radius, slice.midAngle!).y}
-                  x2={slice.labelX}
-                  y2={slice.labelY}
-                  stroke={slice.color}
-                  strokeWidth="3"
-                />
-                <circle
-                  cx={slice.labelX}
-                  cy={slice.labelY}
-                  r="4"
-                  fill={slice.color}
-                  stroke={slice.color}
-                  strokeWidth="2"
-                />
-              </React.Fragment>
-            ))}
-          </g>
-        </svg>
-
-        <div className="center-label">{title}</div>
-
-        {slices.map((slice, i) => (
+    <div className="pie-chart-wrapper w-full h-full flex items-center">
+      <div className="pie-chart w-full h-full">
+        {slicesWithCustom.map((slice, i) => (
           <React.Fragment key={i}>
             {/* Display data in view mode */}
-            {/* <div
-              className="label-text"
-              style={{
-                left: `${slice.labelX + radius}px`,
-                top: `${slice.labelY + radius}px`,
-                textAlign: "center",
-              }}
-            >
-              <div className="label-title">{slice.category}</div>
-            </div> */}
             {/* Edit mode controls */}
 
             {isEditMode && (
@@ -257,98 +218,111 @@ const PieChart: React.FC<PieChartProps> = ({
                 </DraggableComp>
               </div>
             )}
-
-            {/* {isEditMode && (
-              <div
-                className={`label-edit ${
-                  editStates[i]?.minimized ? "minimized" : ""
-                }`}
-                style={{
-                  left: `${editStates[i]?.position.x || 0}px`,
-                  top: `${editStates[i]?.position.y || 0}px`,
-                }}
-              >
-                <div className="edit-header">
-                  <span className="competency-name">
-                    {truncate(slice.category, 16) || "N/A"}
-                  </span>
-                  <div className="edit-controls">
-                    <button
-                      type="button"
-                      className="minimize-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleMinimize(i);
-                      }}
-                    >
-                      <i
-                        className="material-icons"
-                        title={editStates[i]?.minimized ? "Expand" : "Collapse"}
-                      >
-                        {editStates[i]?.minimized ? "add" : "horizontal_rule"}
-                      </i>
-                    </button>
-                    <div className="drag-btn">
-                      <i className="material-icons" title="Drag">
-                        drag_indicator
-                      </i>
-                    </div>
-                  </div>
-                </div>
-
-                {!editStates[i]?.minimized && (
-                  <div className="edit-body">
-                    <div className="edit-row">
-                      <label>Label:</label>
-                      <input
-                        type="text"
-                        defaultValue={slice.category}
-                        onChange={(e) =>
-                          onValueChange(slice.index!, "category", e)
-                        }
-                        placeholder="Competency name"
-                      />
-                    </div>
-                    <div className="edit-row">
-                      <label>Value:</label>
-                      <input
-                        type="number"
-                        defaultValue={slice.value}
-                        step="0.01"
-                        min="0"
-                        max="5"
-                        onChange={(e) =>
-                          onValueChange(slice.index!, "value", e)
-                        }
-                        placeholder="Rating value"
-                      />
-                    </div>
-                    <div className="edit-row">
-                      <label>Description:</label>
-                      <textarea
-                        defaultValue={slice.question}
-                        onChange={(e) =>
-                          onValueChange(slice.index!, "question", e)
-                        }
-                        placeholder="Competency description"
-                      />
-                    </div>
-                    <div className="edit-row">
-                      <label>Color:</label>
-                      <input
-                        type="color"
-                        defaultValue={slice.color}
-                        onChange={(e) =>
-                          onValueChange(slice.index!, "color", e)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )} */}
           </React.Fragment>
         ))}
+
+        <svg
+          width={radius * 2 + 100}
+          height={radius * 2 + 100}
+          viewBox={`0 0 ${radius * 2 + 100} ${radius * 2 + 100}`}
+          className="mx-auto pie-svg w-full"
+        >
+          <g
+            transform={`translate(${(radius * 2 + 100) / 2}, ${(radius * 2 + 100) / 2})`}
+          >
+            {slicesWithCustom.map((slice, index) => (
+              <React.Fragment key={index}>
+                <path
+                  d={describeArc(
+                    0,
+                    0,
+                    radius,
+                    slice.startAngle!,
+                    slice.endAngle!
+                  )}
+                  fill={slice.color}
+                  stroke="#fff"
+                  strokeWidth="2"
+                />
+                <line
+                  x1={polarToCartesian(0, 0, radius, slice.midAngle!).x}
+                  y1={polarToCartesian(0, 0, radius, slice.midAngle!).y}
+                  x2={slice.labelX}
+                  y2={slice.labelY}
+                  stroke={slice.color}
+                  strokeWidth="3"
+                />
+                <circle
+                  cx={slice.labelX}
+                  cy={slice.labelY}
+                  r="8"
+                  fill={slice.color}
+                  stroke={slice.color}
+                  strokeWidth="2"
+                />
+
+                <circle
+                  cx={slice.circleX}
+                  cy={slice.circleY}
+                  r="20"
+                  fill={"#fff"}
+                  stroke={slice.color}
+                  strokeWidth="2"
+                />
+
+                <text
+                  textAnchor="middle"
+                  className=""
+                  alignmentBaseline="middle"
+                  fontSize="15 "
+                  fontWeight="bold"
+                  fill="#000"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                  x={polarToCartesian(0, 0, radius * 0.6, slice.midAngle!).x}
+                  y={
+                    polarToCartesian(0, 0, radius * 0.6, slice.midAngle!).y + 6
+                  }
+                >
+                  {slice.value}
+                </text>
+
+                <text
+                  textAnchor="middle"
+                  className=""
+                  alignmentBaseline="middle"
+                  fontSize="15 "
+                  fontWeight="bold"
+                  fill="#000"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                  x={polarToCartesian(0, 0, radius * 0.6, slice.midAngle!).x}
+                  y={
+                    polarToCartesian(0, 0, radius * 0.6, slice.midAngle!).y + 6
+                  }
+                >
+                  {slice.question}
+                </text>
+
+                {/* Centered label inside the pie slice */}
+                <text
+                  x={polarToCartesian(0, 0, radius * 0.6, slice.midAngle!).x}
+                  y={
+                    polarToCartesian(0, 0, radius * 0.6, slice.midAngle!).y + 6
+                  }
+                  textAnchor="middle"
+                  alignmentBaseline="middle"
+                  fontSize="15 "
+                  fontWeight="bold"
+                  fill="#fff"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                >
+                  {slice.category}
+                </text>
+              </React.Fragment>
+            ))}
+          </g>
+        </svg>
+
+        <div className="center-label">{title}</div>
       </div>
     </div>
   );

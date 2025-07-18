@@ -1,28 +1,11 @@
-.pie-chart-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
 
-  .chart-edit {
-    width: fit-content;
-    margin: 0 auto;
-    padding: 2mm 3mm;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-    background-color: white;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-}
 
 .pie-chart {
   position: relative;
-  display: inline-block;
-  margin: 1rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 
   .center-label {
     position: absolute;

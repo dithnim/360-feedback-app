@@ -3,7 +3,6 @@ import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import * as Papa from "papaparse";
 import "./FeedbackReport.scss";
-import Draggable from "react-draggable";
 import DraggableComp from "../Draggable/DraggableComp";
 
 import Footer from "../footer/Footer";
@@ -12,7 +11,6 @@ import ReportHeader from "../shared/ReportHeader";
 import CircularProgressChart from "../shared/charts/CircularProgressChart/CircularProgressChart";
 import PieChart from "../shared/charts/PieChart/PieChart";
 import BarChart from "../shared/charts/BarChart/BarChart";
-import CollapsiblePanel from "../shared/elements/CollapsiblePanel/CollapsiblePanel";
 
 // Import data stores
 import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore";
@@ -27,17 +25,6 @@ interface EditState {
   position: { x: number; y: number };
   dragging: boolean;
   offset: { x: number; y: number };
-}
-
-interface Rating {
-  rater: string;
-  rating: number;
-  color: string;
-}
-
-interface Question {
-  question: string;
-  ratings: Rating[];
 }
 
 interface ChartItem {
@@ -80,73 +67,121 @@ interface PieChartUpdateArg {
   value: any;
 }
 
+const PIE_CHART_LOCAL_STORAGE_KEY = "feedback_pie_chart_data";
+const RESPONDENT_DATA_LOCAL_STORAGE_KEY = "feedback_respondent_data";
+const USER_NAME_LOCAL_STORAGE_KEY = "feedback_user_name";
+const REPORTED_DATE_LOCAL_STORAGE_KEY = "feedback_reported_date";
+const DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY = "feedback_dev_plan_content";
+const TOC_LOCAL_STORAGE_KEY = "feedback_report_toc";
+const NEW_TOC_LOCAL_STORAGE_KEY = "feedback_report_new_toc";
+
+const LEADERSHIP_Q1_LOCAL_STORAGE_KEY = "feedback_leadership_q1";
+const LEADERSHIP_Q2_LOCAL_STORAGE_KEY = "feedback_leadership_q2";
+const LEADERSHIP_Q3_LOCAL_STORAGE_KEY = "feedback_leadership_q3";
+const LEADERSHIP_Q4_LOCAL_STORAGE_KEY = "feedback_leadership_q4";
+const LEADERSHIP_Q5_LOCAL_STORAGE_KEY = "feedback_leadership_q5";
+const LEADERSHIP_Q6_LOCAL_STORAGE_KEY = "feedback_leadership_q6";
+const LEADERSHIP_Q7_LOCAL_STORAGE_KEY = "feedback_leadership_q7";
+const LEADERSHIP_Q8_LOCAL_STORAGE_KEY = "feedback_leadership_q8";
+const LEADERSHIP_Q9_LOCAL_STORAGE_KEY = "feedback_leadership_q9";
+const LEADERSHIP_Q10_LOCAL_STORAGE_KEY = "feedback_leadership_q10";
+
 const FeedbackReport: React.FC = () => {
   // State for new TOC entry
-  const [newToc, setNewToc] = useState({ title: "", page: "" });
+  const [newToc, setNewToc] = useState(() => {
+    const saved = localStorage.getItem(NEW_TOC_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return { title: "", page: "" };
+  });
   const pdfSectionRef = useRef<HTMLDivElement>(null);
 
   // State management
   const [isExporting, setIsExporting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
-  const [reportedBy, setReportedBy] = useState("talentboozt.com");
-  const [inTitle, setInTitle] = useState("Introduction");
-  const [dfpbColor, setDfpbColor] = useState("#e53935");
-  const [pieChartData, setPieChartData] = useState<any[]>([]);
 
   //!Piechart states
-  const [chart1, Setchart1] = useState([
-    {
-      category: "Leadership",
-      value: 4.05,
-      color: "#4b4ac8",
-      question: "Leads by example, inspires confidence, motivates team members",
-    },
-    {
-      category: "Decision Making",
-      value: 4.05,
-      color: "#367973",
-      question:
-        "Analyzes information effectively, makes timely and sound decisions",
-    },
-    {
-      category: "Drive for Results",
-      value: 4.18,
-      color: "#1b6331",
-      question:
-        "Sets clear goals, takes ownership, consistently meets objectives",
-    },
-    {
-      category: "Communication",
-      value: 4.28,
-      color: "#bc8001",
-      question:
-        "Clear and concise messaging, active listening, persuasive skills",
-    },
-    {
-      category: "Teamwork",
-      value: 4.3,
-      color: "#ee3f40",
-      question:
-        "Collaborates well with peers, fosters a positive team environment, open to feedback",
-    },
-  ]);
+  const [chart1, Setchart1] = useState(() => {
+    const saved = localStorage.getItem(PIE_CHART_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback to default if corrupted
+      }
+    }
+    return [
+      {
+        category: "Leadership",
+        value: 4.05,
+        color: "#4b4ac8",
+        question:
+          "Leads by example, inspires confidence, motivates team members",
+      },
+      {
+        category: "Decision Making",
+        value: 4.05,
+        color: "#367973",
+        question:
+          "Analyzes information effectively, makes timely and sound decisions",
+      },
+      {
+        category: "Drive for Results",
+        value: 4.18,
+        color: "#1b6331",
+        question:
+          "Sets clear goals, takes ownership, consistently meets objectives",
+      },
+      {
+        category: "Communication",
+        value: 4.28,
+        color: "#bc8001",
+        question:
+          "Clear and concise messaging, active listening, persuasive skills",
+      },
+      {
+        category: "Teamwork",
+        value: 4.3,
+        color: "#ee3f40",
+        question:
+          "Collaborates well with peers, fosters a positive team environment, open to feedback",
+      },
+    ];
+  });
 
-  const [userName, setUserName] = useState("John Doe");
-  const [reportedDate, setReportedDate] = useState("2025-01-01");
-  const [developmentPlanContent, setDevelopmentPlanContent] = useState(
-    "<div>Type your development plan here...</div>"
-  );
-  const [respondentData, setRespondentData] = useState([
-    { relationship: "Self", nominated: 0, completed: 0 },
-    { relationship: "Managers", nominated: 0, completed: 0 },
-    { relationship: "Peers", nominated: 0, completed: 0 },
-    {
-      relationship: "Direct Reports",
-      nominated: 0,
-      completed: 0,
-    },
-  ]);
+  const [userName, setUserName] = useState(() => {
+    const saved = localStorage.getItem(USER_NAME_LOCAL_STORAGE_KEY);
+    if (saved) return saved;
+    return "John Doe";
+  });
+  const [reportedDate, setReportedDate] = useState(() => {
+    const saved = localStorage.getItem(REPORTED_DATE_LOCAL_STORAGE_KEY);
+    if (saved) return saved;
+    return "2025-01-01";
+  });
+  const [developmentPlanContent, setDevelopmentPlanContent] = useState(() => {
+    const saved = localStorage.getItem(DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY);
+    if (saved) return saved;
+    return "<div>Type your development plan here...</div>";
+  });
+  const [respondentData, setRespondentData] = useState(() => {
+    const saved = localStorage.getItem(RESPONDENT_DATA_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return [
+      { relationship: "Self", nominated: 0, completed: 0 },
+      { relationship: "Managers", nominated: 0, completed: 0 },
+      { relationship: "Peers", nominated: 0, completed: 0 },
+      { relationship: "Direct Reports", nominated: 0, completed: 0 },
+    ];
+  });
 
   // Edit states for draggable/minimizable panels
   const [editStates, setEditStates] = useState<{ [key: string]: EditState }>({
@@ -205,7 +240,15 @@ const FeedbackReport: React.FC = () => {
   const MAX_DEV_PLAN_PAGE_HEIGHT_PX = 2950;
 
   // TOC and categories
-  const [TOC, setTOC] = useState<any[]>([]);
+  const [TOC, setTOC] = useState<any[]>(() => {
+    const saved = localStorage.getItem(TOC_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return [];
+  });
   const [categories, setCategories] = useState<string[]>([]);
   const [series, setSeries] = useState<any[]>([]);
 
@@ -218,104 +261,184 @@ const FeedbackReport: React.FC = () => {
   const boundTouchCancelRef = useRef<any>(null);
 
   //! States for questions
-  const [leadershipQ1, setLeadershipQ1] = useState({
-    question: "Inspires others with a clear and compelling vision",
-    ratings: [
-      { rater: "Self", rating: 5.0, color: "#095601" },
-      { rater: "Manager", rating: 4.5, color: "#089401" },
-      { rater: "Peers", rating: 4.2, color: "#08d801" },
-      { rater: "Direct Reports", rating: 3.9, color: "#ffbe01" },
-    ],
+  const [leadershipQ1, setLeadershipQ1] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q1_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Inspires others with a clear and compelling vision",
+      ratings: [
+        { rater: "Self", rating: 5.0, color: "#095601" },
+        { rater: "Manager", rating: 4.5, color: "#089401" },
+        { rater: "Peers", rating: 4.2, color: "#08d801" },
+        { rater: "Direct Reports", rating: 3.9, color: "#ffbe01" },
+      ],
+    };
   });
 
-  const [leadershipQ2, setLeadershipQ2] = useState({
-    question: "Leads by example and models core values",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#095601" },
-      { rater: "Manager", rating: 4, color: "#089401" },
-      { rater: "Peers", rating: 4.2, color: "#08d801" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffbe01" },
-    ],
+  const [leadershipQ2, setLeadershipQ2] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q2_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Leads by example and models core values",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#095601" },
+        { rater: "Manager", rating: 4, color: "#089401" },
+        { rater: "Peers", rating: 4.2, color: "#08d801" },
+        { rater: "Direct Reports", rating: 3.5, color: "#ffbe01" },
+      ],
+    };
   });
 
-  const [leadershipQ3, setLeadershipQ3] = useState({
-    question: "Comes up with innovative solutions to work-related problems",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#d08600" },
-      { rater: "Peers", rating: 4.2, color: "#01a73d" },
-      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-    ],
+  const [leadershipQ3, setLeadershipQ3] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q3_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Comes up with innovative solutions to work-related problems",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#036630" },
+        { rater: "Manager", rating: 4, color: "#d08600" },
+        { rater: "Peers", rating: 4.2, color: "#01a73d" },
+        { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+      ],
+    };
   });
 
-  const [leadershipQ4, setLeadershipQ4] = useState({
-    question: "Executes decisions aligned with business strategy",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#d08600" },
-      { rater: "Peers", rating: 4.2, color: "#01a73d" },
-      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-    ],
+  const [leadershipQ4, setLeadershipQ4] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q4_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Executes decisions aligned with business strategy",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#036630" },
+        { rater: "Manager", rating: 4, color: "#d08600" },
+        { rater: "Peers", rating: 4.2, color: "#01a73d" },
+        { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+      ],
+    };
   });
 
-  const [leadershipQ5, setLeadershipQ5] = useState({
-    question: "Focuses on outcomes and meets deadlines",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#01a73d" },
-      { rater: "Peers", rating: 4.2, color: "#01c950" },
-      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-    ],
+  const [leadershipQ5, setLeadershipQ5] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q5_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Focuses on outcomes and meets deadlines",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#036630" },
+        { rater: "Manager", rating: 4, color: "#01a73d" },
+        { rater: "Peers", rating: 4.2, color: "#01c950" },
+        { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+      ],
+    };
   });
 
-  const [leadershipQ6, setLeadershipQ6] = useState({
-    question: "Demonstrates ownership of tasks and goals",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#d08600" },
-      { rater: "Peers", rating: 4.2, color: "#01c950" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-    ],
+  const [leadershipQ6, setLeadershipQ6] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q6_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Demonstrates ownership of tasks and goals",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#036630" },
+        { rater: "Manager", rating: 4, color: "#d08600" },
+        { rater: "Peers", rating: 4.2, color: "#01c950" },
+        { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+      ],
+    };
   });
 
-  const [leadershipQ7, setLeadershipQ7] = useState({
-    question: "Clearly articulates ideas",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#03df73" },
-      { rater: "Peers", rating: 4.2, color: "#fee11e" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-    ],
+  const [leadershipQ7, setLeadershipQ7] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q7_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Clearly articulates ideas",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#036630" },
+        { rater: "Manager", rating: 4, color: "#03df73" },
+        { rater: "Peers", rating: 4.2, color: "#fee11e" },
+        { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+      ],
+    };
   });
 
-  const [leadershipQ8, setLeadershipQ8] = useState({
-    question: "Listens and responds empathetically",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#fafeff" },
-      { rater: "Manager", rating: 4, color: "#fef184" },
-      { rater: "Peers", rating: 4.2, color: "#fee11e" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-    ],
+  const [leadershipQ8, setLeadershipQ8] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q8_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Listens and responds empathetically",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#fafeff" },
+        { rater: "Manager", rating: 4, color: "#fef184" },
+        { rater: "Peers", rating: 4.2, color: "#fee11e" },
+        { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+      ],
+    };
   });
 
-  const [leadershipQ9, setLeadershipQ9] = useState({
-    question: "Supports and encourages team collaboration.",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#01c950" },
-      { rater: "Manager", rating: 4, color: "#03df73" },
-      { rater: "Peers", rating: 4.2, color: "#01a73d" },
-      { rater: "Direct Reports", rating: 3.5, color: "#018335" },
-    ],
+  const [leadershipQ9, setLeadershipQ9] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q9_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Supports and encourages team collaboration.",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#01c950" },
+        { rater: "Manager", rating: 4, color: "#03df73" },
+        { rater: "Peers", rating: 4.2, color: "#01a73d" },
+        { rater: "Direct Reports", rating: 3.5, color: "#018335" },
+      ],
+    };
   });
 
-  const [leadershipQ10, setLeadershipQ10] = useState({
-    question: "Values team contributions and acknowledges efforts of others.",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#01c950" },
-      { rater: "Manager", rating: 4, color: "#03df73" },
-      { rater: "Peers", rating: 4.2, color: "#01c950" },
-      { rater: "Direct Reports", rating: 3.5, color: "#036630" },
-    ],
+  const [leadershipQ10, setLeadershipQ10] = useState(() => {
+    const saved = localStorage.getItem(LEADERSHIP_Q10_LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      question: "Values team contributions and acknowledges efforts of others.",
+      ratings: [
+        { rater: "Self", rating: 3, color: "#01c950" },
+        { rater: "Manager", rating: 4, color: "#03df73" },
+        { rater: "Peers", rating: 4.2, color: "#01c950" },
+        { rater: "Direct Reports", rating: 3.5, color: "#036630" },
+      ],
+    };
   });
 
   const handlePieChartUpdate = ({
@@ -324,7 +447,7 @@ const FeedbackReport: React.FC = () => {
     field,
     value,
   }: PieChartUpdateArg) => {
-    Setchart1((prev) => {
+    Setchart1((prev: any[]) => {
       const updated = [...prev];
       // Map 'question' field to 'desc' if needed for backward compatibility
       if (field === "question") {
@@ -335,6 +458,11 @@ const FeedbackReport: React.FC = () => {
       return updated;
     });
   };
+
+  // Persist chart1 to localStorage on change
+  useEffect(() => {
+    localStorage.setItem(PIE_CHART_LOCAL_STORAGE_KEY, JSON.stringify(chart1));
+  }, [chart1]);
 
   // Initialize component
   useEffect(() => {
@@ -457,9 +585,7 @@ const FeedbackReport: React.FC = () => {
 
         const imgData = canvas.toDataURL("image/png");
         const imgWidth = 210;
-        const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
         let position = 0;
 
         if (i > 0) pdf.addPage();
@@ -549,6 +675,92 @@ const FeedbackReport: React.FC = () => {
     newToc.splice(index, 1);
     setTOC(newToc);
   }
+
+  useEffect(() => {
+    localStorage.setItem(USER_NAME_LOCAL_STORAGE_KEY, userName);
+  }, [userName]);
+  useEffect(() => {
+    localStorage.setItem(REPORTED_DATE_LOCAL_STORAGE_KEY, reportedDate);
+  }, [reportedDate]);
+  useEffect(() => {
+    localStorage.setItem(
+      DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY,
+      developmentPlanContent
+    );
+  }, [developmentPlanContent]);
+  useEffect(() => {
+    localStorage.setItem(
+      RESPONDENT_DATA_LOCAL_STORAGE_KEY,
+      JSON.stringify(respondentData)
+    );
+  }, [respondentData]);
+  useEffect(() => {
+    localStorage.setItem(TOC_LOCAL_STORAGE_KEY, JSON.stringify(TOC));
+  }, [TOC]);
+  useEffect(() => {
+    localStorage.setItem(NEW_TOC_LOCAL_STORAGE_KEY, JSON.stringify(newToc));
+  }, [newToc]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q1_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ1)
+    );
+  }, [leadershipQ1]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q2_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ2)
+    );
+  }, [leadershipQ2]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q3_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ3)
+    );
+  }, [leadershipQ3]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q4_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ4)
+    );
+  }, [leadershipQ4]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q5_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ5)
+    );
+  }, [leadershipQ5]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q6_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ6)
+    );
+  }, [leadershipQ6]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q7_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ7)
+    );
+  }, [leadershipQ7]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q8_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ8)
+    );
+  }, [leadershipQ8]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q9_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ9)
+    );
+  }, [leadershipQ9]);
+  useEffect(() => {
+    localStorage.setItem(
+      LEADERSHIP_Q10_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQ10)
+    );
+  }, [leadershipQ10]);
 
   return (
     <div className="content-wrapper">
@@ -768,7 +980,10 @@ const FeedbackReport: React.FC = () => {
                         placeholder=""
                         value={newToc.title}
                         onChange={(e) =>
-                          setNewToc((nt) => ({ ...nt, title: e.target.value }))
+                          setNewToc((nt: { title: string; page: string }) => ({
+                            ...nt,
+                            title: e.target.value,
+                          }))
                         }
                       />
                     </div>
@@ -787,7 +1002,10 @@ const FeedbackReport: React.FC = () => {
                         placeholder="0"
                         value={newToc.page}
                         onChange={(e) =>
-                          setNewToc((nt) => ({ ...nt, page: e.target.value }))
+                          setNewToc((nt: { title: string; page: string }) => ({
+                            ...nt,
+                            page: e.target.value,
+                          }))
                         }
                       />
                     </div>
@@ -876,7 +1094,7 @@ const FeedbackReport: React.FC = () => {
                 <tbody>
                   {isEditMode
                     ? (() => {
-                        return respondentData.map((row, idx) => {
+                        return respondentData.map((row: any, idx: number) => {
                           let completionRate =
                             row.nominated > 0
                               ? Math.round(
@@ -898,8 +1116,8 @@ const FeedbackReport: React.FC = () => {
                                   value={row.nominated}
                                   onChange={(e) => {
                                     const value = Number(e.target.value);
-                                    setRespondentData((prev) =>
-                                      prev.map((item, i) =>
+                                    setRespondentData((prev: any[]) =>
+                                      prev.map((item: any, i: number) =>
                                         i === idx
                                           ? { ...item, nominated: value }
                                           : item
@@ -918,8 +1136,8 @@ const FeedbackReport: React.FC = () => {
                                   value={row.completed}
                                   onChange={(e) => {
                                     const value = Number(e.target.value);
-                                    setRespondentData((prev) =>
-                                      prev.map((item, i) =>
+                                    setRespondentData((prev: any[]) =>
+                                      prev.map((item: any, i: number) =>
                                         i === idx
                                           ? { ...item, completed: value }
                                           : item
@@ -938,7 +1156,7 @@ const FeedbackReport: React.FC = () => {
                         });
                       })()
                     : (() => {
-                        return respondentData.map((row, idx) => {
+                        return respondentData.map((row: any, idx: number) => {
                           let completionRate =
                             row.nominated > 0
                               ? Math.round(
@@ -1082,13 +1300,12 @@ const FeedbackReport: React.FC = () => {
                 based on high ratings and positive feedback from respondents.
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center flex-1">
+            <div className="flex flex-col items-center justify-center flex-1 w-full">
               {/* Pie Chart and Annotations */}
               <div
-                className="relative flex items-center justify-center"
-                style={{ minHeight: 400 }}
+                className="relative flex items-center justify-center w-full h-full"
               >
-                <div style={{ width: 350, height: 350 }}>
+                <div className="w-full h-full flex items-center justify-center">
                   <PieChart
                     data={chart1}
                     isEditMode={isEditMode}
@@ -1742,60 +1959,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ1.question}
                               onChange={(e) =>
-                                setLeadershipQ1((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ1(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ1.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ1.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ1((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ1.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ1.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ1(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ1.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ1(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ1.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ1((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -1808,30 +2061,40 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ1.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ1.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ1.ratings.map((r, idx) => (
-                        <div className="flex items-center gap-2" key={idx}>
-                          <div className="h-2 w-full rounded bg-gray-200">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{
-                                width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                maxWidth: "100%",
-                                backgroundColor: r.color,
-                              }}
-                            ></div>
+                      {leadershipQ1.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
                           </div>
-                          <span className="text-sm font-semibold">
-                            {isNaN(Number(r.rating)) ? 0 : r.rating}
-                          </span>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1849,60 +2112,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ2.question}
                               onChange={(e) =>
-                                setLeadershipQ2((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ2(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ2.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ2.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ2((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ2.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ2.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ2(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ2.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ2(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ2.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ2((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -1915,30 +2214,40 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ2.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ2.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ2.ratings.map((r, idx) => (
-                        <div className="flex items-center gap-2" key={idx}>
-                          <div className="h-2 w-full rounded bg-gray-200">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{
-                                width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                maxWidth: "100%",
-                                backgroundColor: r.color,
-                              }}
-                            ></div>
+                      {leadershipQ2.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
                           </div>
-                          <span className="text-sm font-semibold">
-                            {isNaN(Number(r.rating)) ? 0 : r.rating}
-                          </span>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1986,60 +2295,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ3.question}
                               onChange={(e) =>
-                                setLeadershipQ3((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ3(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ3.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ3.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ3((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ3.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ3.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ3(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ3.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ3(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ3.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ3((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2052,31 +2397,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ3.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ3.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ3.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ3.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2095,60 +2450,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ4.question}
                               onChange={(e) =>
-                                setLeadershipQ4((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ4(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ4.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ4.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ4((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ4.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ4.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ4(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ4.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ4(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ4.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ4((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2162,31 +2553,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ4.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ4.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ4.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ4.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2235,60 +2636,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ5.question}
                               onChange={(e) =>
-                                setLeadershipQ5((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ5(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ5.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ5.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ5((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ5.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ5.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ5(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ5.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ5(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ5.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ5((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2302,31 +2739,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ5.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ5.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ5.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ5.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2345,60 +2792,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ6.question}
                               onChange={(e) =>
-                                setLeadershipQ6((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ6(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ6.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ6.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ6((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ6.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ6.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ6(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ6.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ6(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ6.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ6((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2412,31 +2895,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ6.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ6.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ6.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ6.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2483,60 +2976,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ7.question}
                               onChange={(e) =>
-                                setLeadershipQ7((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ7(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ7.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ7.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ7((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ7.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ7.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ7(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ7.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ7(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ7.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ7((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2550,31 +3079,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ7.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ7.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ7.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ7.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2593,60 +3132,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ8.question}
                               onChange={(e) =>
-                                setLeadershipQ8((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ8(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ8.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ8.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ8((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ8.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ8.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ8(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ8.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ8(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ8.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ8((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2660,31 +3235,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ8.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ8.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ8.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ8.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2732,60 +3317,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ9.question}
                               onChange={(e) =>
-                                setLeadershipQ7((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ7(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ9.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ9.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ9((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ9.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ9.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ9(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ9.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ9(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ9.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ9((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2799,31 +3420,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ9.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ9.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ9.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ9.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
@@ -2842,60 +3473,96 @@ const FeedbackReport: React.FC = () => {
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
                               value={leadershipQ10.question}
                               onChange={(e) =>
-                                setLeadershipQ8((q) => ({
-                                  ...q,
-                                  question: e.target.value,
-                                }))
+                                setLeadershipQ8(
+                                  (q: {
+                                    question: string;
+                                    ratings: {
+                                      rater: string;
+                                      rating: number;
+                                      color: string;
+                                    }[];
+                                  }) => ({
+                                    ...q,
+                                    question: e.target.value,
+                                  })
+                                )
                               }
                             />
                           </div>
-                          {leadershipQ10.ratings.map((r, idx) => (
-                            <div
-                              className="flex items-center justify-between"
-                              key={idx}
-                            >
-                              <div className="me-4 flex flex-col">
-                                <label>Rater:</label>
-                                <input
-                                  type="text"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rater}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ10.ratings,
-                                    ];
-                                    newRatings[idx].rater = e.target.value;
-                                    setLeadershipQ10((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
+                          {leadershipQ10.ratings.map(
+                            (
+                              r: {
+                                rater: string;
+                                rating: number;
+                                color: string;
+                              },
+                              idx: number
+                            ) => (
+                              <div
+                                className="flex items-center justify-between"
+                                key={idx}
+                              >
+                                <div className="me-4 flex flex-col">
+                                  <label>Rater:</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rater}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ10.ratings,
+                                      ];
+                                      newRatings[idx].rater = e.target.value;
+                                      setLeadershipQ10(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
+                                <div className="me-4 flex flex-col">
+                                  <label>Rating:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
+                                    value={r.rating}
+                                    max={5}
+                                    onChange={(e) => {
+                                      const newRatings = [
+                                        ...leadershipQ10.ratings,
+                                      ];
+                                      newRatings[idx].rating = parseFloat(
+                                        e.target.value
+                                      );
+                                      setLeadershipQ10(
+                                        (q: {
+                                          question: string;
+                                          ratings: {
+                                            rater: string;
+                                            rating: number;
+                                            color: string;
+                                          }[];
+                                        }) => ({
+                                          ...q,
+                                          ratings: newRatings,
+                                        })
+                                      );
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="me-4 flex flex-col">
-                                <label>Rating:</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="border border-gray-300 rounded-md mb-2 w-32 px-1.5"
-                                  value={r.rating}
-                                  max={5}
-                                  onChange={(e) => {
-                                    const newRatings = [
-                                      ...leadershipQ10.ratings,
-                                    ];
-                                    newRatings[idx].rating = parseFloat(
-                                      e.target.value
-                                    );
-                                    setLeadershipQ10((q) => ({
-                                      ...q,
-                                      ratings: newRatings,
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </DraggableComp>
@@ -2909,31 +3576,41 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      {leadershipQ10.ratings.map((r, idx) => (
-                        <span key={idx}>{r.rater}</span>
-                      ))}
+                      {leadershipQ10.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <span key={idx}>{r.rater}</span>
+                        )
+                      )}
                     </div>
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2">
-                        {leadershipQ10.ratings.map((r, idx) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
+                        {leadershipQ10.ratings.map(
+                          (
+                            r: { rater: string; rating: number; color: string },
+                            idx: number
+                          ) => (
+                            <div className="flex items-center gap-2" key={idx}>
+                              <div className="h-2 w-full rounded bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                    maxWidth: "100%",
+                                    backgroundColor: r.color,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {isNaN(Number(r.rating)) ? 0 : r.rating}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
                   </td>
