@@ -1,4 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
+
+import DraggableComp from "../../../Draggable/DraggableComp";
+
+
 // Helper functions for pie chart arc calculations
 const polarToCartesian = (
   centerX: number,
@@ -79,16 +83,9 @@ const PieChart: React.FC<PieChartProps> = ({
   title = "",
   radius = 150,
   isEditMode = false,
-  pageId = "",
   onUpdateData,
 }) => {
-  const [isEditActive, setIsEditActive] = useState(false);
-  const [editStates, setEditStates] = useState<
-    Array<{
-      minimized: boolean;
-      position: { x: number; y: number };
-    }>
-  >([]);
+  
 
   const total = useMemo(() => {
     return data.reduce((sum, d) => sum + d.value, 0);
@@ -117,17 +114,16 @@ const PieChart: React.FC<PieChartProps> = ({
     });
   }, [data, total, radius]);
 
-
-  const toggleMinimize = (index: number) => {
-    setEditStates((prev) => {
-      const newStates = [...prev];
-      newStates[index] = {
-        ...newStates[index],
-        minimized: !newStates[index].minimized,
-      };
-      return newStates;
-    });
-  };
+  // const toggleMinimize = (index: number) => {
+  //   setEditStates((prev) => {
+  //     const newStates = [...prev];
+  //     newStates[index] = {
+  //       ...newStates[index],
+  //       minimized: !newStates[index].minimized,
+  //     };
+  //     return newStates;
+  //   });
+  // };
 
   const onValueChange = (
     index: number,
@@ -139,10 +135,6 @@ const PieChart: React.FC<PieChartProps> = ({
     if (onUpdateData) {
       onUpdateData({ dataindex: datasetIndex, index, field, value });
     }
-  };
-
-  const truncate = (text: string, length: number) => {
-    return text.length > length ? text.substring(0, length) + "..." : text;
   };
 
   return (
@@ -196,7 +188,7 @@ const PieChart: React.FC<PieChartProps> = ({
         {slices.map((slice, i) => (
           <React.Fragment key={i}>
             {/* Display data in view mode */}
-            <div
+            {/* <div
               className="label-text"
               style={{
                 left: `${slice.labelX + radius}px`,
@@ -205,9 +197,68 @@ const PieChart: React.FC<PieChartProps> = ({
               }}
             >
               <div className="label-title">{slice.category}</div>
-            </div>
+            </div> */}
             {/* Edit mode controls */}
-            {isEditActive && (
+
+            {isEditMode && (
+              <div style={{ position: "relative" }}>
+                <DraggableComp title={slice.category || "N/A"}>
+                  <div className="p-4">
+                    <div className="drg-wrapper text-sm">
+                      <div className="flex flex-col mb-2 font-medium text-gray-700">
+                        <label htmlFor="label">Label:</label>
+                        <input
+                          type="text"
+                          value={slice.category}
+                          onChange={(e) =>
+                            onValueChange(slice.index!, "category", e)
+                          }
+                          placeholder="Competency name"
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2 font-medium text-gray-700">
+                        <label htmlFor="label">Value:</label>
+                        <input
+                          type="text"
+                          value={slice.value}
+                          step="0.01"
+                          min="0"
+                          max="5"
+                          onChange={(e) =>
+                            onValueChange(slice.index!, "value", e)
+                          }
+                          placeholder="Rating value"
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2 font-medium text-gray-700">
+                        <label htmlFor="label">Description:</label>
+                        <textarea
+                          value={slice.question}
+                          onChange={(e) =>
+                            onValueChange(slice.index!, "question", e)
+                          }
+                          placeholder="Competency description"
+                          rows={3}
+                        ></textarea>
+                      </div>
+                      <div className="flex flex-col mb-2 font-medium text-gray-700">
+                        <label htmlFor="label">Color:</label>
+                        <input
+                          type="color"
+                          className="w-full"
+                          value={slice.color}
+                          onChange={(e) =>
+                            onValueChange(slice.index!, "color", e)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DraggableComp>
+              </div>
+            )}
+
+            {/* {isEditMode && (
               <div
                 className={`label-edit ${
                   editStates[i]?.minimized ? "minimized" : ""
@@ -295,7 +346,7 @@ const PieChart: React.FC<PieChartProps> = ({
                   </div>
                 )}
               </div>
-            )}
+            )} */}
           </React.Fragment>
         ))}
       </div>

@@ -72,7 +72,13 @@ const roleColors: Record<string, string> = {
   Subordinate: "#FFD166",
 };
 
-import { pieChartsDataStore } from "../utils/data/store/pieChartsDataStore";
+// Add the type for the argument
+interface PieChartUpdateArg {
+  dataindex: number;
+  index: number;
+  field: string;
+  value: any;
+}
 
 const FeedbackReport: React.FC = () => {
   // State for new TOC entry
@@ -92,33 +98,37 @@ const FeedbackReport: React.FC = () => {
   const [chart1, Setchart1] = useState([
     {
       category: "Leadership",
-      desc: "Leads by example, inspires confidence, motivates team members",
       value: 4.05,
       color: "#4b4ac8",
+      question: "Leads by example, inspires confidence, motivates team members",
     },
     {
       category: "Decision Making",
-      desc: "Analyzes information effectively, makes timely and sound decisions",
       value: 4.05,
       color: "#367973",
+      question:
+        "Analyzes information effectively, makes timely and sound decisions",
     },
     {
       category: "Drive for Results",
-      desc: "Sets clear goals, takes ownership, consistently meets objectives",
       value: 4.18,
       color: "#1b6331",
+      question:
+        "Sets clear goals, takes ownership, consistently meets objectives",
     },
     {
       category: "Communication",
-      desc: "Clear and concise messaging, active listening, persuasive skills",
       value: 4.28,
       color: "#bc8001",
+      question:
+        "Clear and concise messaging, active listening, persuasive skills",
     },
     {
       category: "Teamwork",
-      desc: "Collaborates well with peers, fosters a positive team environment, open to feedback",
       value: 4.3,
       color: "#ee3f40",
+      question:
+        "Collaborates well with peers, fosters a positive team environment, open to feedback",
     },
   ]);
 
@@ -307,6 +317,24 @@ const FeedbackReport: React.FC = () => {
       { rater: "Direct Reports", rating: 3.5, color: "#036630" },
     ],
   });
+
+  const handlePieChartUpdate = ({
+    dataindex,
+    index,
+    field,
+    value,
+  }: PieChartUpdateArg) => {
+    Setchart1((prev) => {
+      const updated = [...prev];
+      // Map 'question' field to 'desc' if needed for backward compatibility
+      if (field === "question") {
+        updated[index] = { ...updated[index], question: value };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return updated;
+    });
+  };
 
   // Initialize component
   useEffect(() => {
@@ -1063,9 +1091,9 @@ const FeedbackReport: React.FC = () => {
                 <div style={{ width: 350, height: 350 }}>
                   <PieChart
                     data={chart1}
-                    isEditMode
+                    isEditMode={isEditMode}
                     title=" Strengths for Each Competency"
-                    datasetIndex={5}
+                    onUpdateData={handlePieChartUpdate}
                   />
                 </div>
                 {/* Example annotation positions, replace with dynamic if needed */}
