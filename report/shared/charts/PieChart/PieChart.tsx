@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from "react";
 // Helper functions for pie chart arc calculations
-const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+const polarToCartesian = (
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+) => {
   const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
   return {
     x: centerX + radius * Math.cos(angleInRadians),
@@ -8,15 +13,32 @@ const polarToCartesian = (centerX: number, centerY: number, radius: number, angl
   };
 };
 
-const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
+const describeArc = (
+  x: number,
+  y: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number
+) => {
   const start = polarToCartesian(x, y, radius, endAngle);
   const end = polarToCartesian(x, y, radius, startAngle);
   const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
   return [
-    "M", start.x, start.y,
-    "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
-    "L", x, y,
-    "Z"
+    "M",
+    start.x,
+    start.y,
+    "A",
+    radius,
+    radius,
+    0,
+    largeArcFlag,
+    0,
+    end.x,
+    end.y,
+    "L",
+    x,
+    y,
+    "Z",
   ].join(" ");
 };
 import "./PieChart.scss";
@@ -38,6 +60,7 @@ interface CompetencyData {
 interface PieChartProps {
   datasetIndex?: number;
   data?: CompetencyData[];
+  desc?: string;
   title?: string;
   radius?: number;
   isEditMode?: boolean;
@@ -54,7 +77,7 @@ const PieChart: React.FC<PieChartProps> = ({
   datasetIndex = 0,
   data = [],
   title = "",
-  radius = 100,
+  radius = 150,
   isEditMode = false,
   pageId = "",
   onUpdateData,
@@ -94,9 +117,6 @@ const PieChart: React.FC<PieChartProps> = ({
     });
   }, [data, total, radius]);
 
-  const toggleEdit = () => {
-    setIsEditActive(!isEditActive);
-  };
 
   const toggleMinimize = (index: number) => {
     setEditStates((prev) => {
@@ -127,12 +147,6 @@ const PieChart: React.FC<PieChartProps> = ({
 
   return (
     <div className="pie-chart-wrapper">
-      {isEditMode && (
-        <button onClick={toggleEdit} className="chart-edit">
-          {isEditActive ? "Exit Edit Mode" : "Edit Chart"}
-        </button>
-      )}
-
       <div
         className="pie-chart"
         style={{
@@ -157,31 +171,21 @@ const PieChart: React.FC<PieChartProps> = ({
                   strokeWidth="2"
                 />
                 <line
-                  x1={polarToCartesian(0, 0, radius + 10, slice.midAngle!).x}
-                  y1={polarToCartesian(0, 0, radius + 10, slice.midAngle!).y}
+                  x1={polarToCartesian(0, 0, radius, slice.midAngle!).x}
+                  y1={polarToCartesian(0, 0, radius, slice.midAngle!).y}
                   x2={slice.labelX}
                   y2={slice.labelY}
-                  stroke="#999"
-                  strokeWidth="1"
+                  stroke={slice.color}
+                  strokeWidth="3"
                 />
                 <circle
                   cx={slice.labelX}
                   cy={slice.labelY}
-                  r="14"
-                  fill="#fff"
+                  r="4"
+                  fill={slice.color}
                   stroke={slice.color}
                   strokeWidth="2"
                 />
-                <text
-                  x={slice.labelX}
-                  y={slice.labelY + 4}
-                  textAnchor="middle"
-                  fill="#333"
-                  fontSize="10"
-                  fontWeight="bold"
-                >
-                  {slice.value.toFixed(2)}
-                </text>
               </React.Fragment>
             ))}
           </g>
@@ -192,25 +196,16 @@ const PieChart: React.FC<PieChartProps> = ({
         {slices.map((slice, i) => (
           <React.Fragment key={i}>
             {/* Display data in view mode */}
-            {!isEditActive && (
-              <div
-                className="label-text"
-                style={{
-                  left: `${
-                    slice.labelX +
-                    radius +
-                    50 +
-                    (slice.anchor === "start" ? 20 : -220)
-                  }px`,
-                  top: `${slice.labelY + radius + 50 - 24}px`,
-                  textAlign: slice.anchor === "start" ? "left" : "right",
-                }}
-              >
-                <div className="label-title">{slice.category}</div>
-                <div className="label-desc">{slice.question}</div>
-              </div>
-            )}
-
+            <div
+              className="label-text"
+              style={{
+                left: `${slice.labelX + radius}px`,
+                top: `${slice.labelY + radius}px`,
+                textAlign: "center",
+              }}
+            >
+              <div className="label-title">{slice.category}</div>
+            </div>
             {/* Edit mode controls */}
             {isEditActive && (
               <div

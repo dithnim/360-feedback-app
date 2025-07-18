@@ -89,13 +89,39 @@ const FeedbackReport: React.FC = () => {
   const [pieChartData, setPieChartData] = useState<any[]>([]);
 
   //!Piechart states
-  const [chart1, Setchart1] = useState({
-    
-  })
+  const [chart1, Setchart1] = useState([
+    {
+      category: "Leadership",
+      desc: "Leads by example, inspires confidence, motivates team members",
+      value: 4.05,
+      color: "#4b4ac8",
+    },
+    {
+      category: "Decision Making",
+      desc: "Analyzes information effectively, makes timely and sound decisions",
+      value: 4.05,
+      color: "#367973",
+    },
+    {
+      category: "Drive for Results",
+      desc: "Sets clear goals, takes ownership, consistently meets objectives",
+      value: 4.18,
+      color: "#1b6331",
+    },
+    {
+      category: "Communication",
+      desc: "Clear and concise messaging, active listening, persuasive skills",
+      value: 4.28,
+      color: "#bc8001",
+    },
+    {
+      category: "Teamwork",
+      desc: "Collaborates well with peers, fosters a positive team environment, open to feedback",
+      value: 4.3,
+      color: "#ee3f40",
+    },
+  ]);
 
-  useEffect(() => {
-    setPieChartData(pieChartsDataStore);
-  }, []);
   const [userName, setUserName] = useState("John Doe");
   const [reportedDate, setReportedDate] = useState("2025-01-01");
   const [developmentPlanContent, setDevelopmentPlanContent] = useState(
@@ -309,90 +335,6 @@ const FeedbackReport: React.FC = () => {
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
   };
-
-  // Mouse drag handlers
-  // const onMouseDrag = (key: string, event: MouseEvent) => {
-  //   event.preventDefault();
-  //   if (dragAnimationFrameRef.current) {
-  //     cancelAnimationFrame(dragAnimationFrameRef.current);
-  //   }
-
-  //   dragAnimationFrameRef.current = requestAnimationFrame(() => {
-  //     setEditStates((prev) => ({
-  //       ...prev,
-  //       [key]: {
-  //         ...prev[key],
-  //         position: {
-  //           x: event.clientX - prev[key].offset.x,
-  //           y: event.clientY - prev[key].offset.y,
-  //         },
-  //       },
-  //     }));
-  //   });
-  // };
-
-  // const stopMouseDrag = (key: string, event: MouseEvent) => {
-  //   setEditStates((prev) => ({
-  //     ...prev,
-  //     [key]: {
-  //       ...prev[key],
-  //       dragging: false,
-  //     },
-  //   }));
-
-  //   if (boundMouseMoveRef.current) {
-  //     document.removeEventListener("mousemove", boundMouseMoveRef.current);
-  //     boundMouseMoveRef.current = null;
-  //   }
-  //   if (boundMouseUpRef.current) {
-  //     document.removeEventListener("mouseup", boundMouseUpRef.current);
-  //     boundMouseUpRef.current = null;
-  //   }
-  // };
-
-  // Touch drag handlers
-  // const onTouchDrag = (key: string, event: TouchEvent) => {
-  //   event.preventDefault();
-  //   if (dragAnimationFrameRef.current) {
-  //     cancelAnimationFrame(dragAnimationFrameRef.current);
-  //   }
-
-  //   dragAnimationFrameRef.current = requestAnimationFrame(() => {
-  //     setEditStates((prev) => ({
-  //       ...prev,
-  //       [key]: {
-  //         ...prev[key],
-  //         position: {
-  //           x: event.touches[0].clientX - prev[key].offset.x,
-  //           y: event.touches[0].clientY - prev[key].offset.y,
-  //         },
-  //       },
-  //     }));
-  //   });
-  // };
-
-  // const stopTouchDrag = (key: string, event: TouchEvent) => {
-  //   setEditStates((prev) => ({
-  //     ...prev,
-  //     [key]: {
-  //       ...prev[key],
-  //       dragging: false,
-  //     },
-  //   }));
-
-  //   if (boundTouchMoveRef.current) {
-  //     document.removeEventListener("touchmove", boundTouchMoveRef.current);
-  //     boundTouchMoveRef.current = null;
-  //   }
-  //   if (boundTouchEndRef.current) {
-  //     document.removeEventListener("touchend", boundTouchEndRef.current);
-  //     boundTouchEndRef.current = null;
-  //   }
-  //   if (boundTouchCancelRef.current) {
-  //     document.removeEventListener("touchcancel", boundTouchCancelRef.current);
-  //     boundTouchCancelRef.current = null;
-  //   }
-  // };
 
   // Pagination functions
   const paginateRatings = () => {
@@ -1118,15 +1060,17 @@ const FeedbackReport: React.FC = () => {
                 className="relative flex items-center justify-center"
                 style={{ minHeight: 400 }}
               >
-                {/* PieChart component should be implemented to match the design */}
                 <div style={{ width: 350, height: 350 }}>
-                  {/* Replace with your PieChart component */}
-                  <PieChart data={pieChartData} />
-                  {/* <PieChart data={pieChartData} /> */}
+                  <PieChart
+                    data={chart1}
+                    isEditMode
+                    title=" Strengths for Each Competency"
+                    datasetIndex={5}
+                  />
                 </div>
                 {/* Example annotation positions, replace with dynamic if needed */}
-                <div className="absolute left-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#c94a4a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
+                {/* <div className="absolute left-0 top-8 flex flex-col items-center">
+                  <div className="bg-[#c94a4a] text-white rounded-full px-2 py-3 text-sm font-bold mb-2">
                     4.05
                   </div>
                   <div className="w-32 text-xs text-center">
@@ -1169,7 +1113,7 @@ const FeedbackReport: React.FC = () => {
                     Clear and concise messaging, active listening, persuasive
                     skills
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
             <div className="mt-8">
