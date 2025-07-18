@@ -10,6 +10,7 @@ import Footer from "../footer/Footer";
 import ReportHeader from "../shared/ReportHeader";
 
 import CircularProgressChart from "../shared/charts/CircularProgressChart/CircularProgressChart";
+import PieChart from "../shared/charts/PieChart/PieChart";
 import BarChart from "../shared/charts/BarChart/BarChart";
 import CollapsiblePanel from "../shared/elements/CollapsiblePanel/CollapsiblePanel";
 
@@ -71,6 +72,8 @@ const roleColors: Record<string, string> = {
   Subordinate: "#FFD166",
 };
 
+import { pieChartsDataStore } from "../utils/data/store/pieChartsDataStore";
+
 const FeedbackReport: React.FC = () => {
   // State for new TOC entry
   const [newToc, setNewToc] = useState({ title: "", page: "" });
@@ -84,6 +87,15 @@ const FeedbackReport: React.FC = () => {
   const [inTitle, setInTitle] = useState("Introduction");
   const [dfpbColor, setDfpbColor] = useState("#e53935");
   const [pieChartData, setPieChartData] = useState<any[]>([]);
+
+  //!Piechart states
+  const [chart1, Setchart1] = useState({
+    
+  })
+
+  useEffect(() => {
+    setPieChartData(pieChartsDataStore);
+  }, []);
   const [userName, setUserName] = useState("John Doe");
   const [reportedDate, setReportedDate] = useState("2025-01-01");
   const [developmentPlanContent, setDevelopmentPlanContent] = useState(
@@ -1107,13 +1119,10 @@ const FeedbackReport: React.FC = () => {
                 style={{ minHeight: 400 }}
               >
                 {/* PieChart component should be implemented to match the design */}
-                {/* Example usage: <PieChart data={pieChartData} /> */}
                 <div style={{ width: 350, height: 350 }}>
                   {/* Replace with your PieChart component */}
+                  <PieChart data={pieChartData} />
                   {/* <PieChart data={pieChartData} /> */}
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-full shadow-inner">
-                    <span className="text-gray-400">[Pie Chart Here]</span>
-                  </div>
                 </div>
                 {/* Example annotation positions, replace with dynamic if needed */}
                 <div className="absolute left-0 top-8 flex flex-col items-center">
@@ -1524,16 +1533,13 @@ const FeedbackReport: React.FC = () => {
                 What are this individual's greatest strengths in their current
                 role?
               </p>
-              <ul className="space-y-6">
+              <ul className="space-y-10">
                 <li className="flex items-start gap-3">
                   <span className="inline-block mt-1">
                     {/* Blue user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#2563eb" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#2563eb"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#2563eb" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#2563eb" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1545,11 +1551,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Green user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#65a30d" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#65a30d"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#65a30d" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#65a30d" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1561,11 +1564,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Yellow user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#eab308" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#eab308"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#eab308" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#eab308" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1577,11 +1577,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Red user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#b91c1c" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#b91c1c"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#b91c1c" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#b91c1c" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1605,16 +1602,13 @@ const FeedbackReport: React.FC = () => {
               <p className="font-semibold text-lg mb-4">
                 In what areas could this individual improve or grow further?
               </p>
-              <ul className="space-y-6">
+              <ul className="space-y-10">
                 <li className="flex items-start gap-3">
                   <span className="inline-block mt-1">
                     {/* Light purple user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#bfa5c9" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#bfa5c9"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#bfa5c9" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#bfa5c9" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1626,11 +1620,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Dark purple user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#6d28d9" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#6d28d9"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#6d28d9" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#6d28d9" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1642,11 +1633,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Teal user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#38bdf8" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#38bdf8"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#38bdf8" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#38bdf8" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1658,11 +1646,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Blue user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#2563eb" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#2563eb"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#2563eb" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#2563eb" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1677,16 +1662,13 @@ const FeedbackReport: React.FC = () => {
                 What advice would you offer this individual to enhance their
                 leadership impact?
               </p>
-              <ul className="space-y-6">
+              <ul className="space-y-10">
                 <li className="flex items-start gap-3">
                   <span className="inline-block mt-1">
                     {/* Yellow user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#eab308" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#eab308"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#eab308" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#eab308" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1698,11 +1680,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Pink user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#f43f5e" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#f43f5e"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#f43f5e" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#f43f5e" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1714,11 +1693,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Orange user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#f97316" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#f97316"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#f97316" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#f97316" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
@@ -1730,11 +1706,8 @@ const FeedbackReport: React.FC = () => {
                   <span className="inline-block mt-1">
                     {/* Gray user icon */}
                     <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" fill="#52525b" />
-                      <path
-                        d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"
-                        fill="#52525b"
-                      />
+                      <circle cx="12" cy="6" r="4" fill="#52525b" />
+                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#52525b" />
                     </svg>
                   </span>
                   <span className="font-medium text-base">
