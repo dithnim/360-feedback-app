@@ -4,7 +4,12 @@
 const BASE_URL = "http://localhost:3010/api/v1";
 
 export async function apiGet<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${BASE_URL}${endpoint}`);
+  const token = sessionStorage.getItem("token"); // Assuming token is stored in sessionStorage
+  const headers: HeadersInit = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, { headers });
   if (!response.ok) {
     throw new Error(`GET ${endpoint} failed: ${response.status}`);
   }
@@ -53,4 +58,18 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
     throw new Error(`DELETE ${endpoint} failed: ${response.status}`);
   }
   return response.json();
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  contactPerson: string;
+  email: string;
+  contactNumber: string;
+  logoImg: string;
+  createdAt: string;
+}
+
+export async function getCompanies(): Promise<Company[]> {
+  return apiGet<Company[]>("/company");
 }

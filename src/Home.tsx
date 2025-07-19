@@ -4,55 +4,29 @@ import Footer from "./components/Footer";
 import { Card, CardContent, CardFooter } from "./components/ui/Card";
 import { Avatar } from "./components/ui/Avatar";
 import { PlusIcon, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect,  } from "react";
 import { useNavigate } from "react-router-dom";
 
-import Img1 from "../imgs/image 1.png";
-import Img2 from "../imgs/image 2.png";
-import Img3 from "../imgs/image 3.png";
+import { getCompanies } from "./lib/apiService";
 
-const getCompanies = () => { }
-
-const organizations = [
-  {
-    id: 1,
-    name: "Maliban",
-    image: Img1,
-  },
-  {
-    id: 2,
-    name: "Uniliver",
-    image: Img2,
-  },
-  {
-    id: 3,
-    name: "Nestle",
-    image: Img3,
-  },
-  {
-    id: 4,
-    name: "Uniliver",
-    image: Img1,
-  },
-  {
-    id: 5,
-    name: "Hayleys",
-    image: Img3,
-  },
-  {
-    id: 6,
-    name: "Munchee",
-    image: Img2,
-  },
-  {
-    id: 7,
-    name: "Nestle",
-    image: Img1,
-  },
-];
 
 function Home() {
+  const [organizations, setOrganizations] = useState<any[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchOrganizations() {
+      try {
+        const data = await getCompanies();
+        setOrganizations(data);
+        console.log("Fetched organizations:", data);
+      } catch (error) {
+        console.error("Failed to fetch organizations:", error);
+      }
+    }
+
+    fetchOrganizations();
+  }, []);
 
   const navigate = useNavigate();
 
