@@ -11,6 +11,8 @@ import Img1 from "../imgs/image 1.png";
 import Img2 from "../imgs/image 2.png";
 import Img3 from "../imgs/image 3.png";
 
+const getCompanies = () => { }
+
 const organizations = [
   {
     id: 1,
