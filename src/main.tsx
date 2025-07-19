@@ -17,6 +17,8 @@ import SurvayScratch from "./pages/SurvayScratch.tsx";
 import CreateTeam from "./pages/CreateTeam.tsx";
 import FeedbackReport from "../report/FeedbackReport/FeedbackReport.tsx";
 import Login from "./pages/login.tsx";
+import CurrentProjects from "./pages/currentProjects.tsx";
+import { UserProvider } from "./context/UserContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = sessionStorage.getItem("token");
@@ -28,82 +30,92 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/project"
-          element={
-            <ProtectedRoute>
-              <Project />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create"
-          element={
-            <ProtectedRoute>
-              <CreateSurvay />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-from-scratch"
-          element={
-            <ProtectedRoute>
-              <SurvayScratch />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/view-templates"
-          element={
-            <ProtectedRoute>
-              <Templates />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-template"
-          element={
-            <ProtectedRoute>
-              <CreateTemplate />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/view-team"
-          element={
-            <ProtectedRoute>
-              <ViewTeam />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-team"
-          element={
-            <ProtectedRoute>
-              <CreateTeam />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/feedback-report"
-          element={
-            <ProtectedRoute>
-              <FeedbackReport />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+    <UserProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/project"
+            element={
+              <ProtectedRoute>
+                <Project />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create"
+            element={
+              <ProtectedRoute>
+                <CreateSurvay />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-from-scratch"
+            element={
+              <ProtectedRoute>
+                <SurvayScratch />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/view-templates"
+            element={
+              <ProtectedRoute>
+                <Templates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-template"
+            element={
+              <ProtectedRoute>
+                <CreateTemplate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/view-team"
+            element={
+              <ProtectedRoute>
+                <ViewTeam />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-team"
+            element={
+              <ProtectedRoute>
+                <CreateTeam />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feedback-report"
+            element={
+              <ProtectedRoute>
+                <FeedbackReport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="current-projects"
+            element={
+              <ProtectedRoute>
+                <CurrentProjects />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </UserProvider>
   </React.StrictMode>
 );

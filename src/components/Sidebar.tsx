@@ -6,7 +6,7 @@ import resource from "../../imgs/resource.png";
 import team from "../../imgs/team.png";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import homeVector from "../../imgs/Home-Vector.png";
+import homeVector from "../../imgs/home-vector.png";
 
 interface MenuItem {
   icon: string;
@@ -28,6 +28,10 @@ const Sidebar = () => {
 
   const navigateToCreateTemplate = () => {
     navigate("/create-template");
+  };
+
+  const navigateHome = () => {
+    navigate("/");
   };
 
   const menuItems: (MenuItem & { onClick?: () => void })[] = [
@@ -132,8 +136,28 @@ const Sidebar = () => {
       }`}
     >
       <div className="flex flex-col justify-between items-center w-full  h-[93vh]">
-        <div className="bg-[#ed3f41] flex items-center justify-center">
-          <img src={homeVector} alt="home-vector" className="" />
+        <div className="bg-[#ed3f41] flex items-center justify-center w-full">
+          {isExpanded ? (
+            <div className="flex items-center justify-between px-8 w-full border-b-1 border-gray-200/50 pb-10">
+              <img
+                src={homeVector}
+                alt="home"
+                className="cursor-pointer w-8 h-8"
+                onClick={navigateHome}
+              />
+              <i
+                className="bxr  bx-menu text-gray-100 text-[40px] m-0 p-0 cursor-pointer"
+                onClick={() => setIsExpanded(!isExpanded)}
+              ></i>
+            </div>
+          ) : (
+            <div className=" px-8 w-full border-b-1 border-gray-200/50 pb-10 ms-1">
+              <i
+                className="bxr  bx-menu text-gray-100 text-[40px] m-0 p-0 cursor-pointer flex justify-center items-center"
+                onClick={() => setIsExpanded(!isExpanded)}
+              ></i>
+            </div>
+          )}
         </div>
         {isExpanded ? (
           <div className="expanded-menu text-white w-full flex flex-col h-screen mt-2">

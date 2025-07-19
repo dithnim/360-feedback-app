@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../lib/apiService";
+import { useUser } from "../context/UserContext";
 
 interface AuthResponse {
   data: string;
@@ -10,6 +11,7 @@ const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +20,10 @@ const Login: React.FC = () => {
         username,
         password,
       });
-      sessionStorage.setItem("token", response.data); // Adjust based on actual API response
+      sessionStorage.setItem("token", response.data);
+      console.log(response.data); // Adjust based on actual API response
+      // TODO: Replace with actual user data from backend response
+      setUser({ id: "1", name: username, email: "", role: "" });
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
