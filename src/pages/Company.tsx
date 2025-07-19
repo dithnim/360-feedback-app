@@ -19,6 +19,7 @@ const Company = () => {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<CompanyFormData>();
 
   const handleNext = () => {
@@ -28,6 +29,7 @@ const Company = () => {
   const onSubmit = (data: CompanyFormData) => {
     console.log(data);
     // Handle form submission here
+    reset(); // Reset form data after successful submission
   };
 
   return (
