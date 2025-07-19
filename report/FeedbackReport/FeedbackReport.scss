@@ -152,6 +152,45 @@
         background: white;
         cursor: pointer;
       }
+
+      .cover-image-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+
+        .cover-upload-btn {
+          padding: 8px 16px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          background: white;
+          cursor: pointer;
+          font-size: 14px;
+          display: inline-block;
+
+          &:hover {
+            background: #f5f5f5;
+          }
+        }
+
+        .remove-cover-btn {
+          padding: 8px 16px;
+          border: 1px solid #dc2626;
+          border-radius: 4px;
+          background: #dc2626;
+          color: white;
+          cursor: pointer;
+          font-size: 14px;
+
+          &:hover {
+            background: #b91c1c;
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+      }
     }
   }
 
@@ -247,6 +286,18 @@
   }
 
   .cover-container {
+    .custom-cover-image {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+
+      img {
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+    }
+
     .cover-image {
       img {
         transform: rotate(90deg);

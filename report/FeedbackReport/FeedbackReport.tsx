@@ -28,10 +28,10 @@ interface EditState {
 }
 
 interface ChartItem {
-  label: string;
+  category: string;
   value: number;
-  max: number;
   color: string;
+  question: string;
 }
 
 type FeedbackEntry = {
@@ -60,20 +60,15 @@ const roleColors: Record<string, string> = {
 };
 
 // Add the type for the argument
-interface PieChartUpdateArg {
-  dataindex: number;
-  index: number;
-  field: string;
-  value: any;
-}
 
-const PIE_CHART_LOCAL_STORAGE_KEY = "feedback_pie_chart_data";
+const PIE_CHARTS_LOCAL_STORAGE_KEY = "feedback_pie_charts_data";
 const RESPONDENT_DATA_LOCAL_STORAGE_KEY = "feedback_respondent_data";
 const USER_NAME_LOCAL_STORAGE_KEY = "feedback_user_name";
 const REPORTED_DATE_LOCAL_STORAGE_KEY = "feedback_reported_date";
 const DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY = "feedback_dev_plan_content";
 const TOC_LOCAL_STORAGE_KEY = "feedback_report_toc";
 const NEW_TOC_LOCAL_STORAGE_KEY = "feedback_report_new_toc";
+const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
 
 const LEADERSHIP_Q1_LOCAL_STORAGE_KEY = "feedback_leadership_q1";
 const LEADERSHIP_Q2_LOCAL_STORAGE_KEY = "feedback_leadership_q2";
@@ -88,15 +83,7 @@ const LEADERSHIP_Q10_LOCAL_STORAGE_KEY = "feedback_leadership_q10";
 
 const FeedbackReport: React.FC = () => {
   // State for new TOC entry
-  const [newToc, setNewToc] = useState(() => {
-    const saved = localStorage.getItem(NEW_TOC_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return { title: "", page: "" };
-  });
+  const [newToc, setNewToc] = useState({ title: "", page: "" });
   const pdfSectionRef = useRef<HTMLDivElement>(null);
 
   // State management
@@ -104,17 +91,12 @@ const FeedbackReport: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
 
+  // Custom cover image state
+  const [customCoverImage, setCustomCoverImage] = useState<string | null>(null);
+
   //!Piechart states
-  const [chart1, Setchart1] = useState(() => {
-    const saved = localStorage.getItem(PIE_CHART_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // fallback to default if corrupted
-      }
-    }
-    return [
+  const [pieCharts, setPieCharts] = useState({
+    strengths: [
       {
         category: "Leadership",
         value: 4.05,
@@ -150,38 +132,89 @@ const FeedbackReport: React.FC = () => {
         question:
           "Collaborates well with peers, fosters a positive team environment, open to feedback",
       },
-    ];
+    ],
+    improvements: [
+      {
+        category: "Leadership",
+        value: 4.05,
+        color: "#f5501d",
+        question:
+          "Enhancing delegation skills, providing more constructive feedback",
+      },
+      {
+        category: "Decision Making",
+        value: 4.05,
+        color: "#246e48",
+        question:
+          "Balancing speed with accuracy, involving others in decision-making",
+      },
+      {
+        category: "Drive for Results",
+        value: 4.18,
+        color: "#00a6ed",
+        question:
+          "Setting clearer priorities, improving time management for high-impact tasks",
+      },
+      {
+        category: "Communication",
+        value: 4.28,
+        color: "#7eb900",
+        question:
+          "Engaging in more active listening, ensuring clarity in complex discussions",
+      },
+      {
+        category: "Teamwork",
+        value: 4.3,
+        color: "#0d2d64",
+        question:
+          "Strengthening conflict resolution skills, fostering cross-functional collaboration",
+      },
+    ],
+    hiddenStrengths: [
+      {
+        category: "Leadership",
+        value: 4.05,
+        color: "#56b8fe",
+        question: "Confidence in handling uncertaint",
+      },
+      {
+        category: "Decision Making",
+        value: 4.05,
+        color: "#241250",
+        question: "Ability to motivate the team towards success",
+      },
+      {
+        category: "Drive for Results",
+        value: 4.18,
+        color: "#b4879f",
+        question: "Persuasive speaking and influence skills",
+      },
+      {
+        category: "Communication",
+        value: 4.28,
+        color: "#ff6f59",
+        question: "Facilitates collaboration across departments",
+      },
+      {
+        category: "Teamwork",
+        value: 4.3,
+        color: "#2076af",
+        question: "Strong ability to mentor and develop others",
+      },
+    ],
   });
 
-  const [userName, setUserName] = useState(() => {
-    const saved = localStorage.getItem(USER_NAME_LOCAL_STORAGE_KEY);
-    if (saved) return saved;
-    return "John Doe";
-  });
-  const [reportedDate, setReportedDate] = useState(() => {
-    const saved = localStorage.getItem(REPORTED_DATE_LOCAL_STORAGE_KEY);
-    if (saved) return saved;
-    return "2025-01-01";
-  });
-  const [developmentPlanContent, setDevelopmentPlanContent] = useState(() => {
-    const saved = localStorage.getItem(DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY);
-    if (saved) return saved;
-    return "<div>Type your development plan here...</div>";
-  });
-  const [respondentData, setRespondentData] = useState(() => {
-    const saved = localStorage.getItem(RESPONDENT_DATA_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return [
-      { relationship: "Self", nominated: 0, completed: 0 },
-      { relationship: "Managers", nominated: 0, completed: 0 },
-      { relationship: "Peers", nominated: 0, completed: 0 },
-      { relationship: "Direct Reports", nominated: 0, completed: 0 },
-    ];
-  });
+  const [userName, setUserName] = useState("John Doe");
+  const [reportedDate, setReportedDate] = useState("2025-01-01");
+  const [developmentPlanContent, setDevelopmentPlanContent] = useState(
+    "<div>Type your development plan here...</div>"
+  );
+  const [respondentData, setRespondentData] = useState([
+    { relationship: "Self", nominated: 0, completed: 0 },
+    { relationship: "Managers", nominated: 0, completed: 0 },
+    { relationship: "Peers", nominated: 0, completed: 0 },
+    { relationship: "Direct Reports", nominated: 0, completed: 0 },
+  ]);
 
   // Edit states for draggable/minimizable panels
   const [editStates, setEditStates] = useState<{ [key: string]: EditState }>({
@@ -261,208 +294,132 @@ const FeedbackReport: React.FC = () => {
   const boundTouchCancelRef = useRef<any>(null);
 
   //! States for questions
-  const [leadershipQ1, setLeadershipQ1] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q1_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Inspires others with a clear and compelling vision",
-      ratings: [
-        { rater: "Self", rating: 5.0, color: "#095601" },
-        { rater: "Manager", rating: 4.5, color: "#089401" },
-        { rater: "Peers", rating: 4.2, color: "#08d801" },
-        { rater: "Direct Reports", rating: 3.9, color: "#ffbe01" },
-      ],
-    };
+  const [leadershipQ1, setLeadershipQ1] = useState({
+    question: "Inspires others with a clear and compelling vision",
+    ratings: [
+      { rater: "Self", rating: 5.0, color: "#095601" },
+      { rater: "Manager", rating: 4.5, color: "#089401" },
+      { rater: "Peers", rating: 4.2, color: "#08d801" },
+      { rater: "Direct Reports", rating: 3.9, color: "#ffbe01" },
+    ],
   });
 
-  const [leadershipQ2, setLeadershipQ2] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q2_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Leads by example and models core values",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#095601" },
-        { rater: "Manager", rating: 4, color: "#089401" },
-        { rater: "Peers", rating: 4.2, color: "#08d801" },
-        { rater: "Direct Reports", rating: 3.5, color: "#ffbe01" },
-      ],
-    };
+  const [leadershipQ2, setLeadershipQ2] = useState({
+    question: "Leads by example and models core values",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#095601" },
+      { rater: "Manager", rating: 4, color: "#089401" },
+      { rater: "Peers", rating: 4.2, color: "#08d801" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffbe01" },
+    ],
   });
 
-  const [leadershipQ3, setLeadershipQ3] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q3_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Comes up with innovative solutions to work-related problems",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#036630" },
-        { rater: "Manager", rating: 4, color: "#d08600" },
-        { rater: "Peers", rating: 4.2, color: "#01a73d" },
-        { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-      ],
-    };
+  const [leadershipQ3, setLeadershipQ3] = useState({
+    question: "Comes up with innovative solutions to work-related problems",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#d08600" },
+      { rater: "Peers", rating: 4.2, color: "#01a73d" },
+      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+    ],
   });
 
-  const [leadershipQ4, setLeadershipQ4] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q4_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Executes decisions aligned with business strategy",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#036630" },
-        { rater: "Manager", rating: 4, color: "#d08600" },
-        { rater: "Peers", rating: 4.2, color: "#01a73d" },
-        { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-      ],
-    };
+  const [leadershipQ4, setLeadershipQ4] = useState({
+    question: "Executes decisions aligned with business strategy",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#d08600" },
+      { rater: "Peers", rating: 4.2, color: "#01a73d" },
+      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+    ],
   });
 
-  const [leadershipQ5, setLeadershipQ5] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q5_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Focuses on outcomes and meets deadlines",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#036630" },
-        { rater: "Manager", rating: 4, color: "#01a73d" },
-        { rater: "Peers", rating: 4.2, color: "#01c950" },
-        { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-      ],
-    };
+  const [leadershipQ5, setLeadershipQ5] = useState({
+    question: "Focuses on outcomes and meets deadlines",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#01a73d" },
+      { rater: "Peers", rating: 4.2, color: "#01c950" },
+      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
+    ],
   });
 
-  const [leadershipQ6, setLeadershipQ6] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q6_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Demonstrates ownership of tasks and goals",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#036630" },
-        { rater: "Manager", rating: 4, color: "#d08600" },
-        { rater: "Peers", rating: 4.2, color: "#01c950" },
-        { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-      ],
-    };
+  const [leadershipQ6, setLeadershipQ6] = useState({
+    question: "Demonstrates ownership of tasks and goals",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#d08600" },
+      { rater: "Peers", rating: 4.2, color: "#01c950" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+    ],
   });
 
-  const [leadershipQ7, setLeadershipQ7] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q7_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Clearly articulates ideas",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#036630" },
-        { rater: "Manager", rating: 4, color: "#03df73" },
-        { rater: "Peers", rating: 4.2, color: "#fee11e" },
-        { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-      ],
-    };
+  const [leadershipQ7, setLeadershipQ7] = useState({
+    question: "Clearly articulates ideas",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#036630" },
+      { rater: "Manager", rating: 4, color: "#03df73" },
+      { rater: "Peers", rating: 4.2, color: "#fee11e" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+    ],
   });
 
-  const [leadershipQ8, setLeadershipQ8] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q8_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Listens and responds empathetically",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#fafeff" },
-        { rater: "Manager", rating: 4, color: "#fef184" },
-        { rater: "Peers", rating: 4.2, color: "#fee11e" },
-        { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-      ],
-    };
+  const [leadershipQ8, setLeadershipQ8] = useState({
+    question: "Listens and responds empathetically",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#fafeff" },
+      { rater: "Manager", rating: 4, color: "#fef184" },
+      { rater: "Peers", rating: 4.2, color: "#fee11e" },
+      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
+    ],
   });
 
-  const [leadershipQ9, setLeadershipQ9] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q9_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Supports and encourages team collaboration.",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#01c950" },
-        { rater: "Manager", rating: 4, color: "#03df73" },
-        { rater: "Peers", rating: 4.2, color: "#01a73d" },
-        { rater: "Direct Reports", rating: 3.5, color: "#018335" },
-      ],
-    };
+  const [leadershipQ9, setLeadershipQ9] = useState({
+    question: "Supports and encourages team collaboration.",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#01c950" },
+      { rater: "Manager", rating: 4, color: "#03df73" },
+      { rater: "Peers", rating: 4.2, color: "#01a73d" },
+      { rater: "Direct Reports", rating: 3.5, color: "#018335" },
+    ],
   });
 
-  const [leadershipQ10, setLeadershipQ10] = useState(() => {
-    const saved = localStorage.getItem(LEADERSHIP_Q10_LOCAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return {
-      question: "Values team contributions and acknowledges efforts of others.",
-      ratings: [
-        { rater: "Self", rating: 3, color: "#01c950" },
-        { rater: "Manager", rating: 4, color: "#03df73" },
-        { rater: "Peers", rating: 4.2, color: "#01c950" },
-        { rater: "Direct Reports", rating: 3.5, color: "#036630" },
-      ],
-    };
+  const [leadershipQ10, setLeadershipQ10] = useState({
+    question: "Values team contributions and acknowledges efforts of others.",
+    ratings: [
+      { rater: "Self", rating: 3, color: "#01c950" },
+      { rater: "Manager", rating: 4, color: "#03df73" },
+      { rater: "Peers", rating: 4.2, color: "#01c950" },
+      { rater: "Direct Reports", rating: 3.5, color: "#036630" },
+    ],
   });
 
-  const handlePieChartUpdate = ({
-    dataindex,
-    index,
-    field,
-    value,
-  }: PieChartUpdateArg) => {
-    Setchart1((prev: any[]) => {
-      const updated = [...prev];
-      // Map 'question' field to 'desc' if needed for backward compatibility
-      if (field === "question") {
-        updated[index] = { ...updated[index], question: value };
-      } else {
-        updated[index] = { ...updated[index], [field]: value };
-      }
-      return updated;
-    });
+  const handlePieChartUpdate = (
+    chartKey: "strengths" | "improvements" | "hiddenStrengths",
+    { index, field, value }: { index: number; field: string; value: any }
+  ) => {
+    setPieCharts(
+      (prev: {
+        strengths: ChartItem[];
+        improvements: ChartItem[];
+        hiddenStrengths: ChartItem[];
+      }) => ({
+        ...prev,
+        [chartKey]: (prev[chartKey] as ChartItem[]).map(
+          (item: ChartItem, i: number) =>
+            i === index ? { ...item, [field]: value } : item
+        ),
+      })
+    );
   };
 
   // Persist chart1 to localStorage on change
   useEffect(() => {
-    localStorage.setItem(PIE_CHART_LOCAL_STORAGE_KEY, JSON.stringify(chart1));
-  }, [chart1]);
+    localStorage.setItem(
+      PIE_CHARTS_LOCAL_STORAGE_KEY,
+      JSON.stringify(pieCharts)
+    );
+  }, [pieCharts]);
 
   // Initialize component
   useEffect(() => {
@@ -618,6 +575,38 @@ const FeedbackReport: React.FC = () => {
         console.error("Error parsing CSV:", error);
       },
     });
+  };
+
+  // Cover image upload functionality
+  const onCoverImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image file size must be less than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setCustomCoverImage(result);
+      localStorage.setItem(CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY, result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove custom cover image
+  const removeCustomCoverImage = () => {
+    setCustomCoverImage(null);
+    localStorage.removeItem(CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY);
   };
 
   // Generate competency data from CSV
@@ -846,6 +835,28 @@ const FeedbackReport: React.FC = () => {
             disabled={isExporting}
             accept=".csv"
           />
+          <div className="cover-image-controls">
+            <input
+              type="file"
+              id="cover-image-upload"
+              onChange={onCoverImageUpload}
+              disabled={isExporting}
+              accept="image/*"
+              style={{ display: "none" }}
+            />
+            <label htmlFor="cover-image-upload" className="cover-upload-btn">
+              Upload Cover Image
+            </label>
+            {customCoverImage && (
+              <button
+                className="remove-cover-btn"
+                onClick={removeCustomCoverImage}
+                disabled={isExporting}
+              >
+                Remove Cover
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -860,47 +871,62 @@ const FeedbackReport: React.FC = () => {
           <p className="para__light">Confidential Report</p>
 
           <div className="cover-container">
-            <div className="cover-image">
-              <div className="t-up-row">
-                {Array.from({ length: 13 }).map((_, i) => (
-                  <div key={i} className="svg-wrapper">
-                    <svg
-                      className={i % 2 === 0 ? "svg-down" : "svg-up"}
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                    >
-                      <polygon
-                        points={
-                          i % 2 === 0
-                            ? "0,0 100,0 50,100"
-                            : "50,0 100,100 0,100"
-                        }
-                      />
-                    </svg>
-                  </div>
-                ))}
+            {customCoverImage ? (
+              <div className="custom-cover-image">
+                <img
+                  src={customCoverImage}
+                  alt="Custom Cover"
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    maxHeight: "400px",
+                    objectFit: "contain",
+                  }}
+                />
               </div>
-              <img src={CompanyImage} alt="Cover" />
-              <div className="t-down-row">
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <div key={i} className="svg-wrapper">
-                    <svg
-                      className={i % 2 === 0 ? "svg-up" : "svg-down"}
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                    >
-                      <polygon
-                        points={
-                          i % 2 === 0
-                            ? "0,0 100,0 50,100"
-                            : "50,0 100,100 0,100"
-                        }
-                      />
-                    </svg>
-                  </div>
-                ))}
+            ) : (
+              <div className="cover-image">
+                <div className="t-up-row">
+                  {Array.from({ length: 13 }).map((_, i) => (
+                    <div key={i} className="svg-wrapper">
+                      <svg
+                        className={i % 2 === 0 ? "svg-down" : "svg-up"}
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                      >
+                        <polygon
+                          points={
+                            i % 2 === 0
+                              ? "0,0 100,0 50,100"
+                              : "50,0 100,100 0,100"
+                          }
+                        />
+                      </svg>
+                    </div>
+                  ))}
+                </div>
+                <img src={CompanyImage} alt="Cover" />
+                <div className="t-down-row">
+                  {Array.from({ length: 14 }).map((_, i) => (
+                    <div key={i} className="svg-wrapper">
+                      <svg
+                        className={i % 2 === 0 ? "svg-up" : "svg-down"}
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                      >
+                        <polygon
+                          points={
+                            i % 2 === 0
+                              ? "0,0 100,0 50,100"
+                              : "50,0 100,100 0,100"
+                          }
+                        />
+                      </svg>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {!isEditMode ? (
@@ -1220,9 +1246,9 @@ const FeedbackReport: React.FC = () => {
                         (chart: ChartItem, chartIndex: number) => (
                           <div key={chartIndex} className="chart-item">
                             <CircularProgressChart
-                              label={chart.label}
+                              label={chart.question}
                               value={chart.value}
-                              max={chart.max}
+                              max={5}
                               color={chart.color}
                             />
                           </div>
@@ -1302,63 +1328,18 @@ const FeedbackReport: React.FC = () => {
             </div>
             <div className="flex flex-col items-center justify-center flex-1 w-full">
               {/* Pie Chart and Annotations */}
-              <div
-                className="relative flex items-center justify-center w-full h-full"
-              >
+              <div className="relative flex items-center justify-center w-full h-full">
                 <div className="w-full h-full flex items-center justify-center">
+                  {/* //?Piechart 1 */}
                   <PieChart
-                    data={chart1}
+                    data={pieCharts.strengths}
                     isEditMode={isEditMode}
-                    title=" Strengths for Each Competency"
-                    onUpdateData={handlePieChartUpdate}
+                    title="Strengths for Each Competency"
+                    onUpdateData={(args) =>
+                      handlePieChartUpdate("strengths", args)
+                    }
                   />
                 </div>
-                {/* Example annotation positions, replace with dynamic if needed */}
-                {/* <div className="absolute left-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#c94a4a] text-white rounded-full px-2 py-3 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-32 text-xs text-center">
-                    Leads by example, inspires confidence, motivates team
-                    members
-                  </div>
-                </div>
-                <div className="absolute right-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#4a4ac9] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-32 text-xs text-center">
-                    Analyzes information effectively, makes timely and sound
-                    decisions
-                  </div>
-                </div>
-                <div className="absolute right-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#4ac9a6] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.18
-                  </div>
-                  <div className="w-32 text-xs text-center">
-                    Sets clear goals, takes ownership, consistently meets
-                    objectives
-                  </div>
-                </div>
-                <div className="absolute left-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#c9b14a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.08
-                  </div>
-                  <div className="w-32 text-xs text-center">
-                    Collaborates well with peers, fosters a positive team
-                    environment, open to feedback
-                  </div>
-                </div>
-                <div className="absolute left-1/2 bottom-0 -translate-x-1/2 flex flex-col items-center">
-                  <div className="bg-[#4ac94a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.28
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Clear and concise messaging, active listening, persuasive
-                    skills
-                  </div>
-                </div> */}
               </div>
             </div>
             <div className="mt-8">
@@ -1385,81 +1366,19 @@ const FeedbackReport: React.FC = () => {
                 for further growth and enhancement.
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center flex-1">
+            <div className="flex flex-col items-center justify-center flex-1 w-full h-full">
               {/* Areas of Improvement Chart and Annotations */}
-              <div
-                className="relative flex items-center justify-center"
-                style={{ minHeight: 400 }}
-              >
-                {/* Replace with your PieChart or custom chart component if available */}
-                <div style={{ width: 350, height: 350 }}>
-                  {/* <PieChart data={areasOfImprovementData} /> */}
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-full shadow-inner">
-                    <span className="text-gray-400">
-                      [Areas of Improvement Chart Here]
-                    </span>
-                  </div>
-                  {/* Center label */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                    <div className="bg-white text-black rounded-full px-4 py-2 text-sm font-bold shadow">
-                      Areas of Improvement
-                      <br />
-                      for Each
-                      <br />
-                      Competency
-                    </div>
-                  </div>
-                </div>
-                {/* Annotation positions, matching the provided screenshot */}
-                {/* Leadership */}
-                <div className="absolute left-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#c94a4a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Enhancing delegation skills, providing more constructive
-                    feedback
-                  </div>
-                </div>
-                {/* Decision-Making */}
-                <div className="absolute right-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#4a4ac9] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Balancing speed with accuracy, involving others in
-                    decision-making
-                  </div>
-                </div>
-                {/* Drive for Results */}
-                <div className="absolute right-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#4ac9a6] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.18
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Setting clearer priorities, improving time management for
-                    high-impact tasks
-                  </div>
-                </div>
-                {/* Teamwork */}
-                <div className="absolute left-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#c9b14a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.08
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Strengthening conflict resolution skills, fostering
-                    cross-functional collaboration
-                  </div>
-                </div>
-                {/* Communication */}
-                <div className="absolute left-1/2 bottom-0 -translate-x-1/2 flex flex-col items-center">
-                  <div className="bg-[#4ac94a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.28
-                  </div>
-                  <div className="w-48 text-xs text-center">
-                    Engaging in more active listening, ensuring clarity in
-                    complex discussions
-                  </div>
+              <div className="relative flex items-center justify-center w-full h-full">
+                <div className="w-full h-full flex items-center justify-center">
+                  {/* //?Piechart 2 */}
+                  <PieChart
+                    data={pieCharts.improvements}
+                    isEditMode={isEditMode}
+                    title="Areas of improvement for Each Competency"
+                    onUpdateData={(args) =>
+                      handlePieChartUpdate("improvements", args)
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -1486,108 +1405,18 @@ const FeedbackReport: React.FC = () => {
                 through feedback from others.
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center flex-1">
+            <div className="flex flex-col items-center justify-center flex-1 w-full h-full">
               {/* Hidden Strengths Chart and Annotations */}
-              <div
-                className="relative flex items-center justify-center"
-                style={{ minHeight: 400 }}
-              >
-                {/* Replace with your PieChart or custom chart component if available */}
-                <div style={{ width: 350, height: 350 }}>
-                  {/* <PieChart data={hiddenStrengthsData} /> */}
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-full shadow-inner">
-                    <span className="text-gray-400">
-                      [Hidden Strengths Chart Here]
-                    </span>
-                  </div>
-                  {/* Center label */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                    <div className="bg-white text-black rounded-full px-4 py-2 text-sm font-bold shadow text-center">
-                      Hidden Strengths
-                      <br />
-                      for Each
-                      <br />
-                      Competency
-                    </div>
-                  </div>
-                </div>
-                {/* Annotation positions, matching the provided screenshot */}
-                {/* Leadership */}
-                <div className="absolute left-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#4a4ac9] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Strong ability to mentor and develop others.
-                    <br />
-                    <span className="text-[#c94a4a] font-semibold">
-                      Recognized by peers for inspiring leadership
-                    </span>
-                  </div>
-                </div>
-                {/* Decision-Making */}
-                <div className="absolute right-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#4a4ac9] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Confidence in handling uncertainty.
-                    <br />
-                    <span className="text-[#c94a4a] font-semibold">
-                      Others see decisiveness as a key strength
-                    </span>
-                  </div>
-                </div>
-                {/* Drive for Results */}
-                <div className="absolute right-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#4ac9a6] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.18
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Ability to motivate the team towards success.
-                    <br />
-                    <span className="text-[#c94a4a] font-semibold">
-                      Often sets ambitious but achievable goals
-                    </span>
-                  </div>
-                </div>
-                {/* Teamwork */}
-                <div className="absolute left-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#c9b14a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.08
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Facilitates collaboration across departments.
-                    <br />
-                    <span className="text-[#c94a4a] font-semibold">
-                      Highly valued for bringing teams together
-                    </span>
-                  </div>
-                </div>
-                {/* Communication */}
-                <div className="absolute left-1/2 bottom-0 -translate-x-1/2 flex flex-col items-center">
-                  <div className="bg-[#4ac94a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.28
-                  </div>
-                  <div className="w-48 text-xs text-center">
-                    Persuasive speaking and influence skills.
-                    <br />
-                    <span className="text-[#c94a4a] font-semibold">
-                      Others appreciate clarity and confidence
-                    </span>
-                  </div>
-                </div>
-                {/* Legend */}
-                <div className="absolute left-1/2 top-0 -translate-x-1/2 flex flex-row gap-4 mt-2">
-                  <div className="flex items-center gap-1">
-                    <span className="inline-block w-3 h-3 rounded-full bg-black"></span>
-                    <span className="text-xs">Hidden Strengths</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="inline-block w-3 h-3 rounded-full bg-[#c94a4a]"></span>
-                    <span className="text-xs">Key Insight</span>
-                  </div>
-                </div>
+              <div className="relative flex items-center justify-center w-full h-full">
+                {/* //?Piechart 3 */}
+                <PieChart
+                  data={pieCharts.hiddenStrengths}
+                  isEditMode={isEditMode}
+                  title="Hidden Strengths for Each Competency"
+                  onUpdateData={(args) =>
+                    handlePieChartUpdate("hiddenStrengths", args)
+                  }
+                />
               </div>
             </div>
             <div className="mt-8">
@@ -2409,30 +2238,28 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ3.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
+                      {leadershipQ3.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
                             </div>
-                          )
-                        )}
-                      </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -2565,30 +2392,28 @@ const FeedbackReport: React.FC = () => {
                   </td>
                   <td className="py-4 align-top w-1/3">
                     <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ4.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
+                      {leadershipQ4.ratings.map(
+                        (
+                          r: { rater: string; rating: number; color: string },
+                          idx: number
+                        ) => (
+                          <div className="flex items-center gap-2" key={idx}>
+                            <div className="h-2 w-full rounded bg-gray-200">
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                  maxWidth: "100%",
+                                  backgroundColor: r.color,
+                                }}
+                              ></div>
                             </div>
-                          )
-                        )}
-                      </div>
+                            <span className="text-sm font-semibold">
+                              {isNaN(Number(r.rating)) ? 0 : r.rating}
+                            </span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </td>
                 </tr>
