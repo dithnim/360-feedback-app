@@ -11,12 +11,18 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
-export async function apiPost<T>(endpoint: string, data: any): Promise<T> {
+export async function apiPost<T>(
+  endpoint: string,
+  data: any,
+  headers: Record<string, string> = {}
+): Promise<T> {
+  const mergedHeaders = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: mergedHeaders,
     body: JSON.stringify(data),
   });
   if (!response.ok) {

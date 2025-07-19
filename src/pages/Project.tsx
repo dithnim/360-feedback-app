@@ -5,28 +5,6 @@ import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-//! Handler functions
-const handlerCompanyCreation = async (data: CompanyFormData) => {
-  // Map form data to backend JSON structure
-  const payload = {
-    name: data.companyName,
-    email: data.email,
-    contactNumber: data.phone,
-    contactPerson: data.contactPerson,
-    logoImg:
-      data.file && data.file[0] ? URL.createObjectURL(data.file[0]) : undefined,
-    createdAt: new Date().toISOString(),
-  };
-  try {
-    const response = await apiPost("/company", payload);
-    // Handle success (e.g., show notification, navigate, etc.)
-    console.log("Company created:", response);
-  } catch (error) {
-    // Handle error (e.g., show error message)
-    console.error("Error creating company:", error);
-  }
-};
-
 interface ProjectFormData {
   projectName: string;
   contactPerson: string;
@@ -95,6 +73,7 @@ const Project = () => {
     register: registerCompany,
     handleSubmit: handleSubmitCompany,
     formState: { errors: errorsCompany },
+    reset: resetCompany,
   } = useForm<CompanyFormData>();
 
   const [users, setUsers] = useState<UserData[]>([
@@ -211,6 +190,52 @@ const Project = () => {
     },
     [editIndex, resetInfo]
   );
+
+  // Handler function for company creation, now has access to resetCompany
+  const handlerCompanyCreation = async (data: CompanyFormData) => {
+    // Map form data to backend JSON structure
+    const payload = {
+      name: data.companyName,
+      email: data.email,
+      contactNumber: data.phone,
+      contactPerson: data.contactPerson,
+      logoImg:
+        // data.file && data.file[0] ? URL.createObjectURL(data.file[0]) : undefined
+        "dfjhaskdfjh",
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY4N2I0Nzk5Zjk5M2JhNTZhNzI1NjMzNyIsImVtYWlsIjoiZXhhbXBsZUBtYWlsLmNvbSIsInN1YiI6InVzZXIxMjMiLCJpYXQiOjE3NTI5MDk4NDcsImV4cCI6MTc1MzEyNTg0N30.71xtVqq4iv6mxsB_veaFB0moSLQ0T5GywPkZ70G2IOc";
+      const response = await apiPost(
+        "/company",
+        payload,
+        token ? { Authorization: `Bearer ${token}` } : {}
+      );
+      // Track and handle status code
+      switch ((response as { status: number }).status) {
+        case 201:
+          console.log("Company created successfully.");
+          // Reset the company form data here
+          resetCompany();
+          break;
+        case 403:
+          console.error(
+            "Access forbidden: You do not have permission to create a company."
+          );
+          // Additional forbidden handling here
+          break;
+        default:
+          console.log("Status code:", (response as { status: number }).status);
+        // Handle other status codes
+      }
+      console.log("Company created:", response);
+      // Optionally, you can reset the form or navigate
+    } catch (error) {
+      // Handle error (e.g., show error message)
+      console.error("Error creating company:", error);
+    }
+  };
 
   const onSubmitCompany = useCallback((data: CompanyFormData) => {
     handlerCompanyCreation(data);

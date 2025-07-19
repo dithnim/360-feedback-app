@@ -202,6 +202,42 @@ const FeedbackReport: React.FC = () => {
         question: "Strong ability to mentor and develop others",
       },
     ],
+    blindSpots: [
+      {
+        category: "Leadership",
+        value: 4.05,
+        color: "#380036",
+        question:
+          "Perceives decisiveness; others note limited collaboration in decisions",
+      },
+      {
+        category: "Decision Making",
+        value: 4.05,
+        color: "#77a6b6",
+        question:
+          "Believes goals are consistently met; others see delays in execution",
+      },
+      {
+        category: "Drive for Results",
+        value: 4.18,
+        color: "#4f7199",
+        question:
+          "Sees self as clear communicator; feedback indicates message clarity issues",
+      },
+      {
+        category: "Communication",
+        value: 4.28,
+        color: "#69395d",
+        question:
+          "Views self as collaborative; some perceive lack of responsiveness or shared input",
+      },
+      {
+        category: "Teamwork",
+        value: 4.3,
+        color: "#b38c96",
+        question: "Overestimates team motivation and empowerment skills",
+      },
+    ],
   });
 
   const [userName, setUserName] = useState("John Doe");
@@ -395,7 +431,7 @@ const FeedbackReport: React.FC = () => {
   });
 
   const handlePieChartUpdate = (
-    chartKey: "strengths" | "improvements" | "hiddenStrengths",
+    chartKey: "strengths" | "improvements" | "hiddenStrengths" | "blindSpots",
     { index, field, value }: { index: number; field: string; value: any }
   ) => {
     setPieCharts(
@@ -403,6 +439,7 @@ const FeedbackReport: React.FC = () => {
         strengths: ChartItem[];
         improvements: ChartItem[];
         hiddenStrengths: ChartItem[];
+        blindSpots: ChartItem[];
       }) => ({
         ...prev,
         [chartKey]: (prev[chartKey] as ChartItem[]).map(
@@ -1443,81 +1480,21 @@ const FeedbackReport: React.FC = () => {
                 outlines key blind spots identified for each competency:
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center flex-1">
+            <div className="flex flex-col items-center justify-center flex-1 w-full h-full">
               {/* Blind Spots Chart and Annotations */}
               <div
-                className="relative flex items-center justify-center"
+                className="relative flex items-center justify-center w-full h-full"
                 style={{ minHeight: 400 }}
               >
-                {/* Replace with your PieChart or custom chart component if available */}
-                <div style={{ width: 350, height: 350 }}>
-                  {/* <PieChart data={blindSpotsData} /> */}
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-full shadow-inner">
-                    <span className="text-gray-400">
-                      [Blind Spots Chart Here]
-                    </span>
-                  </div>
-                  {/* Center label */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                    <div className="bg-white text-black rounded-full px-4 py-2 text-sm font-bold shadow text-center">
-                      Blind Spots
-                      <br />
-                      for Each
-                      <br />
-                      Competency
-                    </div>
-                  </div>
-                </div>
-                {/* Annotation positions, matching the provided screenshot */}
-                {/* Leadership */}
-                <div className="absolute left-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#a084a0] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Overestimates team motivation and empowerment skills
-                  </div>
-                </div>
-                {/* Decision-Making */}
-                <div className="absolute right-0 top-8 flex flex-col items-center">
-                  <div className="bg-[#a084a0] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.05
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Perceives decisiveness; others note limited collaboration in
-                    decisions
-                  </div>
-                </div>
-                {/* Drive for Results */}
-                <div className="absolute right-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#4ac9a6] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.18
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Believes goals are consistently met; others see delays in
-                    execution
-                  </div>
-                </div>
-                {/* Teamwork */}
-                <div className="absolute left-0 bottom-24 flex flex-col items-center">
-                  <div className="bg-[#a084a0] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.08
-                  </div>
-                  <div className="w-40 text-xs text-center">
-                    Views self as collaborative; some perceive lack of
-                    responsiveness or shared input
-                  </div>
-                </div>
-                {/* Communication */}
-                <div className="absolute left-1/2 bottom-0 -translate-x-1/2 flex flex-col items-center">
-                  <div className="bg-[#4ac94a] text-white rounded-full px-3 py-1 text-sm font-bold mb-2">
-                    4.28
-                  </div>
-                  <div className="w-48 text-xs text-center">
-                    Sees self as clear communicator; feedback indicates message
-                    clarity issues
-                  </div>
-                </div>
+                {/* //?Piechart 4 */}
+                <PieChart
+                  data={pieCharts.blindSpots}
+                  isEditMode={isEditMode}
+                  title="Blind Spots for Each Competency"
+                  onUpdateData={(args) =>
+                    handlePieChartUpdate("blindSpots", args)
+                  }
+                />
               </div>
             </div>
             <div className="mt-8">
