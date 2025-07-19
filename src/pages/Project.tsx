@@ -1,5 +1,6 @@
 import { Button } from "../components/ui/Button";
 import { apiGet, apiPost, apiPut, apiDelete } from "../lib/apiService";
+import type { Company } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback } from "react";
@@ -47,7 +48,6 @@ const Project = () => {
     formState: { errors },
     watch,
   } = useForm<ProjectFormData>();
-
   const navigate = useNavigate();
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(1);
@@ -208,13 +208,13 @@ const Project = () => {
     setIsSubmitting(true);
     try {
       const token = sessionStorage.getItem("token") || ""; // Get token from session storage
-      const response = await apiPost(
+      const response = await apiPost<{ data: Company; status: number }>(
         "/company",
         payload,
         token ? { Authorization: `Bearer ${token}` } : {}
       );
       // Track and handle status code
-      switch ((response as { status: number }).status) {
+      switch (response.status) {
         case 201:
           console.log("Company created successfully.");
           // Reset the company form data here
@@ -227,7 +227,7 @@ const Project = () => {
           // Additional forbidden handling here
           break;
         default:
-          console.log("Status code:", (response as { status: number }).status);
+          console.log("Status code:", response.status);
         // Handle other status codes
       }
       console.log("Company created:", response);

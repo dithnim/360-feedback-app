@@ -32,7 +32,13 @@ function Home() {
 
   const navigate = useNavigate();
 
-  const navigateToProject = () => {
+  // Handler for viewing an organization
+  const handleViewOrganization = (org: any) => {
+    navigate("/current-projects");
+  };
+
+  // Handler for creating a new organization
+  const handleCreateOrganization = () => {
     navigate("/project");
   };
 
@@ -97,7 +103,10 @@ function Home() {
                       </Avatar>
                     </div>
 
-                    <label className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0 cursor-pointer">
+                    <label
+                      className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0 cursor-pointer"
+                      onClick={() => handleViewOrganization(org)}
+                    >
                       View
                     </label>
                   </CardFooter>
@@ -108,7 +117,7 @@ function Home() {
               <Card className="w-full md:w-[321px] h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center">
                 <CardContent
                   className="flex flex-col items-center justify-center h-full p-0 cursor-pointer"
-                  onClick={navigateToProject}
+                  onClick={handleCreateOrganization}
                 >
                   <div className="w-10 h-6 flex items-center justify-center mb-0">
                     <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%]" />

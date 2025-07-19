@@ -4,7 +4,7 @@
 const BASE_URL = "http://localhost:3010/api/v1";
 
 export async function apiGet<T>(endpoint: string): Promise<T> {
-  const token = sessionStorage.getItem("token"); // Assuming token is stored in sessionStorage
+  const token = sessionStorage.getItem("token"); // Assuming token is stored in localStorage
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
     : {};

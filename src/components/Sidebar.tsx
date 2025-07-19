@@ -151,7 +151,7 @@ const Sidebar = () => {
               ></i>
             </div>
           ) : (
-            <div className=" px-8 w-full border-b-1 border-gray-200/50 pb-10 ms-1">
+            <div className=" px-8 w-full border-b-1 border-gray-200/50 pb-8">
               <i
                 className="bxr  bx-menu text-gray-100 text-[40px] m-0 p-0 cursor-pointer flex justify-center items-center"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -160,7 +160,7 @@ const Sidebar = () => {
           )}
         </div>
         {isExpanded ? (
-          <div className="expanded-menu text-white w-full flex flex-col h-screen mt-2">
+          <div className="expanded-menu text-white w-full flex flex-col h-screen ">
             {sidebarSections.map((section, idx) => (
               <>
                 <SidebarSection key={section.label} {...section} />
