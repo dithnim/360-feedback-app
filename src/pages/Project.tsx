@@ -51,6 +51,7 @@ const Project = () => {
   const navigate = useNavigate();
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [participants, setParticipants] = useState<
     {
@@ -204,9 +205,9 @@ const Project = () => {
         "dfjhaskdfjh",
       createdAt: new Date().toISOString(),
     };
+    setIsSubmitting(true);
     try {
-      const token =
-        "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjY4N2I0Nzk5Zjk5M2JhNTZhNzI1NjMzNyIsImVtYWlsIjoiZXhhbXBsZUBtYWlsLmNvbSIsInN1YiI6InVzZXIxMjMiLCJpYXQiOjE3NTI5MDk4NDcsImV4cCI6MTc1MzEyNTg0N30.71xtVqq4iv6mxsB_veaFB0moSLQ0T5GywPkZ70G2IOc";
+      const token = sessionStorage.getItem("token") || ""; // Get token from session storage
       const response = await apiPost(
         "/company",
         payload,
@@ -234,6 +235,8 @@ const Project = () => {
     } catch (error) {
       // Handle error (e.g., show error message)
       console.error("Error creating company:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -469,7 +472,7 @@ const Project = () => {
                 variant="save"
                 className="mt-15 p-6 text-lg cursor-pointer"
               >
-                Save
+                {isSubmitting ? "Saving..." : "Save"}
               </Button>
             </form>
           </div>
