@@ -18,15 +18,123 @@ import CreateTeam from "./pages/CreateTeam.tsx";
 import FeedbackReport from "../report/FeedbackReport/FeedbackReport.tsx";
 import Login from "./pages/login.tsx";
 import CurrentProjects from "./pages/currentProjects.tsx";
-import { UserProvider } from "./context/UserContext";
+import { UserProvider, useUser } from "./context/UserContext";
 import { SidebarProvider } from "./context/SidebarContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = sessionStorage.getItem("token");
-  if (!token) {
+  const { isAuthenticated, isLoading } = useUser();
+
+  console.log(
+    "ProtectedRoute - isAuthenticated:",
+    isAuthenticated,
+    "isLoading:",
+    isLoading
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    console.log("Redirecting to login from ProtectedRoute");
     return <Navigate to="/login" replace />;
   }
   return children;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/project"
+        element={
+          <ProtectedRoute>
+            <Project />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create"
+        element={
+          <ProtectedRoute>
+            <CreateSurvay />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-from-scratch"
+        element={
+          <ProtectedRoute>
+            <SurvayScratch />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/view-templates"
+        element={
+          <ProtectedRoute>
+            <Templates />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-template"
+        element={
+          <ProtectedRoute>
+            <CreateTemplate />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/view-team"
+        element={
+          <ProtectedRoute>
+            <ViewTeam />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-team"
+        element={
+          <ProtectedRoute>
+            <CreateTeam />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/feedback-report"
+        element={
+          <ProtectedRoute>
+            <FeedbackReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="current-projects"
+        element={
+          <ProtectedRoute>
+            <CurrentProjects />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
 }
 
 createRoot(document.getElementById("root")!).render(
@@ -34,89 +142,7 @@ createRoot(document.getElementById("root")!).render(
     <UserProvider>
       <SidebarProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project"
-              element={
-                <ProtectedRoute>
-                  <Project />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <ProtectedRoute>
-                  <CreateSurvay />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create-from-scratch"
-              element={
-                <ProtectedRoute>
-                  <SurvayScratch />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/view-templates"
-              element={
-                <ProtectedRoute>
-                  <Templates />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create-template"
-              element={
-                <ProtectedRoute>
-                  <CreateTemplate />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/view-team"
-              element={
-                <ProtectedRoute>
-                  <ViewTeam />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create-team"
-              element={
-                <ProtectedRoute>
-                  <CreateTeam />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/feedback-report"
-              element={
-                <ProtectedRoute>
-                  <FeedbackReport />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="current-projects"
-              element={
-                <ProtectedRoute>
-                  <CurrentProjects />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <AppRoutes />
         </BrowserRouter>
       </SidebarProvider>
     </UserProvider>

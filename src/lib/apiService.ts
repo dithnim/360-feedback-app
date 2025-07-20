@@ -1,16 +1,27 @@
 // src/lib/apiService.ts
 // API service for communicating with Spring Boot backend on localhost:3010
 
+import { clearAuthData } from "./util";
+
 const BASE_URL = "http://localhost:3010/api/v1";
 
+// Function to handle unauthorized responses
+const handleUnauthorized = () => {
+  clearAuthData();
+  window.location.href = "/login";
+};
+
 export async function apiGet<T>(endpoint: string): Promise<T> {
-  const token = sessionStorage.getItem("token"); // Assuming token is stored in localStorage
+  const token = localStorage.getItem("token"); // Get token from localStorage
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
     : {};
 
   const response = await fetch(`${BASE_URL}${endpoint}`, { headers });
   if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
     throw new Error(`GET ${endpoint} failed: ${response.status}`);
   }
   return response.json();
@@ -21,16 +32,23 @@ export async function apiPost<T>(
   data: any,
   headers: Record<string, string> = {}
 ): Promise<T> {
+  const token = localStorage.getItem("token");
   const mergedHeaders = {
     "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...headers,
   };
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: "POST",
     headers: mergedHeaders,
     body: JSON.stringify(data),
   });
+
   if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
     throw new Error(`POST ${endpoint} failed: ${response.status}`);
   }
   return response.json();

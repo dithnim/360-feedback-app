@@ -1,30 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../lib/apiService";
 import { useUser } from "../context/UserContext";
+import { getUserFromToken } from "../lib/util";
 
 interface AuthResponse {
   data: string;
+  token?: string;
+  access_token?: string;
 }
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { setUser, isAuthenticated, isLoading } = useUser();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    console.log(
+      "Login useEffect - isAuthenticated:",
+      isAuthenticated,
+      "isLoading:",
+      isLoading
+    );
+    if (isAuthenticated && !isLoading) {
+      console.log("Redirecting to home page from login");
+      window.location.href = "/";
+    }
+  }, [isAuthenticated, isLoading]);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show login form if already authenticated
+  if (isAuthenticated) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Submitting login with username:", username);
       const response = await apiPost<AuthResponse>("/auth", {
         username,
         password,
       });
-      sessionStorage.setItem("token", response.data);
-      console.log(response.data); // Adjust based on actual API response
-      // TODO: Replace with actual user data from backend response
-      setUser({ id: "1", name: username, email: "", role: "" });
-      navigate("/");
+      console.log("Login response:", response);
+
+      // Handle different possible response formats
+      let token = response.data;
+      if (response.token) {
+        token = response.token;
+      } else if (response.access_token) {
+        token = response.access_token;
+      }
+
+      console.log("Extracted token:", token);
+      localStorage.setItem("token", token);
+      console.log("Token stored in localStorage");
+      const userData = getUserFromToken(token);
+      if (userData) {
+        console.log("Setting user data:", userData);
+        setUser(userData);
+        // Let the useEffect handle navigation when isAuthenticated becomes true
+      } else {
+        throw new Error("Invalid token received");
+      }
     } catch (error) {
       console.error("Login failed:", error);
       alert("Login failed. Please check your credentials.");

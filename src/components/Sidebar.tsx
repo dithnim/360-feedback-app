@@ -4,9 +4,9 @@ import company from "../../imgs/company.png";
 import insights from "../../imgs/insight.png";
 import resource from "../../imgs/resource.png";
 import team from "../../imgs/team.png";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import homeVector from "../../imgs/home-vector.png";
+import { useSidebar } from "../context/SidebarContext";
 
 interface MenuItem {
   icon: string;
@@ -14,7 +14,7 @@ interface MenuItem {
 }
 
 const Sidebar = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { isSidebarExpanded, toggleSidebar } = useSidebar();
 
   const navigate = useNavigate();
 
@@ -132,12 +132,12 @@ const Sidebar = () => {
   return (
     <div
       className={`h-[100vh] bg-[#ed3f41] flex justify-center py-10 z-1000 transition-all duration-300 ease-in-out absolute top-0 ${
-        isExpanded ? "w-[240px]" : "w-[120px]"
+        isSidebarExpanded ? "w-[240px]" : "w-[120px]"
       }`}
     >
       <div className="flex flex-col justify-between items-center w-full  h-[93vh]">
         <div className="bg-[#ed3f41] flex items-center justify-center w-full">
-          {isExpanded ? (
+          {isSidebarExpanded ? (
             <div className="flex items-center justify-between px-8 w-full border-b-1 border-gray-200/50 pb-10">
               <img
                 src={homeVector}
@@ -147,19 +147,19 @@ const Sidebar = () => {
               />
               <i
                 className="bxr  bx-menu text-gray-100 text-[40px] m-0 p-0 cursor-pointer"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={toggleSidebar}
               ></i>
             </div>
           ) : (
             <div className=" px-8 w-full border-b-1 border-gray-200/50 pb-8">
               <i
                 className="bxr  bx-menu text-gray-100 text-[40px] m-0 p-0 cursor-pointer flex justify-center items-center"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={toggleSidebar}
               ></i>
             </div>
           )}
         </div>
-        {isExpanded ? (
+        {isSidebarExpanded ? (
           <div className="expanded-menu text-white w-full flex flex-col h-screen ">
             {sidebarSections.map((section, idx) => (
               <>
