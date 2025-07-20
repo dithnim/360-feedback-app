@@ -7,12 +7,18 @@ import { PlusIcon, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+//?User Context
+import { useUser } from "./context/UserContext";
+import { useSidebar } from "./context/SidebarContext";
+
 import { getCompanies } from "./lib/apiService";
 
 function Home() {
   const [organizations, setOrganizations] = useState<any[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const { user } = useUser();
+  const { isSidebarExpanded, setSidebarExpanded } = useSidebar();
 
   useEffect(() => {
     async function fetchOrganizations() {
@@ -20,6 +26,7 @@ function Home() {
         const data = await getCompanies();
         setOrganizations(data);
         console.log("Fetched organizations:", data);
+        console.log("User:", user);
       } catch (error) {
         console.error("Failed to fetch organizations:", error);
       } finally {
@@ -49,7 +56,7 @@ function Home() {
         <Navbar />
         <button
           className="absolute left-4 top-1/2 -translate-y-1/2 z-30 block md:hidden bg-white rounded p-2 shadow"
-          onClick={() => setSidebarOpen(true)}
+          onClick={() => setSidebarExpanded(true)}
           aria-label="Open menu"
         >
           <Menu className="w-7 h-7 text-[#ed3f41]" />
@@ -61,7 +68,11 @@ function Home() {
           <Sidebar />
         </div>
         {/* Main Content */}
-        <div className="py-4 ps-40 overflow-y-auto w-full">
+        <div
+          className={`py-4 overflow-y-auto w-full transition-all duration-300 ease-in-out ${
+            isSidebarExpanded ? "ps-60" : "ps-40"
+          }`}
+        >
           <h1 className="text-[#ed3f41] text-2xl font-semibold">
             360° Feedback Current Organizations
           </h1>
@@ -131,12 +142,12 @@ function Home() {
           )}
         </div>
         {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
+        {isSidebarExpanded && (
           <div className="fixed inset-0 z-40 bg-black bg-opacity-40 flex md:hidden">
             <div className="relative w-[220px] max-w-[80vw] h-full bg-[#ed3f41] shadow-lg animate-slideInLeft">
               <button
                 className="absolute top-4 right-4 z-50 text-white"
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => setSidebarExpanded(false)}
                 aria-label="Close menu"
               >
                 <X className="w-7 h-7" />
@@ -144,7 +155,7 @@ function Home() {
               <Sidebar />
             </div>
             {/* Click outside to close */}
-            <div className="flex-1" onClick={() => setSidebarOpen(false)} />
+            <div className="flex-1" onClick={() => setSidebarExpanded(false)} />
           </div>
         )}
       </div>

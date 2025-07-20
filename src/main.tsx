@@ -19,6 +19,7 @@ import FeedbackReport from "../report/FeedbackReport/FeedbackReport.tsx";
 import Login from "./pages/login.tsx";
 import CurrentProjects from "./pages/currentProjects.tsx";
 import { UserProvider } from "./context/UserContext";
+import { SidebarProvider } from "./context/SidebarContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = sessionStorage.getItem("token");
@@ -31,6 +32,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <UserProvider>
+      <SidebarProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -116,6 +118,7 @@ createRoot(document.getElementById("root")!).render(
             />
           </Routes>
         </BrowserRouter>
+      </SidebarProvider>
     </UserProvider>
   </React.StrictMode>
 );
