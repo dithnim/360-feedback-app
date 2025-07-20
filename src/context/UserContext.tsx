@@ -29,10 +29,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Custom setUser function that updates both user and authentication state
   const setUser = (userData: User | null) => {
-    console.log("setUser called with:", userData);
     setUserState(userData);
     const newAuthState = !!userData;
-    console.log("Setting isAuthenticated to:", newAuthState);
     setIsAuthenticated(newAuthState);
   };
 

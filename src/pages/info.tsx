@@ -35,7 +35,6 @@ const ParticipantInformation = () => {
 
   const handleEdit = (index: number) => {
     // Implement edit logic here, e.g., populate form with data for editing
-    console.log("Edit participant at index:", index);
   };
 
   const handleDelete = (index: number) => {

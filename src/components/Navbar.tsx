@@ -9,8 +9,6 @@ const Navbar = () => {
   const { user, clearUser, isAuthenticated } = useUser();
   const navigate = useNavigate();
 
-  console.log("Navbar - user:", user, "isAuthenticated:", isAuthenticated);
-
   const handleLogout = () => {
     clearUser();
     navigate("/login");

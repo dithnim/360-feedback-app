@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiPost } from "../lib/apiService";
 import { useUser } from "../context/UserContext";
 import { getUserFromToken } from "../lib/util";
+import Loader from "../components/ui/loader";
 
 interface AuthResponse {
   data: string;
@@ -18,14 +19,7 @@ const Login: React.FC = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log(
-      "Login useEffect - isAuthenticated:",
-      isAuthenticated,
-      "isLoading:",
-      isLoading
-    );
     if (isAuthenticated && !isLoading) {
-      console.log("Redirecting to home page from login");
       window.location.href = "/";
     }
   }, [isAuthenticated, isLoading]);
@@ -35,7 +29,7 @@ const Login: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <Loader text="Loading..." />
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -50,12 +44,10 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log("Submitting login with username:", username);
       const response = await apiPost<AuthResponse>("/auth", {
         username,
         password,
       });
-      console.log("Login response:", response);
 
       // Handle different possible response formats
       let token = response.data;
@@ -65,19 +57,15 @@ const Login: React.FC = () => {
         token = response.access_token;
       }
 
-      console.log("Extracted token:", token);
       localStorage.setItem("token", token);
-      console.log("Token stored in localStorage");
       const userData = getUserFromToken(token);
       if (userData) {
-        console.log("Setting user data:", userData);
         setUser(userData);
         // Let the useEffect handle navigation when isAuthenticated becomes true
       } else {
         throw new Error("Invalid token received");
       }
     } catch (error) {
-      console.error("Login failed:", error);
       alert("Login failed. Please check your credentials.");
     }
   };

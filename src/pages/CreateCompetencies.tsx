@@ -142,7 +142,6 @@ const CreateCompetencies = () => {
   });
 
   const onSubmit = (data: FormData) => {
-    console.log(data);
     // Handle survey save logic here
   };
 

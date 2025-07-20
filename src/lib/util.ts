@@ -38,9 +38,7 @@ export const clearAuthData = () => {
 // Utility function to get user data from token
 export const getUserFromToken = (token: string) => {
   try {
-    console.log("Decoding token:", token);
     const decoded = jwtDecode(token);
-    console.log("Decoded token:", decoded);
     const userData = {
       id: (decoded as any).id,
       name: (decoded as any).sub,
@@ -48,7 +46,6 @@ export const getUserFromToken = (token: string) => {
       exp: (decoded as any).exp,
       role: (decoded as any).role,
     };
-    console.log("Extracted user data:", userData);
     return userData;
   } catch (error) {
     console.error("Error decoding token:", error);

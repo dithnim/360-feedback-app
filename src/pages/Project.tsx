@@ -1,10 +1,12 @@
 import { Button } from "../components/ui/Button";
-import { apiGet, apiPost, apiPut, apiDelete } from "../lib/apiService";
+import { apiPost } from "../lib/apiService";
 import type { Company } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import Loader from "../components/ui/loader";
+import { getUserFromToken } from "../lib/util";
 
 interface ProjectFormData {
   projectName: string;
@@ -208,32 +210,22 @@ const Project = () => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token") || ""; // Get token from localStorage
-      const response = await apiPost<{ data: Company; status: number }>(
+      const response = await apiPost<any>(
         "/company",
         payload,
         token ? { Authorization: `Bearer ${token}` } : {}
       );
-      // Track and handle status code
-      switch (response.status) {
-        case 201:
-          console.log("Company created successfully.");
-          // Reset the company form data here
-          resetCompany();
-          break;
-        case 403:
-          console.error(
-            "Access forbidden: You do not have permission to create a company."
-          );
-          // Additional forbidden handling here
-          break;
-        default:
-          console.log("Status code:", response.status);
-        // Handle other status codes
+      console.log("RAW API response:", response);
+      // Save the backend response data to localStorage if it contains an id
+      if (response && response.id) {
+        localStorage.setItem("Company", JSON.stringify(response));
+        resetCompany();
+      } else {
+        console.error("Invalid response from API:", response);
       }
-      console.log("Company created:", response);
-      // Optionally, you can reset the form or navigate
     } catch (error) {
       // Handle error (e.g., show error message)
+      console.log("Error caught:", error);
       console.error("Error creating company:", error);
     } finally {
       setIsSubmitting(false);
@@ -244,8 +236,59 @@ const Project = () => {
     handlerCompanyCreation(data);
   }, []);
 
+  // TODO Handler function for project creation
+  const handlerProjectCreation = async (data: ProjectFormData) => {
+    setIsSubmitting(true);
+    try {
+      const companyStr = localStorage.getItem("Company");
+      let companyId = "";
+      if (companyStr) {
+        try {
+          const companyObj = JSON.parse(companyStr);
+          companyId = companyObj.id || "";
+        } catch (e) {
+          companyId = "";
+        }
+      }
+      // Get createdBy from token
+      const token = localStorage.getItem("token") || "";
+      const user = getUserFromToken(token);
+      const createdBy = user?.id || "";
+      // Prepare payload for backend
+      const payload = {
+        project_name: data.projectName,
+        companyId: companyId,
+        assignTeamId: "n/a",
+        contactPerson: data.contactPerson,
+        designation: data.designation,
+        email: data.email,
+        phoneNumber: data.phone,
+        startDate: data.startDate || "n/a",
+        endDate: data.endDate || "n/a",
+        createdBy: createdBy,
+      };
+      localStorage.setItem("Project", JSON.stringify(payload));
+      // Post to backend
+      try {
+        const response = await apiPost<any>(
+          "/project",
+          payload,
+          token ? { Authorization: `Bearer ${token}` } : {}
+        );
+
+        console.log("RAW API response:", response);
+      } catch (error) {
+        console.error("Error posting project data:", error);
+      }
+    } catch (error) {
+      console.error("Error creating project:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const onSubmitProject = useCallback((data: ProjectFormData) => {
-    console.log(data);
+    handlerProjectCreation(data);
   }, []);
 
   const handleParticipantSubmit = useCallback(
@@ -279,6 +322,59 @@ const Project = () => {
     []
   );
 
+  // Handler function for user creation
+  const handlerUserCreation = async (data: {
+    name: string;
+    email: string;
+    designation: string;
+  }) => {
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const company = localStorage.getItem("company") || "";
+      const payload = {
+        name: data.name,
+        email: data.email,
+        designation: data.designation,
+        appraiser: 1,
+        role: "admin",
+        companyId: "sdkjfa",
+      };
+      const response = await apiPost<any>(
+        "/company/user",
+        payload,
+        token ? { Authorization: `Bearer ${token}` } : {}
+      );
+      console.log("User creation response:", response);
+      // Optionally reset form or update state here
+    } catch (error) {
+      console.error("Error creating user:", error);
+      // Optionally show error message to user
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Add a new form state for user creation
+  const {
+    register: registerUser,
+    handleSubmit: handleSubmitUser,
+    formState: { errors: errorsUser },
+    reset: resetUser,
+  } = useForm<{
+    name: string;
+    email: string;
+    designation: string;
+    appraiser: number;
+    role: string;
+    companyId: string;
+  }>();
+
+  // Add navigation to user creation step from the last step (case 5)
+  const handleGoToUserCreation = useCallback(() => {
+    setPageCase(6);
+  }, []);
+
   let pageContent;
   switch (pageCase) {
     case 1:
@@ -286,6 +382,11 @@ const Project = () => {
         <div>
           <PageNav name="Jese Leos" position="CEO" title="Create New Company" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            {isSubmitting && (
+              <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
+                <Loader text="Saving..." />
+              </div>
+            )}
             <div className="flex justify-between">
               <label className="text-3xl font-semibold">Company Details</label>
               <Button
@@ -798,7 +899,23 @@ const Project = () => {
               </div>
             </div>
             <form
-              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
+              onSubmit={handleSubmitUser((data) => {
+                // Pre-fill companyId from localStorage if available
+                let companyId = "";
+                const companyStr = localStorage.getItem("Company");
+                if (companyStr) {
+                  try {
+                    const companyObj = JSON.parse(companyStr);
+                    companyId = companyObj.id || "";
+                  } catch (e) {
+                    companyId = "";
+                  }
+                }
+                handlerUserCreation({
+                  ...data,
+                });
+                resetUser();
+              })}
               className="mt-5"
             >
               <div className="mb-5">
@@ -1121,9 +1238,9 @@ const Project = () => {
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={handleFinish}
+                  onClick={handleGoToUserCreation}
                 >
-                  Finish
+                  Create User
                 </Button>
               </div>
             </div>
@@ -1171,6 +1288,151 @@ const Project = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      );
+      break;
+    case 6:
+      // User creation form
+      pageContent = (
+        <div>
+          <PageNav name="Jese Leos" position="CEO" title="Create User" />
+          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            {isSubmitting && (
+              <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
+                <Loader text="Saving..." />
+              </div>
+            )}
+            <form className="mt-10">
+              <div className="mb-5">
+                <label
+                  htmlFor="name"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Name*
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  className={`bg-gray-50 border ${errorsUser.name ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerUser("name", {
+                    required: "Name is required",
+                    minLength: {
+                      value: 2,
+                      message: "Name must be at least 2 characters",
+                    },
+                  })}
+                />
+                {errorsUser.name && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsUser.name.message}
+                  </p>
+                )}
+              </div>
+              <div className="mb-5">
+                <label
+                  htmlFor="email"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Email*
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  className={`bg-gray-50 border ${errorsUser.email ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerUser("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address",
+                    },
+                  })}
+                />
+                {errorsUser.email && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsUser.email.message}
+                  </p>
+                )}
+              </div>
+              <div className="mb-5">
+                <label
+                  htmlFor="designation"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Designation*
+                </label>
+                <input
+                  type="text"
+                  id="designation"
+                  className={`bg-gray-50 border ${errorsUser.designation ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerUser("designation", {
+                    required: "Designation is required",
+                    minLength: {
+                      value: 2,
+                      message: "Designation must be at least 2 characters",
+                    },
+                  })}
+                />
+                {errorsUser.designation && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsUser.designation.message}
+                  </p>
+                )}
+              </div>
+              <div className="mb-5">
+                <label
+                  htmlFor="appraiser"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Appraiser (number)*
+                </label>
+                <input
+                  type="number"
+                  id="appraiser"
+                  className={`bg-gray-50 border ${errorsUser.appraiser ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerUser("appraiser", {
+                    required: "Appraiser is required",
+                    valueAsNumber: true,
+                  })}
+                />
+                {errorsUser.appraiser && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsUser.appraiser.message}
+                  </p>
+                )}
+              </div>
+              <div className="mb-5">
+                <label
+                  htmlFor="role"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Role*
+                </label>
+                <select
+                  id="role"
+                  className={`bg-gray-50 border ${errorsUser.role ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerUser("role", { required: "Role is required" })}
+                >
+                  <option value="">Select Role</option>
+                  <option value="peer">Peer</option>
+                  <option value="manager">Manager</option>
+                  <option value="boss">Boss</option>
+                  <option value="subordinate">Subordinate</option>
+                </select>
+                {errorsUser.role && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsUser.role.message}
+                  </p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                variant="save"
+                className="mt-8 p-6 text-lg cursor-pointer"
+              >
+                {isSubmitting ? "Saving..." : "Create User"}
+              </Button>
+            </form>
           </div>
         </div>
       );

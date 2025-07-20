@@ -27,7 +27,6 @@ const Company = () => {
   };
 
   const onSubmit = (data: CompanyFormData) => {
-    console.log(data);
     // Handle form submission here
     reset(); // Reset form data after successful submission
   };

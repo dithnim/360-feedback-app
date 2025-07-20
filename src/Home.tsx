@@ -12,6 +12,7 @@ import { useUser } from "./context/UserContext";
 import { useSidebar } from "./context/SidebarContext";
 
 import { getCompanies } from "./lib/apiService";
+import Loader from "./components/ui/loader";
 
 function Home() {
   const [organizations, setOrganizations] = useState<any[]>([]);
@@ -25,8 +26,6 @@ function Home() {
       try {
         const data = await getCompanies();
         setOrganizations(data);
-        console.log("Fetched organizations:", data);
-        console.log("User:", user);
       } catch (error) {
         console.error("Failed to fetch organizations:", error);
       } finally {
@@ -79,7 +78,7 @@ function Home() {
 
           {loading ? (
             <div className="flex justify-center items-center h-[calc(100vh-370px)]">
-              <div className="w-16 h-16 border-4 border-[#ed3f41] border-t-transparent rounded-full animate-spin"></div>
+              <Loader text="Loading..." />
             </div>
           ) : (
             <div className="w-full grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-370px)]">

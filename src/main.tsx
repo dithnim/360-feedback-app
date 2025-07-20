@@ -20,22 +20,16 @@ import Login from "./pages/login.tsx";
 import CurrentProjects from "./pages/currentProjects.tsx";
 import { UserProvider, useUser } from "./context/UserContext";
 import { SidebarProvider } from "./context/SidebarContext";
+import Loader from "./components/ui/loader";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
-
-  console.log(
-    "ProtectedRoute - isAuthenticated:",
-    isAuthenticated,
-    "isLoading:",
-    isLoading
-  );
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <Loader text="Loading..." />
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -43,7 +37,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    console.log("Redirecting to login from ProtectedRoute");
     return <Navigate to="/login" replace />;
   }
   return children;
