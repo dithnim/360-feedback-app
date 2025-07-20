@@ -51,11 +51,10 @@ const categoryDescriptions: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  Self: "#ffbc42",
-  Manager: "#8e2c57",
-  Peer: "#1f8380",
-  Peer1: "#0000FF",
-  "Direct Report": "#d72928",
+  Self: "#1f8380",
+  Manager: "#d72928",
+  Peer: "#1D2180",
+  DirectReport: "#ffbc42",
   Subordinate: "#FFD166",
 };
 
@@ -70,16 +69,8 @@ const TOC_LOCAL_STORAGE_KEY = "feedback_report_toc";
 const NEW_TOC_LOCAL_STORAGE_KEY = "feedback_report_new_toc";
 const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
 
-const LEADERSHIP_Q1_LOCAL_STORAGE_KEY = "feedback_leadership_q1";
-const LEADERSHIP_Q2_LOCAL_STORAGE_KEY = "feedback_leadership_q2";
-const LEADERSHIP_Q3_LOCAL_STORAGE_KEY = "feedback_leadership_q3";
-const LEADERSHIP_Q4_LOCAL_STORAGE_KEY = "feedback_leadership_q4";
-const LEADERSHIP_Q5_LOCAL_STORAGE_KEY = "feedback_leadership_q5";
-const LEADERSHIP_Q6_LOCAL_STORAGE_KEY = "feedback_leadership_q6";
-const LEADERSHIP_Q7_LOCAL_STORAGE_KEY = "feedback_leadership_q7";
-const LEADERSHIP_Q8_LOCAL_STORAGE_KEY = "feedback_leadership_q8";
-const LEADERSHIP_Q9_LOCAL_STORAGE_KEY = "feedback_leadership_q9";
-const LEADERSHIP_Q10_LOCAL_STORAGE_KEY = "feedback_leadership_q10";
+const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
+import LeadershipQuestionRow from "../../src/components/ui/LeadershipQuestionRow";
 
 const FeedbackReport: React.FC = () => {
   // State for new TOC entry
@@ -329,106 +320,154 @@ const FeedbackReport: React.FC = () => {
   const boundTouchEndRef = useRef<any>(null);
   const boundTouchCancelRef = useRef<any>(null);
 
-  //! States for questions
-  const [leadershipQ1, setLeadershipQ1] = useState({
-    question: "Inspires others with a clear and compelling vision",
-    ratings: [
-      { rater: "Self", rating: 5.0, color: "#095601" },
-      { rater: "Manager", rating: 4.5, color: "#089401" },
-      { rater: "Peers", rating: 4.2, color: "#08d801" },
-      { rater: "Direct Reports", rating: 3.9, color: "#ffbe01" },
-    ],
-  });
-
-  const [leadershipQ2, setLeadershipQ2] = useState({
-    question: "Leads by example and models core values",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#095601" },
-      { rater: "Manager", rating: 4, color: "#089401" },
-      { rater: "Peers", rating: 4.2, color: "#08d801" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffbe01" },
-    ],
-  });
-
-  const [leadershipQ3, setLeadershipQ3] = useState({
-    question: "Comes up with innovative solutions to work-related problems",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#d08600" },
-      { rater: "Peers", rating: 4.2, color: "#01a73d" },
-      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-    ],
-  });
-
-  const [leadershipQ4, setLeadershipQ4] = useState({
-    question: "Executes decisions aligned with business strategy",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#d08600" },
-      { rater: "Peers", rating: 4.2, color: "#01a73d" },
-      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-    ],
-  });
-
-  const [leadershipQ5, setLeadershipQ5] = useState({
-    question: "Focuses on outcomes and meets deadlines",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#01a73d" },
-      { rater: "Peers", rating: 4.2, color: "#01c950" },
-      { rater: "Direct Reports", rating: 3.5, color: "#03df73" },
-    ],
-  });
-
-  const [leadershipQ6, setLeadershipQ6] = useState({
-    question: "Demonstrates ownership of tasks and goals",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#d08600" },
-      { rater: "Peers", rating: 4.2, color: "#01c950" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-    ],
-  });
-
-  const [leadershipQ7, setLeadershipQ7] = useState({
-    question: "Clearly articulates ideas",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#036630" },
-      { rater: "Manager", rating: 4, color: "#03df73" },
-      { rater: "Peers", rating: 4.2, color: "#fee11e" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-    ],
-  });
-
-  const [leadershipQ8, setLeadershipQ8] = useState({
-    question: "Listens and responds empathetically",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#fafeff" },
-      { rater: "Manager", rating: 4, color: "#fef184" },
-      { rater: "Peers", rating: 4.2, color: "#fee11e" },
-      { rater: "Direct Reports", rating: 3.5, color: "#ffc801" },
-    ],
-  });
-
-  const [leadershipQ9, setLeadershipQ9] = useState({
-    question: "Supports and encourages team collaboration.",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#01c950" },
-      { rater: "Manager", rating: 4, color: "#03df73" },
-      { rater: "Peers", rating: 4.2, color: "#01a73d" },
-      { rater: "Direct Reports", rating: 3.5, color: "#018335" },
-    ],
-  });
-
-  const [leadershipQ10, setLeadershipQ10] = useState({
-    question: "Values team contributions and acknowledges efforts of others.",
-    ratings: [
-      { rater: "Self", rating: 3, color: "#01c950" },
-      { rater: "Manager", rating: 4, color: "#03df73" },
-      { rater: "Peers", rating: 4.2, color: "#01c950" },
-      { rater: "Direct Reports", rating: 3.5, color: "#036630" },
-    ],
-  });
+  const [summaryOfRatings, setSummaryOfRatings] = useState<any[]>([
+    {
+      category: "Leadership",
+      ratings: [
+        { rater: "Self", rating: 5.0, color: roleColors.Self },
+        { rater: "Manager", rating: 4.5, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.9,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+  ]);
+  // Refactored: Leadership questions as an array of objects
+  const [leadershipQuestions, setLeadershipQuestions] = useState([
+    {
+      question: "Inspires others with a clear and compelling vision",
+      ratings: [
+        { rater: "Self", rating: 5.0, color: roleColors.Self },
+        { rater: "Manager", rating: 4.5, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.9,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Leads by example and models core values",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Comes up with innovative solutions to work-related problems",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Executes decisions aligned with business strategy",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Focuses on outcomes and meets deadlines",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Demonstrates ownership of tasks and goals",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Clearly articulates ideas",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Listens and responds empathetically",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Supports and encourages team collaboration.",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+    {
+      question: "Values team contributions and acknowledges efforts of others.",
+      ratings: [
+        { rater: "Self", rating: 3, color: roleColors.Self },
+        { rater: "Manager", rating: 4, color: roleColors.Manager },
+        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
+        {
+          rater: "Direct Reports",
+          rating: 3.5,
+          color: roleColors.DirectReport,
+        },
+      ],
+    },
+  ]);
 
   const handlePieChartUpdate = (
     chartKey: "strengths" | "improvements" | "hiddenStrengths" | "blindSpots",
@@ -729,64 +768,10 @@ const FeedbackReport: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem(
-      LEADERSHIP_Q1_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ1)
+      LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY,
+      JSON.stringify(leadershipQuestions)
     );
-  }, [leadershipQ1]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q2_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ2)
-    );
-  }, [leadershipQ2]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q3_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ3)
-    );
-  }, [leadershipQ3]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q4_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ4)
-    );
-  }, [leadershipQ4]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q5_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ5)
-    );
-  }, [leadershipQ5]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q6_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ6)
-    );
-  }, [leadershipQ6]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q7_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ7)
-    );
-  }, [leadershipQ7]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q8_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ8)
-    );
-  }, [leadershipQ8]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q9_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ9)
-    );
-  }, [leadershipQ9]);
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_Q10_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQ10)
-    );
-  }, [leadershipQ10]);
+  }, [leadershipQuestions]);
 
   return (
     <div className="content-wrapper">
@@ -1264,7 +1249,7 @@ const FeedbackReport: React.FC = () => {
                   groups
                 </p>
                 {page.map((item, index) => (
-                  <div key={index} className="competency-item">
+                  <div key={index} className="competency-item ">
                     <div className="competency-header">
                       <h3 className="competency-title">{item.category}</h3>
                       <div className="competency-rating">
@@ -1278,15 +1263,13 @@ const FeedbackReport: React.FC = () => {
                       {item.description}
                     </p>
 
-                    <div className="charts-container grid grid-cols-4 gap-4">
-                      {item.charts.map(
-                        (chart: ChartItem, chartIndex: number) => (
-                          <div key={chartIndex} className="chart-item">
-                            <CircularProgressChart
-                              label={chart.question}
-                              value={chart.value}
-                              max={5}
-                              color={chart.color}
+                    <div className="charts-container w-full ">
+                      {summaryOfRatings.map(
+                        (chart: any, chartIndex: number) => (
+                          <div key={chartIndex} className="chart-item w-full">
+                            <LeadershipQuestionRow
+                              question={chart.question}
+                              ratings={chart.ratings}
                             />
                           </div>
                         )
@@ -1754,7 +1737,7 @@ const FeedbackReport: React.FC = () => {
               <tbody>
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ1.question}>
+                    <DraggableComp title={leadershipQuestions[0].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -1763,25 +1746,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ1.question}
+                              value={leadershipQuestions[0].question}
                               onChange={(e) =>
-                                setLeadershipQ1(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 0
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ1.ratings.map(
+                          {leadershipQuestions[0].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -1802,21 +1779,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ1.ratings,
+                                        ...leadershipQuestions[0].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ1(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 0
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -1831,23 +1802,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ1.ratings,
+                                        ...leadershipQuestions[0].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ1(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 0
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -1861,53 +1826,14 @@ const FeedbackReport: React.FC = () => {
                   </div>
                 )}
                 {/* Row 1 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ1.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ1.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ1.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[0].question}
+                  ratings={leadershipQuestions[0].ratings}
+                />
 
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ2.question}>
+                    <DraggableComp title={leadershipQuestions[1].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -1916,25 +1842,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ2.question}
+                              value={leadershipQuestions[1].question}
                               onChange={(e) =>
-                                setLeadershipQ2(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 1
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ2.ratings.map(
+                          {leadershipQuestions[1].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -1955,21 +1875,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ2.ratings,
+                                        ...leadershipQuestions[1].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ2(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 1
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -1984,23 +1898,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ2.ratings,
+                                        ...leadershipQuestions[1].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ2(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 1
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2014,49 +1922,10 @@ const FeedbackReport: React.FC = () => {
                   </div>
                 )}
                 {/* Row 2 */}
-                <tr>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ2.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ2.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ2.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[1].question}
+                  ratings={leadershipQuestions[1].ratings}
+                />
               </tbody>
             </table>
             <div className="w-full mt-auto">
@@ -2090,7 +1959,7 @@ const FeedbackReport: React.FC = () => {
               <tbody>
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ3.question}>
+                    <DraggableComp title={leadershipQuestions[2].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -2099,25 +1968,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ3.question}
+                              value={leadershipQuestions[2].question}
                               onChange={(e) =>
-                                setLeadershipQ3(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 2
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ3.ratings.map(
+                          {leadershipQuestions[2].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -2138,21 +2001,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ3.ratings,
+                                        ...leadershipQuestions[2].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ3(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 2
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2167,23 +2024,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ3.ratings,
+                                        ...leadershipQuestions[2].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ3(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 2
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2197,53 +2048,14 @@ const FeedbackReport: React.FC = () => {
                   </div>
                 )}
                 {/* Row 1 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ3.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ3.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ3.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[2].question}
+                  ratings={leadershipQuestions[2].ratings}
+                />
 
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ4.question}>
+                    <DraggableComp title={leadershipQuestions[3].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -2252,25 +2064,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ4.question}
+                              value={leadershipQuestions[3].question}
                               onChange={(e) =>
-                                setLeadershipQ4(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 3
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ4.ratings.map(
+                          {leadershipQuestions[3].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -2291,21 +2097,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ4.ratings,
+                                        ...leadershipQuestions[3].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ4(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 3
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2320,23 +2120,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ4.ratings,
+                                        ...leadershipQuestions[3].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ4(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 3
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2349,51 +2143,11 @@ const FeedbackReport: React.FC = () => {
                     </DraggableComp>
                   </div>
                 )}
-
                 {/* Row 2 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ4.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ4.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ4.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <div className="flex items-center gap-2" key={idx}>
-                            <div className="h-2 w-full rounded bg-gray-200">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                  maxWidth: "100%",
-                                  backgroundColor: r.color,
-                                }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-semibold">
-                              {isNaN(Number(r.rating)) ? 0 : r.rating}
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[3].question}
+                  ratings={leadershipQuestions[3].ratings}
+                />
               </tbody>
             </table>
             <div className="w-full mt-auto">
@@ -2427,7 +2181,7 @@ const FeedbackReport: React.FC = () => {
               <tbody>
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ5.question}>
+                    <DraggableComp title={leadershipQuestions[4].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -2436,25 +2190,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ5.question}
+                              value={leadershipQuestions[4].question}
                               onChange={(e) =>
-                                setLeadershipQ5(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 4
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ5.ratings.map(
+                          {leadershipQuestions[4].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -2475,21 +2223,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ5.ratings,
+                                        ...leadershipQuestions[4].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ5(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 4
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2504,23 +2246,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ5.ratings,
+                                        ...leadershipQuestions[4].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ5(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 4
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2535,55 +2271,14 @@ const FeedbackReport: React.FC = () => {
                 )}
 
                 {/* Row 1 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ5.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ5.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ5.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[4].question}
+                  ratings={leadershipQuestions[4].ratings}
+                />
 
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ6.question}>
+                    <DraggableComp title={leadershipQuestions[5].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -2592,25 +2287,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ6.question}
+                              value={leadershipQuestions[5].question}
                               onChange={(e) =>
-                                setLeadershipQ6(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 5
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ6.ratings.map(
+                          {leadershipQuestions[5].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -2631,21 +2320,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ6.ratings,
+                                        ...leadershipQuestions[5].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ6(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 5
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2660,23 +2343,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ6.ratings,
+                                        ...leadershipQuestions[5].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ6(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 5
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2691,51 +2368,10 @@ const FeedbackReport: React.FC = () => {
                 )}
 
                 {/* Row 2 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ6.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ6.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ6.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[5].question}
+                  ratings={leadershipQuestions[5].ratings}
+                />
               </tbody>
             </table>
             <div className="w-full mt-auto">
@@ -2767,7 +2403,7 @@ const FeedbackReport: React.FC = () => {
               <tbody>
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ7.question}>
+                    <DraggableComp title={leadershipQuestions[6].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -2776,25 +2412,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ7.question}
+                              value={leadershipQuestions[6].question}
                               onChange={(e) =>
-                                setLeadershipQ7(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 6
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ7.ratings.map(
+                          {leadershipQuestions[6].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -2815,21 +2445,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ7.ratings,
+                                        ...leadershipQuestions[6].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ7(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 6
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2844,23 +2468,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ7.ratings,
+                                        ...leadershipQuestions[6].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ7(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 6
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -2875,55 +2493,14 @@ const FeedbackReport: React.FC = () => {
                 )}
 
                 {/* Row 1 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ7.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ7.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ7.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[6].question}
+                  ratings={leadershipQuestions[6].ratings}
+                />
 
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ8.question}>
+                    <DraggableComp title={leadershipQuestions[7].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -2932,25 +2509,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ8.question}
+                              value={leadershipQuestions[7].question}
                               onChange={(e) =>
-                                setLeadershipQ8(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 7
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ8.ratings.map(
+                          {leadershipQuestions[7].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -2971,21 +2542,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ8.ratings,
+                                        ...leadershipQuestions[7].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ8(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 7
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -3000,23 +2565,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ8.ratings,
+                                        ...leadershipQuestions[7].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ8(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 7
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -3031,51 +2590,10 @@ const FeedbackReport: React.FC = () => {
                 )}
 
                 {/* Row 2 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ8.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ8.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ8.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[7].question}
+                  ratings={leadershipQuestions[7].ratings}
+                />
               </tbody>
             </table>
             <div className="w-full mt-auto">
@@ -3108,7 +2626,7 @@ const FeedbackReport: React.FC = () => {
               <tbody>
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ9.question}>
+                    <DraggableComp title={leadershipQuestions[8].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -3117,25 +2635,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ9.question}
+                              value={leadershipQuestions[8].question}
                               onChange={(e) =>
-                                setLeadershipQ7(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 8
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ9.ratings.map(
+                          {leadershipQuestions[8].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -3156,21 +2668,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ9.ratings,
+                                        ...leadershipQuestions[8].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ9(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 8
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -3185,23 +2691,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ9.ratings,
+                                        ...leadershipQuestions[8].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ9(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 8
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -3216,55 +2716,14 @@ const FeedbackReport: React.FC = () => {
                 )}
 
                 {/* Row 1 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ9.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ9.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ9.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[8].question}
+                  ratings={leadershipQuestions[8].ratings}
+                />
 
                 {isEditMode && (
                   <div style={{ position: "relative" }}>
-                    <DraggableComp title={leadershipQ10.question}>
+                    <DraggableComp title={leadershipQuestions[9].question}>
                       <div className="p-4">
                         <div className="drg-wrapper">
                           <div className="flex flex-col mb-2">
@@ -3273,25 +2732,19 @@ const FeedbackReport: React.FC = () => {
                               id="edit-question"
                               type="text"
                               className="border border-gray-300 rounded-md mb-2 px-1.5"
-                              value={leadershipQ10.question}
+                              value={leadershipQuestions[9].question}
                               onChange={(e) =>
-                                setLeadershipQ8(
-                                  (q: {
-                                    question: string;
-                                    ratings: {
-                                      rater: string;
-                                      rating: number;
-                                      color: string;
-                                    }[];
-                                  }) => ({
-                                    ...q,
-                                    question: e.target.value,
-                                  })
+                                setLeadershipQuestions((prev: any[]) =>
+                                  prev.map((q: any, idx: number) =>
+                                    idx === 9
+                                      ? { ...q, question: e.target.value }
+                                      : q
+                                  )
                                 )
                               }
                             />
                           </div>
-                          {leadershipQ10.ratings.map(
+                          {leadershipQuestions[9].ratings.map(
                             (
                               r: {
                                 rater: string;
@@ -3312,21 +2765,15 @@ const FeedbackReport: React.FC = () => {
                                     value={r.rater}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ10.ratings,
+                                        ...leadershipQuestions[9].ratings,
                                       ];
                                       newRatings[idx].rater = e.target.value;
-                                      setLeadershipQ10(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 9
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -3341,23 +2788,17 @@ const FeedbackReport: React.FC = () => {
                                     max={5}
                                     onChange={(e) => {
                                       const newRatings = [
-                                        ...leadershipQ10.ratings,
+                                        ...leadershipQuestions[9].ratings,
                                       ];
                                       newRatings[idx].rating = parseFloat(
                                         e.target.value
                                       );
-                                      setLeadershipQ10(
-                                        (q: {
-                                          question: string;
-                                          ratings: {
-                                            rater: string;
-                                            rating: number;
-                                            color: string;
-                                          }[];
-                                        }) => ({
-                                          ...q,
-                                          ratings: newRatings,
-                                        })
+                                      setLeadershipQuestions((prev: any[]) =>
+                                        prev.map((q: any, idx: number) =>
+                                          idx === 9
+                                            ? { ...q, ratings: newRatings }
+                                            : q
+                                        )
                                       );
                                     }}
                                   />
@@ -3372,51 +2813,10 @@ const FeedbackReport: React.FC = () => {
                 )}
 
                 {/* Row 2 */}
-                <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td className="py-4 align-top w-1/3">
-                    {leadershipQ10.question}
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      {leadershipQ10.ratings.map(
-                        (
-                          r: { rater: string; rating: number; color: string },
-                          idx: number
-                        ) => (
-                          <span key={idx}>{r.rater}</span>
-                        )
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 align-top w-1/3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col gap-2">
-                        {leadershipQ10.ratings.map(
-                          (
-                            r: { rater: string; rating: number; color: string },
-                            idx: number
-                          ) => (
-                            <div className="flex items-center gap-2" key={idx}>
-                              <div className="h-2 w-full rounded bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full"
-                                  style={{
-                                    width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                    maxWidth: "100%",
-                                    backgroundColor: r.color,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-semibold">
-                                {isNaN(Number(r.rating)) ? 0 : r.rating}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
+                <LeadershipQuestionRow
+                  question={leadershipQuestions[9].question}
+                  ratings={leadershipQuestions[9].ratings}
+                />
               </tbody>
             </table>
             <div className="w-full mt-auto">
