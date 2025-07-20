@@ -850,13 +850,6 @@ const FeedbackReport: React.FC = () => {
           >
             {isExporting ? "Generating PDF..." : "Export PDF"}
           </button>
-          <input
-            type="file"
-            className="print"
-            onChange={onCSVUpload}
-            disabled={isExporting}
-            accept=".csv"
-          />
           <div className="cover-image-controls">
             <input
               type="file"
@@ -1266,11 +1259,43 @@ const FeedbackReport: React.FC = () => {
                     <div className="charts-container w-full ">
                       {summaryOfRatings.map(
                         (chart: any, chartIndex: number) => (
-                          <div key={chartIndex} className="chart-item w-full">
-                            <LeadershipQuestionRow
-                              question={chart.question}
-                              ratings={chart.ratings}
-                            />
+                          <div
+                            key={chartIndex}
+                            className="chart-item w-full px-4"
+                          >
+                            <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                              <td className="py-4 align-top w-1/3">
+                                <div className="flex flex-col gap-2 pe-20">
+                                  {chart.ratings.map((r: any, idx: number) => (
+                                    <span key={idx}>{r.rater}</span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="py-4 align-top w-1/3">
+                                <div className="flex flex-col gap-2">
+                                  {chart.ratings.map((r: any, idx: number) => (
+                                    <div
+                                      className="flex items-center gap-2"
+                                      key={idx}
+                                    >
+                                      <div className="h-2 w-full rounded bg-gray-200">
+                                        <div
+                                          className="h-2 rounded-full"
+                                          style={{
+                                            width: `${(Math.max(0, r.rating) / 5) * 100}%`,
+                                            maxWidth: "100%",
+                                            backgroundColor: r.color,
+                                          }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-sm font-semibold">
+                                        {isNaN(Number(r.rating)) ? 0 : r.rating}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
                           </div>
                         )
                       )}
@@ -1289,7 +1314,7 @@ const FeedbackReport: React.FC = () => {
         <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
           <ReportHeader title="Bar Chart for Competency Ratings">
             {/* Legend */}
-            <div className="flex flex-row gap-8 mt-6 mb-2">
+            {/* <div className="flex flex-row gap-8 mt-6 mb-2">
               <div className="flex items-center gap-2">
                 <span
                   className="inline-block w-4 h-4 rounded"
@@ -1325,10 +1350,41 @@ const FeedbackReport: React.FC = () => {
                 ></span>
                 <span className="text-sm">Overall Average</span>
               </div>
-            </div>
+            </div> */}
             {/* Bar Chart */}
             <div className="flex-1 flex items-center justify-center min-h-[400px]">
-              <BarChart />
+              <BarChart
+                height={700}
+                categories={[
+                  "Leaderhip",
+                  "Decision Making",
+                  "Drive for Results",
+                  "Communication",
+                  "Teamwork",
+                ]}
+                series={[
+                  {
+                    name: "Self",
+                    color: roleColors.Self,
+                    values: [3.0, 2.0, 4.5, 2.9, 2.5],
+                  },
+                  {
+                    name: "Manager",
+                    color: roleColors.Manager,
+                    values: [2.5, 3.5, 2, 3.5, 3.5],
+                  },
+                  {
+                    name: "Peers",
+                    color: roleColors.Peer,
+                    values: [4.3, 2.7, 3.0, 2.5, 2],
+                  },
+                  {
+                    name: "Direct Reports",
+                    color: roleColors.DirectReport,
+                    values: [1.6, 3.5, 4.5, 1.5, 2.5],
+                  },
+                ]}
+              />
             </div>
             <div className="w-full mt-auto">
               <Footer />

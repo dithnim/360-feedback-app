@@ -18,7 +18,7 @@ const LeadershipQuestionRow: React.FC<LeadershipQuestionRowProps> = ({
   <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
     <td className="py-4 align-top w-1/3">{question}</td>
     <td className="py-4 align-top w-1/3">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 pe-20">
         {ratings.map((r, idx) => (
           <span key={idx}>{r.rater}</span>
         ))}
