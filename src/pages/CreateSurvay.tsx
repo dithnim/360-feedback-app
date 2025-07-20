@@ -13,7 +13,7 @@ const CreateSurvay = () => {
 
   return (
     <div className="h-screen">
-      <div className="">
+      <div>
         <PageNav name="Jese Leos" position="CEO" title="Create Survey" />
       </div>
       <div className="flex flex-col items-center justify-center mt-30">

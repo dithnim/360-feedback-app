@@ -207,7 +207,7 @@ const Project = () => {
     };
     setIsSubmitting(true);
     try {
-      const token = sessionStorage.getItem("token") || ""; // Get token from session storage
+      const token = localStorage.getItem("token") || ""; // Get token from localStorage
       const response = await apiPost<{ data: Company; status: number }>(
         "/company",
         payload,
