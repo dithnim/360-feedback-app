@@ -3,7 +3,7 @@ import { apiPost } from "../lib/apiService";
 import type { Company } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
@@ -23,6 +23,8 @@ interface ParticipantFormData {
   participantName: string;
   email: string;
   designation: string;
+  appraisee: string;
+  role: string;
 }
 
 interface UserData {
@@ -61,6 +63,8 @@ const Project = () => {
       participantName: string;
       email: string;
       designation: string;
+      appraisee: string;
+      role: string;
     }[]
   >([]);
   const {
@@ -79,56 +83,32 @@ const Project = () => {
     reset: resetCompany,
   } = useForm<CompanyFormData>();
 
-  const [users, setUsers] = useState<UserData[]>([
-    {
-      id: 1,
-      name: "Lorraine Christine Evans",
-      email: "lorraineevans85@gmail.com",
-      designation: "HR Assistance",
-      type: "Appraisee",
-      role: "Peer",
-    },
-    {
-      id: 2,
-      name: "Niro Yin",
-      email: "niroyinsh7459@gmail.com",
-      designation: "HR Manager",
-      type: "Appraiser",
-      role: "Manager",
-    },
-    {
-      id: 3,
-      name: "Lorraine Christine Evans",
-      email: "lorraineevans85@gmail.com",
-      designation: "CEO",
-      type: "Appraisee",
-      role: "Boss",
-    },
-    {
-      id: 4,
-      name: "Niro Yin",
-      email: "niroyinsh7459@gmail.com",
-      designation: "HR Manager",
-      type: "Appraiser",
-      role: "Subordinate",
-    },
-    {
-      id: 5,
-      name: "Lorraine Christine Evans",
-      email: "lorraineevans85@gmail.com",
-      designation: "HR Assistance",
-      type: "Appraiser",
-      role: "Subordinate",
-    },
-    {
-      id: 6,
-      name: "Niro Yin",
-      email: "niroyinsh7459@gmail.com",
-      designation: "HR Manager",
-      type: "Appraiser",
-      role: "Manager",
-    },
-  ]);
+  const [users, setUsers] = useState<UserData[]>([]);
+
+  // Load participants from localStorage when pageCase changes to 4
+  useEffect(() => {
+    if (pageCase === 4) {
+      const participantsFromStorage = localStorage.getItem("Participants");
+      if (participantsFromStorage && users.length === 0) {
+        try {
+          const parsedParticipants = JSON.parse(participantsFromStorage);
+          const transformedUsers: UserData[] = parsedParticipants.map(
+            (participant: any, index: number) => ({
+              id: participant.id || index + 1,
+              name: participant.participantName,
+              email: participant.email,
+              designation: participant.designation,
+              type: participant.appraisee as "Appraisee" | "Appraiser",
+              role: participant.role,
+            })
+          );
+          setUsers(transformedUsers);
+        } catch (error) {
+          console.error("Error parsing participants from localStorage:", error);
+        }
+      }
+    }
+  }, [pageCase, users.length]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<
     "Appraisee" | "Appraiser" | "All"
@@ -188,7 +168,13 @@ const Project = () => {
       setParticipants((prev) => prev.filter((_, i) => i !== index));
       if (editIndex === index) {
         setEditIndex(null);
-        resetInfo({ participantName: "", email: "", designation: "" });
+        resetInfo({
+          participantName: "",
+          email: "",
+          designation: "",
+          appraisee: "",
+          role: "",
+        });
       }
     },
     [editIndex, resetInfo]
@@ -199,12 +185,11 @@ const Project = () => {
     // Map form data to backend JSON structure
     const payload = {
       name: data.companyName,
+      description: data.description,
       email: data.email,
       contactNumber: data.phone,
       contactPerson: data.contactPerson,
-      logoImg:
-        // data.file && data.file[0] ? URL.createObjectURL(data.file[0]) : undefined
-        "dfjhaskdfjh",
+      logoImg: data.file && data.file[0] ? data.file[0].name : "",
       createdAt: new Date().toISOString(),
     };
     setIsSubmitting(true);
@@ -258,13 +243,13 @@ const Project = () => {
       const payload = {
         project_name: data.projectName,
         companyId: companyId,
-        assignTeamId: "n/a",
+        assignTeamId: data.assigningTeam,
         contactPerson: data.contactPerson,
         designation: data.designation,
         email: data.email,
         phoneNumber: data.phone,
-        startDate: data.startDate || "n/a",
-        endDate: data.endDate || "n/a",
+        startDate: data.startDate,
+        endDate: data.endDate,
         createdBy: createdBy,
       };
       localStorage.setItem("Project", JSON.stringify(payload));
@@ -301,7 +286,13 @@ const Project = () => {
       } else {
         setParticipants((prev) => [...prev, { ...data, id: Date.now() }]);
       }
-      resetInfo({ participantName: "", email: "", designation: "" });
+      resetInfo({
+        participantName: "",
+        email: "",
+        designation: "",
+        appraisee: "",
+        role: "",
+      });
     },
     [editIndex, resetInfo]
   );
@@ -327,26 +318,45 @@ const Project = () => {
     name: string;
     email: string;
     designation: string;
+    appraiser: number;
+    role: string;
   }) => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token") || "";
       const company = localStorage.getItem("company") || "";
+      // Get companyId from localStorage
+      let companyId = "";
+      const companyStr = localStorage.getItem("Company");
+      if (companyStr) {
+        try {
+          const companyObj = JSON.parse(companyStr);
+          companyId = companyObj.id || "";
+        } catch (e) {
+          // Fallback: try to parse company as JSON, otherwise use empty string
+          try {
+            const companyObj = JSON.parse(company);
+            companyId = companyObj.id || "";
+          } catch {
+            companyId = "";
+          }
+        }
+      }
+
       const payload = {
         name: data.name,
         email: data.email,
         designation: data.designation,
-        appraiser: 1,
-        role: "admin",
-        companyId: "sdkjfa",
+        appraiser: data.appraiser,
+        role: data.role,
+        companyId: companyId,
       };
       const response = await apiPost<any>(
         "/company/user",
         payload,
         token ? { Authorization: `Bearer ${token}` } : {}
       );
-      console.log("User creation response:", response);
-      // Optionally reset form or update state here
+      console.log("RAW API response:", response);
     } catch (error) {
       console.error("Error creating user:", error);
       // Optionally show error message to user
@@ -892,30 +902,20 @@ const Project = () => {
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={handleNext}
+                  onClick={() => {
+                    localStorage.setItem(
+                      "Participants",
+                      JSON.stringify(participants)
+                    );
+                    handleNext();
+                  }}
                 >
                   next
                 </Button>
               </div>
             </div>
             <form
-              onSubmit={handleSubmitUser((data) => {
-                // Pre-fill companyId from localStorage if available
-                let companyId = "";
-                const companyStr = localStorage.getItem("Company");
-                if (companyStr) {
-                  try {
-                    const companyObj = JSON.parse(companyStr);
-                    companyId = companyObj.id || "";
-                  } catch (e) {
-                    companyId = "";
-                  }
-                }
-                handlerUserCreation({
-                  ...data,
-                });
-                resetUser();
-              })}
+              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
               className="mt-5"
             >
               <div className="mb-5">
@@ -1005,6 +1005,63 @@ const Project = () => {
                   )}
                 </div>
               </div>
+              <div className="flex justify-between items-center mb-5">
+                <div className="w-full me-10">
+                  <label
+                    htmlFor="appraisee"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Appraisee/Appraiser*
+                  </label>
+                  <select
+                    id="appraisee"
+                    className={`bg-gray-50 border ${
+                      errorsInfo.appraisee
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("appraisee", {
+                      required: "Appraisee/Appraiser is required",
+                    })}
+                  >
+                    <option value="">Select Appraisee/Appraiser</option>
+                    <option value="Appraisee">Appraisee</option>
+                    <option value="Appraiser">Appraiser</option>
+                  </select>
+                  {errorsInfo.appraisee && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsInfo.appraisee.message}
+                    </p>
+                  )}
+                </div>
+                <div className="w-full">
+                  <label
+                    htmlFor="role"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Role*
+                  </label>
+                  <input
+                    type="text"
+                    id="role"
+                    className={`bg-gray-50 border ${
+                      errorsInfo.role ? "border-red-500" : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("role", {
+                      required: "Role is required",
+                      minLength: {
+                        value: 2,
+                        message: "Role must be at least 2 characters",
+                      },
+                    })}
+                  />
+                  {errorsInfo.role && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsInfo.role.message}
+                    </p>
+                  )}
+                </div>
+              </div>
               <Button
                 type="submit"
                 variant="save"
@@ -1046,6 +1103,12 @@ const Project = () => {
                       </td>
                       <td className="py-2 px-4 text-gray-900">
                         {participant.designation}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.appraisee}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.role}
                       </td>
                       <td className="py-2 px-4">
                         <Button
@@ -1235,12 +1298,29 @@ const Project = () => {
                 >
                   previous
                 </Button>
+
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={handleGoToUserCreation}
+                  onClick={() => {
+                    setIsSubmitting(true);
+                    const data = localStorage.getItem("Participants");
+                    try {
+                      if (data) {
+                        const parsedData = JSON.parse(data);
+                        parsedData.forEach((participant: any) => {
+                          handlerUserCreation(participant);
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Error creating users:", error);
+                    } finally {
+                      setIsSubmitting(false);
+                      handleFinish();
+                    }
+                  }}
                 >
-                  Create User
+                  Finish
                 </Button>
               </div>
             </div>
@@ -1292,151 +1372,7 @@ const Project = () => {
         </div>
       );
       break;
-    case 6:
-      // User creation form
-      pageContent = (
-        <div>
-          <PageNav name="Jese Leos" position="CEO" title="Create User" />
-          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
-            {isSubmitting && (
-              <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
-                <Loader text="Saving..." />
-              </div>
-            )}
-            <form className="mt-10">
-              <div className="mb-5">
-                <label
-                  htmlFor="name"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Name*
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  className={`bg-gray-50 border ${errorsUser.name ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerUser("name", {
-                    required: "Name is required",
-                    minLength: {
-                      value: 2,
-                      message: "Name must be at least 2 characters",
-                    },
-                  })}
-                />
-                {errorsUser.name && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsUser.name.message}
-                  </p>
-                )}
-              </div>
-              <div className="mb-5">
-                <label
-                  htmlFor="email"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Email*
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  className={`bg-gray-50 border ${errorsUser.email ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerUser("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address",
-                    },
-                  })}
-                />
-                {errorsUser.email && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsUser.email.message}
-                  </p>
-                )}
-              </div>
-              <div className="mb-5">
-                <label
-                  htmlFor="designation"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Designation*
-                </label>
-                <input
-                  type="text"
-                  id="designation"
-                  className={`bg-gray-50 border ${errorsUser.designation ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerUser("designation", {
-                    required: "Designation is required",
-                    minLength: {
-                      value: 2,
-                      message: "Designation must be at least 2 characters",
-                    },
-                  })}
-                />
-                {errorsUser.designation && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsUser.designation.message}
-                  </p>
-                )}
-              </div>
-              <div className="mb-5">
-                <label
-                  htmlFor="appraiser"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Appraiser (number)*
-                </label>
-                <input
-                  type="number"
-                  id="appraiser"
-                  className={`bg-gray-50 border ${errorsUser.appraiser ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerUser("appraiser", {
-                    required: "Appraiser is required",
-                    valueAsNumber: true,
-                  })}
-                />
-                {errorsUser.appraiser && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsUser.appraiser.message}
-                  </p>
-                )}
-              </div>
-              <div className="mb-5">
-                <label
-                  htmlFor="role"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Role*
-                </label>
-                <select
-                  id="role"
-                  className={`bg-gray-50 border ${errorsUser.role ? "border-red-500" : "border-gray-300"} text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerUser("role", { required: "Role is required" })}
-                >
-                  <option value="">Select Role</option>
-                  <option value="peer">Peer</option>
-                  <option value="manager">Manager</option>
-                  <option value="boss">Boss</option>
-                  <option value="subordinate">Subordinate</option>
-                </select>
-                {errorsUser.role && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsUser.role.message}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                variant="save"
-                className="mt-8 p-6 text-lg cursor-pointer"
-              >
-                {isSubmitting ? "Saving..." : "Create User"}
-              </Button>
-            </form>
-          </div>
-        </div>
-      );
-      break;
+
     default:
       pageContent = null;
   }

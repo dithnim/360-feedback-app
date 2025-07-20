@@ -15,7 +15,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className="bg-[#f5f5f5] w-screen h-[120px] flex items-center justify-between border-b-[1px] border-[#acacac] pe-20 ps-35">
+    <div className="bg-[#f5f5f5] w-screen h-[120px] flex items-center justify-between border-b-[1px] border-[#acacac] pe-10 ps-35">
       <div className="flex items-center gap-20">
         <img
           src={dashLogo}
@@ -35,9 +35,9 @@ const Navbar = () => {
             </div>
             <button
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-200"
+              className="bg-[#ee3f40] hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl focus:outline-none focus:shadow-outline transition-colors duration-200 flex items-center justify-center w-14 h-14 cursor-pointer"
             >
-              Logout
+              <i className="bx bx-arrow-from-left-stroke text-2xl"></i>
             </button>
           </div>
         )}
