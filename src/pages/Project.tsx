@@ -45,6 +45,13 @@ interface CompanyFormData {
   file?: FileList;
 }
 
+// Helper function to format date as 2025-12-20T17:00:00Z
+function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
+  const date = new Date(dateStr);
+  date.setUTCHours(hour, minute, second, 0);
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 const Project = () => {
   const {
     register: registerProject,
@@ -149,6 +156,8 @@ const Project = () => {
   }, []);
 
   const handleFinish = useCallback(() => {
+    localStorage.removeItem("Company");
+    localStorage.removeItem("Project");
     navigate("/create");
   }, [navigate]);
 
@@ -182,14 +191,12 @@ const Project = () => {
 
   // Handler function for company creation, now has access to resetCompany
   const handlerCompanyCreation = async (data: CompanyFormData) => {
-    // Map form data to backend JSON structure
     const payload = {
       name: data.companyName,
-      description: data.description,
       email: data.email,
       contactNumber: data.phone,
       contactPerson: data.contactPerson,
-      logoImg: data.file && data.file[0] ? data.file[0].name : "",
+      logoImg: "https://example.com/images/acme-logo.png",
       createdAt: new Date().toISOString(),
     };
     setIsSubmitting(true);
@@ -223,8 +230,15 @@ const Project = () => {
 
   // TODO Handler function for project creation
   const handlerProjectCreation = async (data: ProjectFormData) => {
-    setIsSubmitting(true);
+    setIsSubmitting(true); // Set loading state immediately
     try {
+      const token = localStorage.getItem("token") || "";
+      const user = getUserFromToken(token);
+      const createdBy = user?.id || "";
+      // Prepare payload for backend
+      const startDateISO = toISODateWithTime(data.startDate);
+      const endDateISO = toISODateWithTime(data.endDate);
+
       const companyStr = localStorage.getItem("Company");
       let companyId = "";
       if (companyStr) {
@@ -235,21 +249,17 @@ const Project = () => {
           companyId = "";
         }
       }
-      // Get createdBy from token
-      const token = localStorage.getItem("token") || "";
-      const user = getUserFromToken(token);
-      const createdBy = user?.id || "";
-      // Prepare payload for backend
+
       const payload = {
         project_name: data.projectName,
         companyId: companyId,
-        assignTeamId: data.assigningTeam,
+        assignTeamId: "687e79c59eb4f512d6c66155",
         contactPerson: data.contactPerson,
         designation: data.designation,
         email: data.email,
         phoneNumber: data.phone,
-        startDate: data.startDate,
-        endDate: data.endDate,
+        startDate: startDateISO,
+        endDate: endDateISO,
         createdBy: createdBy,
       };
       localStorage.setItem("Project", JSON.stringify(payload));
@@ -260,7 +270,6 @@ const Project = () => {
           payload,
           token ? { Authorization: `Bearer ${token}` } : {}
         );
-
         console.log("RAW API response:", response);
       } catch (error) {
         console.error("Error posting project data:", error);
@@ -268,7 +277,7 @@ const Project = () => {
     } catch (error) {
       console.error("Error creating project:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Always reset loading state
     }
   };
 
@@ -541,19 +550,23 @@ const Project = () => {
                     id="phone"
                     className={`bg-gray-50 border ${
                       errorsCompany.phone ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5
-`}
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
                     onKeyPress={(e) => {
-                      if (!/[0-9]/.test(e.key)) {
+                      // Allow digits and '+' only as the first character
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        !(e.key === "+" && e.currentTarget.value.length === 0)
+                      ) {
                         e.preventDefault();
                       }
                     }}
-                    maxLength={10}
+                    maxLength={13}
                     {...registerCompany("phone", {
                       required: "Phone number is required",
                       pattern: {
-                        value: /^[0-9]{10}$/,
-                        message: "Phone number must be 10 digits",
+                        value: /^\+?[0-9]{10,12}$/,
+                        message:
+                          "Phone number must be 10-12 digits, optionally starting with +",
                       },
                     })}
                   />
@@ -595,6 +608,11 @@ const Project = () => {
         <div className="min-h-screen bg-white">
           <PageNav position="CEO" title="Create New Project" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            {isSubmitting && (
+              <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
+                <Loader text="Saving..." />
+              </div>
+            )}
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <label className="text-2xl sm:text-3xl font-semibold">
                 Project Information
@@ -873,7 +891,7 @@ const Project = () => {
                 variant="save"
                 className="mt-8 sm:mt-12 px-4 py-3 sm:p-6 text-base sm:text-lg cursor-pointer w-full md:w-auto"
               >
-                Save
+                {isSubmitting ? "Saving..." : "Save"}
               </Button>
             </form>
           </div>
@@ -883,10 +901,7 @@ const Project = () => {
     case 3:
       pageContent = (
         <div>
-          <PageNav
-            position="CEO"
-            title="Participant Information"
-          />
+          <PageNav position="CEO" title="Participant Information" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label className="text-3xl font-semibold">User Details</label>
@@ -1285,7 +1300,7 @@ const Project = () => {
     case 5:
       pageContent = (
         <div>
-          <PageNav  position="CEO" title="Review Users" />
+          <PageNav position="CEO" title="Review Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label className="text-3xl font-semibold">Review Users</label>
