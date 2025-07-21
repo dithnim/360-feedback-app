@@ -390,7 +390,7 @@ const Project = () => {
     case 1:
       pageContent = (
         <div>
-          <PageNav name="Jese Leos" position="CEO" title="Create New Company" />
+          <PageNav position="CEO" title="Create New Company" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             {isSubmitting && (
               <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
@@ -593,7 +593,7 @@ const Project = () => {
     case 2:
       pageContent = (
         <div className="min-h-screen bg-white">
-          <PageNav name="Jese Leos" position="CEO" title="Create New Project" />
+          <PageNav position="CEO" title="Create New Project" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <label className="text-2xl sm:text-3xl font-semibold">
@@ -884,7 +884,6 @@ const Project = () => {
       pageContent = (
         <div>
           <PageNav
-            name="Jese Leos"
             position="CEO"
             title="Participant Information"
           />
@@ -1138,7 +1137,7 @@ const Project = () => {
     case 4:
       pageContent = (
         <div>
-          <PageNav name="Jese Leos" position="CEO" title="All Users" />
+          <PageNav position="CEO" title="All Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label className="text-3xl font-semibold">Participants</label>
@@ -1286,7 +1285,7 @@ const Project = () => {
     case 5:
       pageContent = (
         <div>
-          <PageNav name="Jese Leos" position="CEO" title="Review Users" />
+          <PageNav  position="CEO" title="Review Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
             <div className="flex justify-between items-center mb-10">
               <label className="text-3xl font-semibold">Review Users</label>

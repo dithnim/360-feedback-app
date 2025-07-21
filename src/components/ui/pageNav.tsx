@@ -12,12 +12,11 @@ import team from "../../../imgs/team.png";
 import homeVector from "../../../imgs/Home-Vector.png";
 
 type PageNavProps = {
-  name: string;
   position: string;
   title: string;
 };
 
-const pageNav: React.FC<PageNavProps> = ({ name, position, title }) => {
+const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
   const { user } = useUser();
   const { isSidebarExpanded, toggleSidebar } = useSidebar();
   const navigate = useNavigate();

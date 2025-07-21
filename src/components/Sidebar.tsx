@@ -34,6 +34,10 @@ const Sidebar = () => {
     navigate("/");
   };
 
+  const navigateToCreateTeam = () => {
+    navigate("/create-team");
+  };
+
   const menuItems: (MenuItem & { onClick?: () => void })[] = [
     { icon: business, label: "Business", onClick: () => navigate("/business") },
     { icon: company, label: "Company", onClick: navigateToCompany },
@@ -84,7 +88,7 @@ const Sidebar = () => {
       label: "Teams",
       htmlFor: "org",
       children: [
-        { label: "Create New Team", onClick: undefined },
+        { label: "Create New Team", onClick: navigateToCreateTeam },
         { label: "View All Teams", onClick: undefined },
       ],
       className: "",
