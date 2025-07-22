@@ -1111,7 +1111,7 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={3} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1224,7 +1224,7 @@ const FeedbackReport: React.FC = () => {
               </table>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={4} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1305,7 +1305,7 @@ const FeedbackReport: React.FC = () => {
               </div>
             </ReportHeader>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={5} isEditing={isEditMode} />
             </div>
           </div>
         ))}
@@ -1387,7 +1387,7 @@ const FeedbackReport: React.FC = () => {
               />
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={6} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1426,7 +1426,7 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={7} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1465,7 +1465,7 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={8} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1503,7 +1503,7 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={9} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1543,7 +1543,7 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={2} />
+              <Footer org="TalentBoozt" pageNo={10} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1623,7 +1623,7 @@ const FeedbackReport: React.FC = () => {
               </ul>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={11} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1752,7 +1752,7 @@ const FeedbackReport: React.FC = () => {
               </ul>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={12} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1985,7 +1985,7 @@ const FeedbackReport: React.FC = () => {
               </tbody>
             </table>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={13} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -2207,7 +2207,7 @@ const FeedbackReport: React.FC = () => {
               </tbody>
             </table>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={14} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -2431,7 +2431,7 @@ const FeedbackReport: React.FC = () => {
               </tbody>
             </table>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={15} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -2653,7 +2653,7 @@ const FeedbackReport: React.FC = () => {
               </tbody>
             </table>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={16} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -2876,7 +2876,7 @@ const FeedbackReport: React.FC = () => {
               </tbody>
             </table>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={17} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -2954,7 +2954,7 @@ const FeedbackReport: React.FC = () => {
               </ul>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={18} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -2999,7 +2999,7 @@ const FeedbackReport: React.FC = () => {
               </li>
             </ul>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={19} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
