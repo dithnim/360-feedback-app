@@ -2,6 +2,7 @@ import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiGet } from "../lib/apiService";
+import { useState, useCallback, useEffect } from "react";
 
 const getParticipants = async (orgId: string) => {
   const response = await apiGet(`/user/company/${orgId}`);
@@ -12,17 +13,46 @@ const getParticipants = async (orgId: string) => {
   throw new Error("Invalid response from API");
 };
 
-const participants = [
-  {
-    name: "Test Participant",
-    role: "Senior Web Developer",
-  },
-];
+interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  designation: string;
+  appraiser: boolean;
+  role: string;
+  comanyId: string;
+  createdAt: string;
+}
 
 export default function ParticipantsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const org = location.state?.org;
+
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchParticipants = useCallback(async () => {
+    if (!org?.id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getParticipants(org.id);
+      setParticipants(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError("Failed to fetch participants");
+      setParticipants([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [org?.id]);
+
+  useEffect(() => {
+    if (org?.id) {
+      fetchParticipants();
+    }
+  }, [org?.id, fetchParticipants]);
 
   const navigateToViewProject = () => {
     navigate(`/view-project`);
@@ -52,10 +82,12 @@ export default function ParticipantsPage() {
               </button>
             </div>
           </div>
+          {loading && <div>Loading participants...</div>}
+          {error && <div className="text-red-500">{error}</div>}
           <div className="space-y-4">
             {participants.map((p, i) => (
               <div
-                key={i}
+                key={p.id || i}
                 className="flex items-center   p-4 border-b border-gray-300/50"
               >
                 <div className="w-12 h-12 rounded-full bg-[#E0E0E0] flex items-center justify-center mr-3">

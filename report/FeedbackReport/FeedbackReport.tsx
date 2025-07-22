@@ -1074,7 +1074,7 @@ const FeedbackReport: React.FC = () => {
             </div>
 
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={2} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
@@ -1543,7 +1543,7 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer />
+              <Footer org="TalentBoozt" pageNo={2} />
             </div>
           </ReportHeader>
         </div>
