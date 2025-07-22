@@ -40,7 +40,7 @@ function Home() {
 
   // Handler for viewing an organization
   const handleViewOrganization = (org: any) => {
-    navigate("/current-projects");
+    navigate("/current-projects", { state: { org } });
   };
 
   // Handler for creating a new organization

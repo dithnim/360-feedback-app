@@ -1,6 +1,16 @@
 import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { apiGet } from "../lib/apiService";
+
+const getParticipants = async (orgId: string) => {
+  const response = await apiGet(`/user/company/${orgId}`);
+  if (response && typeof response === "object" && "data" in response) {
+    // Optionally, add more type checks here if needed
+    return (response as { data: unknown }).data;
+  }
+  throw new Error("Invalid response from API");
+};
 
 const participants = [
   {
@@ -11,6 +21,8 @@ const participants = [
 
 export default function ParticipantsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const org = location.state?.org;
 
   const navigateToViewProject = () => {
     navigate(`/view-project`);
@@ -21,7 +33,7 @@ export default function ParticipantsPage() {
       <div className="flex-1 flex flex-col">
         <PageNav position="CEO" title="Current Projects" />
         <main className="p-8">
-          <h2 className="text-3xl font-semibold mb-6">Nestle</h2>
+          <h2 className="text-3xl font-semibold mb-6">{org?.name || ""}</h2>
           <div className="mb-4">
             <h3 className="font-medium text-xl mb-2">Participants</h3>
             <div className="flex items-center gap-2 mt-2 justify-between pe-2">
