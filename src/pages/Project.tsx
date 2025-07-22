@@ -1,6 +1,5 @@
 import { Button } from "../components/ui/Button";
 import { apiPost } from "../lib/apiService";
-import type { Company } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback, useEffect } from "react";

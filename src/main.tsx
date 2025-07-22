@@ -21,6 +21,7 @@ import CurrentProjects from "./pages/currentProjects.tsx";
 import { UserProvider, useUser } from "./context/UserContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import Loader from "./components/ui/loader";
+import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -123,6 +124,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CurrentProjects />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/view-project"
+        element={
+          <ProtectedRoute>
+            <PreviewCurrentProject />
           </ProtectedRoute>
         }
       />

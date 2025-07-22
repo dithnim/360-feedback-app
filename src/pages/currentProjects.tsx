@@ -1,32 +1,42 @@
 import PageNav from "../components/ui/pageNav";
-import { Avatar } from "../components/ui/Avatar";
 import { Button } from "../components/ui/Button";
+import { useNavigate } from "react-router-dom";
 
 const participants = [
   {
-    name: "Thejani Jayawickrama",
+    name: "Test Participant",
     role: "Senior Web Developer",
-    // ...other fields
   },
-  // ...repeat for demo
 ];
 
 export default function ParticipantsPage() {
+  const navigate = useNavigate();
+
+  const navigateToViewProject = () => {
+    navigate(`/view-project`);
+  };
+
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
-        <PageNav name="Jese Leos" position="CEO" title="Current Projects" />
+        <PageNav position="CEO" title="Current Projects" />
         <main className="p-8">
-          <h2 className="text-2xl font-semibold mb-2">Nestle</h2>
+          <h2 className="text-3xl font-semibold mb-6">Nestle</h2>
           <div className="mb-4">
-            <h3 className="font-medium">Participants</h3>
-            <div className="flex items-center gap-2 mt-2">
-              <input type="checkbox" id="download-all" />
-              <label htmlFor="download-all" className="text-sm">
-                Download All Reports
-              </label>
-              <button className="ml-2 text-red-500">
-                {/* Download icon here */}
+            <h3 className="font-medium text-xl mb-2">Participants</h3>
+            <div className="flex items-center gap-2 mt-2 justify-between pe-2">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="download-all"
+                  className="accent-[#A10000]"
+                />
+                <label htmlFor="download-all" className="text-sm ms-2">
+                  Download All Reports
+                </label>
+              </div>
+              <button className=" text-[#A10000]">
+                <i className="bx bx-arrow-in-down-square-half text-2xl"></i>
               </button>
             </div>
           </div>
@@ -34,17 +44,31 @@ export default function ParticipantsPage() {
             {participants.map((p, i) => (
               <div
                 key={i}
-                className="flex items-center bg-white rounded-lg shadow p-4"
+                className="flex items-center   p-4 border-b border-gray-300/50"
               >
-                <Avatar />
+                <div className="w-12 h-12 rounded-full bg-[#E0E0E0] flex items-center justify-center mr-3">
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle cx="12" cy="8" r="4" fill="#C4C4C4" />
+                    <ellipse cx="12" cy="17" rx="7" ry="4" fill="#C4C4C4" />
+                  </svg>
+                </div>
                 <div className="ml-4 flex-1">
                   <div className="font-semibold">{p.name}</div>
                   <div className="text-xs text-gray-500">{p.role}</div>
                 </div>
-                <Button className="border border-red-400 text-red-400 hover:bg-red-50 mr-4">
+                <Button
+                  className="border border-[#ee3f40] text-[#ee3f40] hover:bg-[#ee3f40] hover:text-white mr-4 rounded-full cursor-pointer"
+                  onClick={navigateToViewProject}
+                >
                   Preview Report
                 </Button>
-                <input type="checkbox" />
+                <input type="checkbox" className="accent-[#A10000]" />
               </div>
             ))}
           </div>
