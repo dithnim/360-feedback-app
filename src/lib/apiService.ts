@@ -91,3 +91,26 @@ export interface Company {
 export async function getCompanies(): Promise<Company[]> {
   return apiGet<Company[]>("/company");
 }
+
+// Create a new competency
+export async function createCompetency(competency: string) {
+  return apiPost<{ id: string; competency: string }>("/competency", {
+    competency,
+  });
+}
+
+// Create a new question for a competency
+export async function createQuestion(data: {
+  competencyId: string;
+  question: string;
+  optionType: string;
+  options: string[];
+}) {
+  return apiPost<{
+    id: string;
+    competencyId: string;
+    question: string;
+    optionType: string;
+    options: string[];
+  }>("/question", data);
+}
