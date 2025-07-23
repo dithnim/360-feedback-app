@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
+import { createCompetency, createQuestion } from "../lib/apiService";
+import { useNavigate } from "react-router-dom";
 
 const defaultOptions = [
   "Strongly Agree",
@@ -24,12 +26,20 @@ const SurvayScratch = () => {
   // New state to track if editing preview
   const [isEditingPreview, setIsEditingPreview] = useState(false);
 
-  const [templatePreview, setTemplatePreview] = useState({
-    templateName: "",
-    competency: "",
-    description: "",
-    questions: [] as Question[],
-  });
+  // New: array of competencies
+  const [templatePreviews, setTemplatePreviews] = useState<
+    {
+      templateName: string;
+      competency: string;
+      description: string;
+      questions: Question[];
+    }[]
+  >([]);
+  // Track which competency is being edited (index), or null
+  const [editPreviewIndex, setEditPreviewIndex] = useState<number | null>(null);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleQuestionAdd = () => {
     if (input.trim() === "") return;
@@ -42,17 +52,28 @@ const SurvayScratch = () => {
 
   const handleAdd = () => {
     if (!competency.trim()) return;
-    // If no questions, don't add
     if (questions.length === 0) return;
 
-    setTemplatePreview({
+    const newCompetency = {
       templateName,
       competency,
       description,
       questions: [...questions],
-    });
-    setIsEditingPreview(false);
+    };
 
+    if (editPreviewIndex !== null) {
+      // Update existing
+      setTemplatePreviews((prev) =>
+        prev.map((item, idx) =>
+          idx === editPreviewIndex ? newCompetency : item
+        )
+      );
+      setEditPreviewIndex(null);
+    } else {
+      // Add new
+      setTemplatePreviews((prev) => [...prev, newCompetency]);
+    }
+    setIsEditingPreview(false);
     setTemplateName("");
     setCompetency("");
     setDescription("");
@@ -117,28 +138,41 @@ const SurvayScratch = () => {
     competency,
     description,
     questions,
+    onEdit,
+    onDelete,
   }: {
     competency: string;
     description: string;
     questions: Question[];
+    onEdit: () => void;
+    onDelete: () => void;
   }) => (
     <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center justify-between gap-2 mb-2">
         <span className="font-semibold">{competency || "Competency"}</span>
-        <button
-          className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center"
-          style={{ width: 32, height: 32 }}
-          onClick={() => {
-            setTemplateName(templatePreview.templateName);
-            setCompetency(competency);
-            setDescription(description);
-            setQuestions(questions);
-            setIsEditingPreview(true);
-          }}
-          title="Edit"
-        >
-          <span style={{ fontSize: 16 }}>✎</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            className="bg-[#EE3E41] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center cursor-pointer"
+            style={{ width: 32, height: 32 }}
+            onClick={onEdit}
+            title="Edit"
+          >
+            <span style={{ fontSize: 16 }}>✎</span>
+          </button>
+          <button
+            className="bg-[#ef3e40] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center ml-1  cursor-pointer"
+            style={{ width: 32, height: 32 }}
+            onClick={onDelete}
+            title="Delete"
+          >
+            <span
+              style={{ fontSize: 16 }}
+              className="flex justify-center items-center"
+            >
+              <i className="bxr  bx-trash text-xl flex items-center justify-center"></i>{" "}
+            </span>
+          </button>
+        </div>
       </div>
       <div className="mb-2 text-sm font-medium text-black">
         {description || <span className="text-gray-400">No description</span>}
@@ -153,13 +187,41 @@ const SurvayScratch = () => {
     </div>
   );
 
+  const handleSaveTemplate = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      for (const comp of templatePreviews) {
+        // 1. Create competency
+        const compRes = await createCompetency(comp.competency);
+        const competencyId = compRes.id;
+        // 2. Create questions
+        for (const q of comp.questions) {
+          await createQuestion({
+            competencyId,
+            question: q.text,
+            optionType: "string", // Adjust if needed
+            options: q.options,
+          });
+        }
+      }
+      alert("Template saved successfully!");
+    } catch (err: any) {
+      setSaveError(err.message || "Failed to save template");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const navigate = useNavigate();
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen">
       {/* Navbar */}
-      <PageNav position="HR Manager" title="Create Template" />
+      <PageNav position="HR Manager" title="Create From Scratch" />
 
       {/* Main Content Area */}
-      <main className="flex flex-col py-6 px-2 sm:px-6 md:px-12 lg:px-24 xl:px-36 2xl:px-64 overflow-y-auto bg-white w-full">
+      <main className="flex flex-col py-6 pt-12 px-2 sm:px-6 md:px-12 lg:px-24 xl:px-36 2xl:px-64 overflow-y-auto bg-white w-full">
         <div className=" flex flex-col rounded-lg w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 mb-6 w-full">
             <div className="w-full">
@@ -358,14 +420,36 @@ const SurvayScratch = () => {
 
           {/* Preview Section */}
           <div className="mt-12 border-t border-gray-300/50 pt-8">
-            {templatePreview.questions.length > 0 && (
+            {templatePreviews.length > 0 && (
               <div>
-                {templatePreview.questions.map((q) => (
+                {templatePreviews.map((item, idx) => (
                   <PreviewCompetency
-                    key={q.id}
-                    competency={templatePreview.competency}
-                    description={templatePreview.description}
-                    questions={[q]}
+                    key={idx}
+                    competency={item.competency}
+                    description={item.description}
+                    questions={item.questions}
+                    onEdit={() => {
+                      setTemplateName(item.templateName);
+                      setCompetency(item.competency);
+                      setDescription(item.description);
+                      setQuestions(item.questions);
+                      setIsEditingPreview(true);
+                      setEditPreviewIndex(idx);
+                    }}
+                    onDelete={() => {
+                      setTemplatePreviews((prev) =>
+                        prev.filter((_, i) => i !== idx)
+                      );
+                      // If deleting the one being edited, reset edit state
+                      if (editPreviewIndex === idx) {
+                        setEditPreviewIndex(null);
+                        setIsEditingPreview(false);
+                        setTemplateName("");
+                        setCompetency("");
+                        setDescription("");
+                        setQuestions([]);
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -374,29 +458,47 @@ const SurvayScratch = () => {
         </div>
 
         {/* Example CompetencySection below, not changed */}
-        <CompetencySection
-          title={templatePreview.competency || "Competency"}
-          questions={templatePreview.questions.map((q) => ({
-            id: q.id.toString(),
-            text: q.text,
-          }))}
-          commentLabel="Additional Comments"
-        />
+        {templatePreviews.map((item, idx) => (
+          <div key={idx}>
+            <CompetencySection
+              title={item.competency}
+              questions={item.questions.map((q) => ({
+                id: q.id.toString(),
+                text: q.text,
+              }))}
+              commentLabel="Additional Comments"
+            />
+            <div className="flex justify-center mt-4">
+              <Button
+                className="bg-[#008235] text-white font-semibold px-6 py-2 rounded cursor-pointer"
+                onClick={() => {}}
+              >
+                NEXT
+              </Button>
+            </div>
+          </div>
+        ))}
 
         <div className="flex flex-col sm:flex-row items-center mt-8 gap-2">
           <Button
             variant="edit"
             className="bg-[#8B1C13] font-medium text-md w-full sm:w-auto"
+            onClick={handleSaveTemplate}
+            disabled={isSaving}
           >
-            Save Template
+            {isSaving ? "Saving..." : "Save Survey"}
           </Button>
           <Button
             className="bg-transparent border border-[#ed3f41] text-[#ed3f41] font-semibold px-2 py-1 rounded-lg text-md w-full sm:w-auto"
             variant="next"
+            onClick={() =>
+              navigate("/survey-preview", { state: { templatePreviews } })
+            }
           >
             Preview
           </Button>
         </div>
+        {saveError && <div className="text-red-600 mt-2">{saveError}</div>}
       </main>
     </div>
   );
