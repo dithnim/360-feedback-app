@@ -22,6 +22,7 @@ import { UserProvider, useUser } from "./context/UserContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import Loader from "./components/ui/loader";
 import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
+import SurveyPreview from "./pages/SurveyPreview";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -132,6 +133,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PreviewCurrentProject />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/survey-preview"
+        element={
+          <ProtectedRoute>
+            <SurveyPreview />
           </ProtectedRoute>
         }
       />
