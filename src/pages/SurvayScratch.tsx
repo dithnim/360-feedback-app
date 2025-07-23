@@ -21,6 +21,9 @@ const SurvayScratch = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
 
+  // New state to track if editing preview
+  const [isEditingPreview, setIsEditingPreview] = useState(false);
+
   const [templatePreview, setTemplatePreview] = useState({
     templateName: "",
     competency: "",
@@ -42,13 +45,13 @@ const SurvayScratch = () => {
     // If no questions, don't add
     if (questions.length === 0) return;
 
-    setTemplatePreview((prev) => ({
-      ...prev,
+    setTemplatePreview({
       templateName,
       competency,
       description,
-      questions: [...prev.questions, ...questions],
-    }));
+      questions: [...questions],
+    });
+    setIsEditingPreview(false);
 
     setTemplateName("");
     setCompetency("");
@@ -130,6 +133,7 @@ const SurvayScratch = () => {
             setCompetency(competency);
             setDescription(description);
             setQuestions(questions);
+            setIsEditingPreview(true);
           }}
           title="Edit"
         >
