@@ -152,7 +152,7 @@ const SurvayScratch = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Navbar */}
-      <PageNav name="John Doe" position="HR Manager" title="Create Template" />
+      <PageNav position="HR Manager" title="Create Template" />
 
       {/* Main Content Area */}
       <main className="flex flex-col py-6 px-2 sm:px-6 md:px-12 lg:px-24 xl:px-36 2xl:px-64 overflow-y-auto bg-white w-full">
@@ -353,8 +353,7 @@ const SurvayScratch = () => {
           </div>
 
           {/* Preview Section */}
-          <div className="mt-12 border-t pt-8">
-            <h2 className="text-xl font-bold mb-4">Preview</h2>
+          <div className="mt-12 border-t border-gray-300/50 pt-8">
             {templatePreview.questions.length > 0 && (
               <div>
                 {templatePreview.questions.map((q) => (
