@@ -16,6 +16,7 @@ import ViewTeam from "./pages/ViewTeam.tsx";
 import SurvayScratch from "./pages/SurvayScratch.tsx";
 import CreateTeam from "./pages/CreateTeam.tsx";
 import FeedbackReport from "../report/FeedbackReport/FeedbackReport.tsx";
+import FeedbackReport2 from "../report/FeedbackReport/FeedbackReport2.tsx";
 import Login from "./pages/login.tsx";
 import CurrentProjects from "./pages/currentProjects.tsx";
 import { UserProvider, useUser } from "./context/UserContext";
@@ -118,6 +119,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <FeedbackReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/feedback-report2"
+        element={
+          <ProtectedRoute>
+            <FeedbackReport2 />
           </ProtectedRoute>
         }
       />
