@@ -261,7 +261,6 @@ const Project = () => {
         endDate: endDateISO,
         createdBy: createdBy,
       };
-      localStorage.setItem("Project", JSON.stringify(payload));
       // Post to backend
       try {
         const response = await apiPost<any>(
@@ -270,6 +269,7 @@ const Project = () => {
           token ? { Authorization: `Bearer ${token}` } : {}
         );
         console.log("RAW API response:", response);
+        localStorage.setItem("Project", JSON.stringify(response));
       } catch (error) {
         console.error("Error posting project data:", error);
       }
@@ -322,13 +322,8 @@ const Project = () => {
   );
 
   // Handler function for user creation
-  const handlerUserCreation = async (data: {
-    name: string;
-    email: string;
-    designation: string;
-    appraiser: number;
-    role: string;
-  }) => {
+  // Batch handler for user creation
+  const handlerUserCreation = async (userList: any[]) => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token") || "";
@@ -350,24 +345,23 @@ const Project = () => {
           }
         }
       }
-
-      const payload = {
-        name: data.name,
+      // Map users to backend DTO
+      const payload = userList.map((data) => ({
+        name: data.participantName || data.name,
         email: data.email,
         designation: data.designation,
-        appraiser: data.appraiser,
+        appraiser: data.appraisee === "Appraiser" ? true : false, // boolean: true if Appraiser, false otherwise
         role: data.role,
         companyId: companyId,
-      };
+      }));
       const response = await apiPost<any>(
-        "/company/user",
+        "/company/user/set",
         payload,
         token ? { Authorization: `Bearer ${token}` } : {}
       );
       console.log("RAW API response:", response);
     } catch (error) {
-      console.error("Error creating user:", error);
-      // Optionally show error message to user
+      console.error("Error creating users:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -383,7 +377,7 @@ const Project = () => {
     name: string;
     email: string;
     designation: string;
-    appraiser: number;
+    appraiser: boolean;
     role: string;
     companyId: string;
   }>();
@@ -1315,15 +1309,13 @@ const Project = () => {
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={() => {
+                  onClick={async () => {
                     setIsSubmitting(true);
                     const data = localStorage.getItem("Participants");
                     try {
                       if (data) {
                         const parsedData = JSON.parse(data);
-                        parsedData.forEach((participant: any) => {
-                          handlerUserCreation(participant);
-                        });
+                        await handlerUserCreation(parsedData);
                       }
                     } catch (error) {
                       console.error("Error creating users:", error);

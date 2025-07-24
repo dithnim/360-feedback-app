@@ -38,7 +38,7 @@ const CreateTeam = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Navbar */}
-      <PageNav name="John Doe" position="HR Manager" title="All Users" />
+      <PageNav position="HR Manager" title="All Users" />
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto bg-white">
