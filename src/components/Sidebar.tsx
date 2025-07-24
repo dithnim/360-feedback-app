@@ -38,7 +38,7 @@ const Sidebar = () => {
     navigate("/create-team");
   };
 
-  const navitageToViewTeam = () => {
+  const navigateToViewTeam = () => {
     navigate("/view-team");
   };
 
@@ -93,7 +93,7 @@ const Sidebar = () => {
       htmlFor: "org",
       children: [
         { label: "Create New Team", onClick: navigateToCreateTeam },
-        { label: "View All Teams", onClick: navitageToViewTeam },
+        { label: "View All Teams", onClick: navigateToViewTeam },
       ],
       className: "",
     },
