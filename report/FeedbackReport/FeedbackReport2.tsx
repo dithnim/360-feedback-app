@@ -17,7 +17,7 @@ import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore
 import { openEndedFeedbackDataStore } from "../utils/data/store/openEndedFeedbackDataStore";
 
 import coverLogo from "../imgs/templates/Dash.png";
-import CompanyImage from "../imgs/templates/cover_1.png";
+import CompanyImage from "../imgs/templates/cover_2.png";
 
 // Types and interfaces
 interface EditState {
@@ -925,18 +925,26 @@ const FeedbackReport: React.FC = () => {
             )}
           </div>
 
-          <h1 className="title">
-            360-Degree <br /> Feedback <br /> Report
-          </h1>
-          <p className="para__light">Confidential Report</p>
+          <div className="flex px-20">
+            <div className="flex flex-col">
+              <h1 className="title mb-2">
+                360-Degree <br /> Feedback <br /> Report
+              </h1>
+              <p className="para__light">Confidential Report</p>
+            </div>
+          </div>
 
-          <p className="para__sm">
-            This report is confidential and should not be distributed without
-            permission.
-          </p>
-          <p className="para__dark">
-            DAASH Consultancy & Training Online Assessments © 2025
-          </p>
+          <div className="flex flex-col  w-full justify-end">
+            <div className="flex flex-col bg-red-500">
+              <p className="para__sm">
+                This report is confidential and should not be distributed
+                without permission.
+              </p>
+              <p className="para__dark">
+                DAASH Consultancy & Training Online Assessments © 2025
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Table of Contents */}
