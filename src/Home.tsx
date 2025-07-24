@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "./context/UserContext";
 import { useSidebar } from "./context/SidebarContext";
 
-import { getCompanies } from "./lib/apiService";
+import { getCompanies, deleteOrganization } from "./lib/apiService";
 import Loader from "./components/ui/loader";
 
 function Home() {
@@ -46,6 +46,26 @@ function Home() {
   // Handler for creating a new organization
   const handleCreateOrganization = () => {
     navigate("/project");
+  };
+
+  const deleteOrganizationHandler = async (org: any) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the organization '${org.name}'? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await deleteOrganization(org.id);
+      setOrganizations((prev) => prev.filter((o) => o.id !== org.id));
+    } catch (error) {
+      console.error("Failed to delete organization:", error);
+      alert("Failed to delete organization. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,6 +111,7 @@ function Home() {
                     backgroundSize: "cover",
                     backgroundPosition: "50% 50%",
                   }}
+                  onClick={() => handleViewOrganization(org)}
                 >
                   {/* Dark overlay */}
                   <div className="absolute inset-0 bg-black opacity-40 rounded-[10px]"></div>
@@ -114,10 +135,10 @@ function Home() {
                     </div>
 
                     <label
-                      className="font-['Poppins',Helvetica] font-semibold text-black text-[15px] p-0 cursor-pointer"
-                      onClick={() => handleViewOrganization(org)}
+                      className="font-['Poppins',Helvetica] font-semibold text-[#ed3f41] p-0 cursor-pointer flex items-center justify-center"
+                      onClick={() => deleteOrganizationHandler(org)}
                     >
-                      View
+                      Delete
                     </label>
                   </CardFooter>
                 </Card>
