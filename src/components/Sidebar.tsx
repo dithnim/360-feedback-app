@@ -38,6 +38,10 @@ const Sidebar = () => {
     navigate("/create-team");
   };
 
+  const navitageToViewTeam = () => {
+    navigate("/view-team");
+  };
+
   const menuItems: (MenuItem & { onClick?: () => void })[] = [
     { icon: business, label: "Business", onClick: () => navigate("/business") },
     { icon: company, label: "Company", onClick: navigateToCompany },
@@ -46,7 +50,7 @@ const Sidebar = () => {
       label: "Checklist",
       onClick: () => navigate("/create-template"),
     },
-    { icon: team, label: "Team", onClick: () => navigate("/team") },
+    { icon: team, label: "Team", onClick: () => navigate("/create-team") },
     { icon: resource, label: "Resource", onClick: () => navigate("/resource") },
     { icon: insights, label: "Insights", onClick: () => navigate("/insights") },
   ];
@@ -89,7 +93,7 @@ const Sidebar = () => {
       htmlFor: "org",
       children: [
         { label: "Create New Team", onClick: navigateToCreateTeam },
-        { label: "View All Teams", onClick: undefined },
+        { label: "View All Teams", onClick: navitageToViewTeam },
       ],
       className: "",
     },
