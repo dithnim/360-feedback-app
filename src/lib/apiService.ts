@@ -31,7 +31,7 @@ export async function apiPost<T>(
   endpoint: string,
   data: any,
   headers: Record<string, string> = {}
-): Promise<T> {
+): Promise<T | string> {
   const token = localStorage.getItem("token");
   const mergedHeaders = {
     "Content-Type": "application/json",
@@ -51,7 +51,12 @@ export async function apiPost<T>(
     }
     throw new Error(`POST ${endpoint} failed: ${response.status}`);
   }
-  return response.json();
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return response.json();
+  } else {
+    return response.text();
+  }
 }
 
 export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
@@ -74,6 +79,22 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
   });
   if (!response.ok) {
     throw new Error(`DELETE ${endpoint} failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+// Delete a company/organization by ID
+export async function deleteOrganization(companyId: string): Promise<any> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+  const response = await fetch(`${BASE_URL}/company/${companyId}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!response.ok) {
+    throw new Error(`DELETE /company/${companyId} failed: ${response.status}`);
   }
   return response.json();
 }

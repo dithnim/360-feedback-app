@@ -113,6 +113,7 @@ const CreateTeam = () => {
                       type="checkbox"
                       checked={selectedPermissions.includes(idx)}
                       onChange={() => handlePermissionChange(idx)}
+                      className="accent-[#ed3f41]"
                     />
                     {perm}
                   </label>
