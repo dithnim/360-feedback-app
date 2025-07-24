@@ -20,14 +20,13 @@ const SurveyPreview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] flex flex-row">
-      <Sidebar />
+    <div className="min-h-screen flex flex-row">
       <div className="flex-1 flex flex-col min-h-screen">
         <PageNav position="HR Manager" title="Preview Survey" />
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col items-center py-8">
-          <div className="w-full ps-40 bg-white rounded-xl shadow p-8">
+          <div className="w-full  bg-white rounded-xl  p-8">
             {/* Competency Header */}
             <div className="rounded-t-lg bg-green-700 px-6 py-4">
               <div className="text-white font-bold text-lg">

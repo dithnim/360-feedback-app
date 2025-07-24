@@ -23,6 +23,7 @@ import { SidebarProvider } from "./context/SidebarContext";
 import Loader from "./components/ui/loader";
 import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
 import SurveyPreview from "./pages/SurveyPreview";
+import CreateFromTemplate from "./pages/CreateFromTemplate";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -141,6 +142,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <SurveyPreview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-from-template"
+        element={
+          <ProtectedRoute>
+            <CreateFromTemplate />
           </ProtectedRoute>
         }
       />
