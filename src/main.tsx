@@ -153,6 +153,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/view-team"
+        element={
+          <ProtectedRoute>
+            <ViewTeam />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
