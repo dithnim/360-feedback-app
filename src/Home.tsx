@@ -7,8 +7,7 @@ import { PlusIcon, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-//?User Context
-import { useUser } from "./context/UserContext";
+//?Sidebar Context
 import { useSidebar } from "./context/SidebarContext";
 
 import { getCompanies, deleteOrganization } from "./lib/apiService";
@@ -17,17 +16,19 @@ import Loader from "./components/ui/loader";
 function Home() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { user } = useUser();
   const { isSidebarExpanded, setSidebarExpanded } = useSidebar();
 
   useEffect(() => {
     async function fetchOrganizations() {
       try {
+        setError(null);
         const data = await getCompanies();
         setOrganizations(data);
       } catch (error) {
         console.error("Failed to fetch organizations:", error);
+        setError("Failed to load organizations. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -99,6 +100,18 @@ function Home() {
           {loading ? (
             <div className="flex justify-center items-center h-[calc(100vh-370px)]">
               <Loader text="Loading..." />
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-[calc(100vh-370px)]">
+              <div className="text-center">
+                <p className="text-red-500 text-lg mb-4">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-[#ed3f41] text-white px-4 py-2 rounded hover:bg-[#d23539]"
+                >
+                  Retry
+                </button>
+              </div>
             </div>
           ) : (
             <div className="w-full grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-370px)]">
