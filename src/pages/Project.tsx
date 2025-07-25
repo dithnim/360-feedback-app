@@ -606,7 +606,6 @@ const Project = () => {
                       console.error("Error creating users:", error);
                     } finally {
                       setIsSubmitting(false);
-                      handleFinish();
                     }
                     handleNext();
                   }}
