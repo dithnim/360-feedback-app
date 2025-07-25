@@ -25,6 +25,7 @@ import Loader from "./components/ui/loader";
 import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
 import SurveyPreview from "./pages/SurveyPreview";
 import CreateFromTemplate from "./pages/CreateFromTemplate";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -162,26 +163,20 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/view-team"
-        element={
-          <ProtectedRoute>
-            <ViewTeam />
-          </ProtectedRoute>
-        }
-      />
     </Routes>
   );
 }
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <UserProvider>
-      <SidebarProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </SidebarProvider>
-    </UserProvider>
+    <ErrorBoundary>
+      <UserProvider>
+        <SidebarProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </SidebarProvider>
+      </UserProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
