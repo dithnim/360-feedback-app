@@ -20,9 +20,9 @@ const Login: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      window.location.href = "/";
+      navigate("/", { replace: true });
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Show loading while checking authentication
   if (isLoading) {

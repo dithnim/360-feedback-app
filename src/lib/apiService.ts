@@ -60,24 +60,42 @@ export async function apiPost<T>(
 }
 
 export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(data),
   });
+
   if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
     throw new Error(`PUT ${endpoint} failed: ${response.status}`);
   }
   return response.json();
 }
 
 export async function apiDelete<T>(endpoint: string): Promise<T> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: "DELETE",
+    headers,
   });
+
   if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
     throw new Error(`DELETE ${endpoint} failed: ${response.status}`);
   }
   return response.json();

@@ -9,9 +9,9 @@ export function cn(...inputs: ClassValue[]) {
 // Utility function to check if a token is expired
 export const isTokenExpired = (token: string): boolean => {
   try {
-    const decoded = jwtDecode(token);
+    const decoded = jwtDecode<{ exp?: number }>(token);
     const currentTime = Date.now() / 1000;
-    return (decoded as any).exp ? (decoded as any).exp < currentTime : false;
+    return decoded.exp ? decoded.exp < currentTime : true;
   } catch (error) {
     console.error("Error decoding token:", error);
     return true; // Consider invalid tokens as expired
@@ -21,8 +21,8 @@ export const isTokenExpired = (token: string): boolean => {
 // Utility function to get token expiration time
 export const getTokenExpiration = (token: string): number | null => {
   try {
-    const decoded = jwtDecode(token);
-    return (decoded as any).exp || null;
+    const decoded = jwtDecode<{ exp?: number }>(token);
+    return decoded.exp || null;
   } catch (error) {
     console.error("Error decoding token:", error);
     return null;
@@ -38,13 +38,21 @@ export const clearAuthData = () => {
 // Utility function to get user data from token
 export const getUserFromToken = (token: string) => {
   try {
-    const decoded = jwtDecode(token);
+    interface DecodedToken {
+      id?: string;
+      sub?: string;
+      email?: string;
+      exp?: number;
+      role?: string;
+    }
+
+    const decoded = jwtDecode<DecodedToken>(token);
     const userData = {
-      id: (decoded as any).id,
-      name: (decoded as any).sub,
-      email: (decoded as any).email,
-      exp: (decoded as any).exp,
-      role: (decoded as any).role,
+      id: decoded.id || "",
+      name: decoded.sub || "",
+      email: decoded.email || "",
+      exp: decoded.exp,
+      role: decoded.role || "",
     };
     return userData;
   } catch (error) {

@@ -3,7 +3,7 @@ import { apiPost } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { data, useNavigate } from "react-router-dom";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
 
@@ -111,10 +111,12 @@ const Project = () => {
           setUsers(transformedUsers);
         } catch (error) {
           console.error("Error parsing participants from localStorage:", error);
+          // Reset to empty array on parse error
+          setUsers([]);
         }
       }
     }
-  }, [pageCase, users.length]);
+  }, [pageCase]); // Remove users.length dependency to prevent infinite re-renders
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<
     "Appraisee" | "Appraiser" | "All"
@@ -298,27 +300,25 @@ const Project = () => {
         participantName: "",
         email: "",
         designation: "",
-        appraisee: "",
-        role: "",
       });
     },
     [editIndex, resetInfo]
   );
 
-  const debounce = (func: Function, delay: number) => {
+  const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: ReturnType<typeof setTimeout>;
     return (...args: any[]) => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => func(...args), delay);
     };
-  };
+  }, []);
 
   const handleSearchChange = useMemo(
     () =>
       debounce((value: string) => {
         setSearchTerm(value);
       }, 300),
-    []
+    [debounce]
   );
 
   // Handler function for user creation
@@ -367,25 +367,7 @@ const Project = () => {
     }
   };
 
-  // Add a new form state for user creation
-  const {
-    register: registerUser,
-    handleSubmit: handleSubmitUser,
-    formState: { errors: errorsUser },
-    reset: resetUser,
-  } = useForm<{
-    name: string;
-    email: string;
-    designation: string;
-    appraiser: boolean;
-    role: string;
-    companyId: string;
-  }>();
-
-  // Add navigation to user creation step from the last step (case 5)
-  const handleGoToUserCreation = useCallback(() => {
-    setPageCase(6);
-  }, []);
+  // Remove unused form state for user creation since it's not being used
 
   let pageContent;
   switch (pageCase) {
@@ -598,6 +580,264 @@ const Project = () => {
       break;
     case 2:
       pageContent = (
+        <div>
+          <PageNav position="CEO" title="Participant Information" />
+          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            <div className="flex justify-between items-center mb-10">
+              <label className="text-3xl font-semibold">User Details</label>
+              <div className="flex">
+                <Button
+                  variant="previous"
+                  className="font-semibold text-xl flex items-center justify-center p-6 me-3"
+                  onClick={handlePrev}
+                >
+                  previous
+                </Button>
+                <Button
+                  variant="next"
+                  className="font-semibold text-xl flex items-center justify-center p-6"
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    try {
+                      if (participants.length > 0 && !isSubmitting) {
+                        await handlerUserCreation(participants);
+                      }
+                    } catch (error) {
+                      console.error("Error creating users:", error);
+                    } finally {
+                      setIsSubmitting(false);
+                      handleFinish();
+                    }
+                    handleNext();
+                  }}
+                >
+                  next
+                </Button>
+              </div>
+            </div>
+            <form
+              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
+              className="mt-5"
+            >
+              <div className="mb-5">
+                <label
+                  htmlFor="participantName"
+                  className="block mb-2 text-lg text-gray-500"
+                >
+                  Participant Name*
+                </label>
+                <input
+                  type="text"
+                  id="participantName"
+                  className={`bg-gray-50 border ${
+                    errorsInfo.participantName
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                  {...registerInfo("participantName", {
+                    required: "Participant name is required",
+                    minLength: {
+                      value: 2,
+                      message: "Participant name must be at least 2 characters",
+                    },
+                  })}
+                />
+                {errorsInfo.participantName && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errorsInfo.participantName.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-between items-center mb-5">
+                <div className="w-full me-10">
+                  <label
+                    htmlFor="email"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Email Address*
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    className={`bg-gray-50 border ${
+                      errorsInfo.email ? "border-red-500" : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("email", {
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address",
+                      },
+                    })}
+                  />
+                  {errorsInfo.email && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsInfo.email.message}
+                    </p>
+                  )}
+                </div>
+                <div className="w-full">
+                  <label
+                    htmlFor="designation"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Designation*
+                  </label>
+                  <input
+                    type="text"
+                    id="designation"
+                    className={`bg-gray-50 border ${
+                      errorsInfo.designation
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("designation", {
+                      required: "Designation is required",
+                      minLength: {
+                        value: 2,
+                        message: "Designation must be at least 2 characters",
+                      },
+                    })}
+                  />
+                  {errorsInfo.designation && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsInfo.designation.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {/* <div className="flex justify-between items-center mb-5">
+                <div className="w-full me-10">
+                  <label
+                    htmlFor="appraisee"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Appraisee/Appraiser*
+                  </label>
+                  <select
+                    id="appraisee"
+                    className={`bg-gray-50 border ${
+                      errorsInfo.appraisee
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("appraisee", {
+                      required: "Appraisee/Appraiser is required",
+                    })}
+                  >
+                    <option value="">Select Appraisee/Appraiser</option>
+                    <option value="Appraisee">Appraisee</option>
+                    <option value="Appraiser">Appraiser</option>
+                  </select>
+                  {errorsInfo.appraisee && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsInfo.appraisee.message}
+                    </p>
+                  )}
+                </div>
+                <div className="w-full">
+                  <label
+                    htmlFor="role"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Role*
+                  </label>
+                  <input
+                    type="text"
+                    id="role"
+                    className={`bg-gray-50 border ${
+                      errorsInfo.role ? "border-red-500" : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
+                    {...registerInfo("role", {
+                      required: "Role is required",
+                      minLength: {
+                        value: 2,
+                        message: "Role must be at least 2 characters",
+                      },
+                    })}
+                  />
+                  {errorsInfo.role && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsInfo.role.message}
+                    </p>
+                  )}
+                </div>
+              </div> */}
+              <Button
+                type="submit"
+                variant="save"
+                className="mt-5 p-6 text-lg cursor-pointer"
+              >
+                {editIndex !== null ? "Update" : "Add"}
+              </Button>
+              {editIndex !== null && (
+                <Button
+                  type="button"
+                  variant="previous"
+                  className="mt-5 ms-3 p-6 text-lg cursor-pointer rounded-lg"
+                  onClick={() => {
+                    setEditIndex(null);
+                    resetInfo({
+                      participantName: "",
+                      email: "",
+                      designation: "",
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </form>
+          </div>
+          <div className="h-[1px] bg-gray-300 w-[80%] mx-auto mt-15"></div>
+          {participants.length > 0 && (
+            <div className="mt-10 px-50 pb-10">
+              <table className="min-w-full bg-white">
+                <tbody>
+                  {participants.map((participant, index) => (
+                    <tr key={participant.id}>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.participantName}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.email}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.designation}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.appraisee}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900">
+                        {participant.role}
+                      </td>
+                      <td className="py-2 px-4">
+                        <Button
+                          variant="edit"
+                          onClick={() => handleEdit(index)}
+                          className="me-2 p-2"
+                        >
+                          <i className="bx bxs-pencil"></i>
+                        </Button>
+                        <Button
+                          variant="delete"
+                          onClick={() => handleDelete(index)}
+                          className="me-2 p-2"
+                        >
+                          <i className="bx bxs-trash"></i>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+      break;
+    case 3:
+      pageContent = (
         <div className="min-h-screen bg-white">
           <PageNav position="CEO" title="Create New Project" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
@@ -764,7 +1004,15 @@ const Project = () => {
                       errors.phone ? "border-red-500" : "border-gray-300"
                     } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 placeholder-gray-400 md:placeholder-transparent`}
                     onKeyPress={(e) => {
-                      if (!/[0-9]/.test(e.key)) {
+                      // Allow digits, backspace, delete, and '+' only as the first character
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        !(
+                          e.key === "+" && e.currentTarget.value.length === 0
+                        ) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete"
+                      ) {
                         e.preventDefault();
                       }
                     }}
@@ -832,7 +1080,9 @@ const Project = () => {
                       required: "Start date is required",
                       validate: (value) => {
                         const today = new Date();
+                        today.setHours(0, 0, 0, 0); // Reset time for proper comparison
                         const selectedDate = new Date(value);
+                        selectedDate.setHours(0, 0, 0, 0);
                         return (
                           selectedDate >= today ||
                           "Start date cannot be in the past"
@@ -888,257 +1138,6 @@ const Project = () => {
               </Button>
             </form>
           </div>
-        </div>
-      );
-      break;
-    case 3:
-      pageContent = (
-        <div>
-          <PageNav position="CEO" title="Participant Information" />
-          <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
-            <div className="flex justify-between items-center mb-10">
-              <label className="text-3xl font-semibold">User Details</label>
-              <div className="flex">
-                <Button
-                  variant="previous"
-                  className="font-semibold text-xl flex items-center justify-center p-6 me-3"
-                  onClick={handlePrev}
-                >
-                  previous
-                </Button>
-                <Button
-                  variant="next"
-                  className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={() => {
-                    localStorage.setItem(
-                      "Participants",
-                      JSON.stringify(participants)
-                    );
-                    handleNext();
-                  }}
-                >
-                  next
-                </Button>
-              </div>
-            </div>
-            <form
-              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
-              className="mt-5"
-            >
-              <div className="mb-5">
-                <label
-                  htmlFor="participantName"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Participant Name*
-                </label>
-                <input
-                  type="text"
-                  id="participantName"
-                  className={`bg-gray-50 border ${
-                    errorsInfo.participantName
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerInfo("participantName", {
-                    required: "Participant name is required",
-                    minLength: {
-                      value: 2,
-                      message: "Participant name must be at least 2 characters",
-                    },
-                  })}
-                />
-                {errorsInfo.participantName && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsInfo.participantName.message}
-                  </p>
-                )}
-              </div>
-              <div className="flex justify-between items-center mb-5">
-                <div className="w-full me-10">
-                  <label
-                    htmlFor="email"
-                    className="block mb-2 text-lg text-gray-500"
-                  >
-                    Email Address*
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    className={`bg-gray-50 border ${
-                      errorsInfo.email ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                    {...registerInfo("email", {
-                      required: "Email is required",
-                      pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: "Invalid email address",
-                      },
-                    })}
-                  />
-                  {errorsInfo.email && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errorsInfo.email.message}
-                    </p>
-                  )}
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="designation"
-                    className="block mb-2 text-lg text-gray-500"
-                  >
-                    Designation*
-                  </label>
-                  <input
-                    type="text"
-                    id="designation"
-                    className={`bg-gray-50 border ${
-                      errorsInfo.designation
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                    {...registerInfo("designation", {
-                      required: "Designation is required",
-                      minLength: {
-                        value: 2,
-                        message: "Designation must be at least 2 characters",
-                      },
-                    })}
-                  />
-                  {errorsInfo.designation && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errorsInfo.designation.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex justify-between items-center mb-5">
-                <div className="w-full me-10">
-                  <label
-                    htmlFor="appraisee"
-                    className="block mb-2 text-lg text-gray-500"
-                  >
-                    Appraisee/Appraiser*
-                  </label>
-                  <select
-                    id="appraisee"
-                    className={`bg-gray-50 border ${
-                      errorsInfo.appraisee
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                    {...registerInfo("appraisee", {
-                      required: "Appraisee/Appraiser is required",
-                    })}
-                  >
-                    <option value="">Select Appraisee/Appraiser</option>
-                    <option value="Appraisee">Appraisee</option>
-                    <option value="Appraiser">Appraiser</option>
-                  </select>
-                  {errorsInfo.appraisee && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errorsInfo.appraisee.message}
-                    </p>
-                  )}
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="role"
-                    className="block mb-2 text-lg text-gray-500"
-                  >
-                    Role*
-                  </label>
-                  <input
-                    type="text"
-                    id="role"
-                    className={`bg-gray-50 border ${
-                      errorsInfo.role ? "border-red-500" : "border-gray-300"
-                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                    {...registerInfo("role", {
-                      required: "Role is required",
-                      minLength: {
-                        value: 2,
-                        message: "Role must be at least 2 characters",
-                      },
-                    })}
-                  />
-                  {errorsInfo.role && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errorsInfo.role.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <Button
-                type="submit"
-                variant="save"
-                className="mt-5 p-6 text-lg cursor-pointer"
-              >
-                {editIndex !== null ? "Update" : "Add"}
-              </Button>
-              {editIndex !== null && (
-                <Button
-                  type="button"
-                  variant="previous"
-                  className="mt-5 ms-3 p-6 text-lg cursor-pointer rounded-lg"
-                  onClick={() => {
-                    setEditIndex(null);
-                    resetInfo({
-                      participantName: "",
-                      email: "",
-                      designation: "",
-                    });
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </form>
-          </div>
-          <div className="h-[1px] bg-gray-300 w-[80%] mx-auto mt-15"></div>
-          {participants.length > 0 && (
-            <div className="mt-10 px-50 pb-10">
-              <table className="min-w-full bg-white">
-                <tbody>
-                  {participants.map((participant, index) => (
-                    <tr key={participant.id}>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.participantName}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.email}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.designation}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.appraisee}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.role}
-                      </td>
-                      <td className="py-2 px-4">
-                        <Button
-                          variant="edit"
-                          onClick={() => handleEdit(index)}
-                          className="me-2 p-2"
-                        >
-                          <i className="bx bxs-pencil"></i>
-                        </Button>
-                        <Button
-                          variant="delete"
-                          onClick={() => handleDelete(index)}
-                          className="me-2 p-2"
-                        >
-                          <i className="bx bxs-trash"></i>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       );
       break;
