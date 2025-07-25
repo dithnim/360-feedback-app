@@ -74,7 +74,7 @@ const Sidebar = () => {
       label: "Organization",
       htmlFor: "org",
       children: [
-        { label: "Current Organizations", onClick: undefined },
+        { label: "Current Organizations", onClick: navigateHome },
         { label: "Create New Organization", onClick: navigateToCompany },
       ],
       className: "",
@@ -123,14 +123,15 @@ const Sidebar = () => {
       {Array.isArray(children) && (
         <div className="ms-4 flex flex-col">
           {children.map((child, idx) => (
-            <label
+            <button
               key={idx}
-              htmlFor={htmlFor}
-              className={`ms-10 text-sm${child.onClick ? " cursor-pointer" : " mb-1 cursor-pointer"}`}
+              type="button"
+              className={`ms-10 text-sm mb-1 cursor-pointer text-left bg-transparent border-none outline-none focus:underline hover:underline`}
               onClick={child.onClick}
+              style={{ color: "inherit" }}
             >
               {child.label}
-            </label>
+            </button>
           ))}
         </div>
       )}

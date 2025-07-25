@@ -64,6 +64,13 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
     toggleSidebar();
   };
 
+  const navigateToViewTeam = () => {
+    navigate("/view-team");
+  };
+  const navigateToCreateTeam = () => {
+    navigate("/create-team");
+  };
+
   const menuItems: (MenuItem & { onClick?: () => void })[] = [
     { icon: business, label: "Business", onClick: () => navigate("/business") },
     { icon: company, label: "Company", onClick: navigateToCompany },
@@ -96,7 +103,7 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
       label: "Organization",
       htmlFor: "org",
       children: [
-        { label: "Current Organizations", onClick: undefined },
+        { label: "Current Organizations", onClick: navigateHome },
         { label: "Create New Organization", onClick: navigateToCompany },
       ],
       className: "",
@@ -114,8 +121,8 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
       label: "Teams",
       htmlFor: "org",
       children: [
-        { label: "Create New Team", onClick: undefined },
-        { label: "View All Teams", onClick: undefined },
+        { label: "Create New Team", onClick: navigateToCreateTeam },
+        { label: "View All Teams", onClick: navigateToViewTeam },
       ],
       className: "",
     },
@@ -145,14 +152,15 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
       {Array.isArray(children) && (
         <div className="ms-4 flex flex-col">
           {children.map((child, idx) => (
-            <label
+            <button
               key={idx}
-              htmlFor={htmlFor}
-              className={`ms-10 text-sm${child.onClick ? " cursor-pointer" : " mb-1 cursor-pointer"}`}
+              type="button"
+              className={`ms-10 text-sm mb-1 cursor-pointer text-left bg-transparent border-none outline-none focus:underline hover:underline`}
               onClick={child.onClick}
+              style={{ color: "inherit" }}
             >
               {child.label}
-            </label>
+            </button>
           ))}
         </div>
       )}
