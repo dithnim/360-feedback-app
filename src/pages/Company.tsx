@@ -34,7 +34,7 @@ const Company = () => {
   return (
     <div>
       <div className="">
-        <PageNav name="Jese Leos" position="CEO" title="Create New Company" />
+        <PageNav position="CEO" title="Create New Company" />
       </div>
       <div className="h-(calc[100vh-120px]) px-50 pt-10">
         <div className="flex justify-between">

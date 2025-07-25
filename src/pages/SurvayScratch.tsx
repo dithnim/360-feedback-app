@@ -194,7 +194,10 @@ const SurvayScratch = () => {
       for (const comp of templatePreviews) {
         // 1. Create competency
         const compRes = await createCompetency(comp.competency);
-        const competencyId = compRes.id;
+        const competencyId =
+          typeof compRes === "string"
+            ? compRes
+            : compRes.id;
         // 2. Create questions
         for (const q of comp.questions) {
           await createQuestion({

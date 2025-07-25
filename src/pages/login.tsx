@@ -50,11 +50,15 @@ const Login: React.FC = () => {
       });
 
       // Handle different possible response formats
-      let token = response.data;
-      if (response.token) {
+      let token = "";
+      if (typeof response === "string") {
+        token = response;
+      } else if (response.token) {
         token = response.token;
       } else if (response.access_token) {
         token = response.access_token;
+      } else if (response.data) {
+        token = response.data;
       }
 
       localStorage.setItem("token", token);
