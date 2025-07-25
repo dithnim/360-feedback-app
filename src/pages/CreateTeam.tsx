@@ -1,9 +1,9 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
 
 // TODO: Integrate with the backend
-const permissionsList = [
+const defaultPermissions = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
@@ -38,6 +38,11 @@ const CreateTeam = () => {
     { email: string; role: string; permissions: number[] }[]
   >([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [permissions, setPermissions] = useState<string[]>(defaultPermissions);
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [teamName, setTeamName] = useState("");
+  const [teamDescription, setTeamDescription] = useState("");
 
   const handlePermissionChange = (idx: number) => {
     setSelectedPermissions((prev) =>
@@ -109,7 +114,7 @@ const CreateTeam = () => {
             <div className="mb-4">
               <h3 className="font-semibold mb-2 text-lg">Permissions</h3>
               <div className="flex flex-col gap-2 mb-10 ">
-                {permissionsList.map((perm: string, idx: number) => (
+                {permissions.map((perm: string, idx: number) => (
                   <label key={idx} className="flex items-center gap-2 text-md">
                     <input
                       type="checkbox"
@@ -159,12 +164,68 @@ const CreateTeam = () => {
             </tbody>
           </table>
           {/* //TODO: Integrate with the backend */}
-          <Button variant="black" className="w-50 mt-8 flex items-center ">
+          <Button
+            variant="black"
+            className="w-50 mt-8 flex items-center "
+            onClick={() => setIsModalOpen(true)}
+          >
             <i className="bx bx-plus-circle text-2xl"></i>
             Create New Team
           </Button>
         </div>
       </div>
+      {/* Modal Popup */}
+      {isModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 bg-opacity-40 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl relative">
+            <h2 className="text-lg font-semibold mb-4">Create Team</h2>
+            <label className="block text-md mb-1">Team Name*</label>
+            <input
+              type="text"
+              className="border border-gray-300 rounded-lg p-2 w-[45%] mb-4"
+              placeholder="Team Name"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+            />
+            <label className="block text-md mb-1">Description*</label>
+            <textarea
+              className="border border-gray-300 rounded-lg p-2 w-full mb-4"
+              placeholder="Description"
+              value={teamDescription}
+              onChange={(e) => setTeamDescription(e.target.value)}
+              rows={3}
+            />
+            <table className="min-w-full bg-white">
+              <tbody>
+                {teams.map((team, idx) => (
+                  <div>
+                    <input
+                      type="checkbox"
+                      checked={selectedPermissions.includes(idx)}
+                      onChange={() => handlePermissionChange(idx)}
+                      className="accent-[#ed3f41]"
+                    />
+                  </div>
+                ))}
+              </tbody>
+            </table>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="bg-gray-200 text-gray-700 rounded px-4 py-2"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-[#a02a2b] text-white rounded px-4 py-2 font-semibold"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Save Team
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
