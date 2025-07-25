@@ -12,29 +12,31 @@ const permissionsList = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
 ];
 
-const initialTeams = [
-  {
-    email: "example1@example.com",
-    role: "Overseeing Recruitment Process",
-    permissions: [0, 1, 2],
-  },
-  {
-    email: "example2@example.com",
-    role: "Overseeing Recruitment Process",
-    permissions: [0, 1],
-  },
-  {
-    email: "example3@example.com",
-    role: "Overseeing Recruitment Process",
-    permissions: [0, 1, 2, 3],
-  },
-];
+// const initialTeams = [
+//   {
+//     email: "example1@example.com",
+//     role: "Overseeing Recruitment Process",
+//     permissions: [0, 1, 2],
+//   },
+//   {
+//     email: "example2@example.com",
+//     role: "Overseeing Recruitment Process",
+//     permissions: [0, 1],
+//   },
+//   {
+//     email: "example3@example.com",
+//     role: "Overseeing Recruitment Process",
+//     permissions: [0, 1, 2, 3],
+//   },
+// ];
 
 const CreateTeam = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
-  const [teams, setTeams] = useState(initialTeams);
+  const [teams, setTeams] = useState<
+    { email: string; role: string; permissions: number[] }[]
+  >([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
   const handlePermissionChange = (idx: number) => {
@@ -107,7 +109,7 @@ const CreateTeam = () => {
             <div className="mb-4">
               <h3 className="font-semibold mb-2 text-lg">Permissions</h3>
               <div className="flex flex-col gap-2 mb-10 ">
-                {permissionsList.map((perm, idx) => (
+                {permissionsList.map((perm: string, idx: number) => (
                   <label key={idx} className="flex items-center gap-2 text-md">
                     <input
                       type="checkbox"
@@ -132,10 +134,13 @@ const CreateTeam = () => {
           <table className="min-w-full bg-white">
             <tbody>
               {teams.map((team, idx) => (
-                <tr key={idx} className="border-b border-gray-200">
+                <tr
+                  key={idx}
+                  className="border-b border-gray-200 flex w-full justify-between px-20"
+                >
                   <td className="py-2  text-gray-900">{team.email}</td>
                   <td className="py-2  text-gray-900">{team.role}</td>
-                  <td className="py-2 ">
+                  <td className="py-2">
                     <button
                       className="bg-[#ed3f41] text-white rounded p-2 me-2"
                       onClick={() => handleEdit(idx)}
