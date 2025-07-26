@@ -26,6 +26,7 @@ import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
 import SurveyPreview from "./pages/SurveyPreview";
 import CreateFromTemplate from "./pages/CreateFromTemplate";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ApiDemo } from "./pages/ApiDemo";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -163,6 +164,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/api-demo" element={<ApiDemo />} />
     </Routes>
   );
 }
