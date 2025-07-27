@@ -1,4 +1,4 @@
-import dashLogo from "../../imgs/Dash-Logo.png";
+import dashLogo from "../../imgs/dash-logo.png";
 import proPic from "../../imgs/Qrio-retouched-final.jpg";
 import { useNavigate } from "react-router-dom";
 
