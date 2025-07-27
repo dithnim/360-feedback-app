@@ -5,7 +5,7 @@ import insights from "../../imgs/insight.png";
 import resource from "../../imgs/resource.png";
 import team from "../../imgs/team.png";
 import { useNavigate } from "react-router-dom";
-import homeVector from "../../imgs/home-vector.png";
+import homeVector from "../../imgs/Home-Vector.png";
 import { useSidebar } from "../context/SidebarContext";
 
 interface MenuItem {
