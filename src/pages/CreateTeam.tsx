@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
 
@@ -38,7 +38,7 @@ const CreateTeam = () => {
     { email: string; role: string; permissions: number[] }[]
   >([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [permissions, setPermissions] = useState<string[]>(defaultPermissions);
+  const [permissions] = useState<string[]>(defaultPermissions);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [teamName, setTeamName] = useState("");
@@ -197,7 +197,7 @@ const CreateTeam = () => {
             />
             <table className="min-w-full bg-white">
               <tbody>
-                {teams.map((team, idx) => (
+                {teams.map((_team, idx) => (
                   <div>
                     <input
                       type="checkbox"

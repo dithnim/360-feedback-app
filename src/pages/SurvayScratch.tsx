@@ -24,7 +24,7 @@ const SurvayScratch = () => {
   const [editText, setEditText] = useState("");
 
   // New state to track if editing preview
-  const [isEditingPreview, setIsEditingPreview] = useState(false);
+  const [_isEditingPreview, setIsEditingPreview] = useState(false);
 
   // New: array of competencies
   const [templatePreviews, setTemplatePreviews] = useState<
@@ -194,10 +194,7 @@ const SurvayScratch = () => {
       for (const comp of templatePreviews) {
         // 1. Create competency
         const compRes = await createCompetency(comp.competency);
-        const competencyId =
-          typeof compRes === "string"
-            ? compRes
-            : compRes.id;
+        const competencyId = typeof compRes === "string" ? compRes : compRes.id;
         // 2. Create questions
         for (const q of comp.questions) {
           await createQuestion({

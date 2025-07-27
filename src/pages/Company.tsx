@@ -26,7 +26,7 @@ const Company = () => {
     navigate("/project");
   };
 
-  const onSubmit = (data: CompanyFormData) => {
+  const onSubmit = (_data: CompanyFormData) => {
     // Handle form submission here
     reset(); // Reset form data after successful submission
   };

@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
 const Navbar = () => {
-  const { user, clearUser, isAuthenticated } = useUser();
+  const { user, clearUser } = useUser();
   const navigate = useNavigate();
 
   const handleLogout = () => {

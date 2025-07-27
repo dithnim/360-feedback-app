@@ -117,6 +117,19 @@ export async function deleteOrganization(companyId: string): Promise<any> {
   return response.json();
 }
 
+// Authentication types
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface ClientRegistrationData {
+  name: string;
+  email: string;
+  password: string;
+  contactNumber?: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -152,4 +165,15 @@ export async function createQuestion(data: {
     optionType: string;
     options: string[];
   }>("/question", data);
+}
+
+// Authentication functions
+export async function login(loginData: LoginData): Promise<any> {
+  return apiPost<any>("/auth/login", loginData);
+}
+
+export async function registerClient(
+  registrationData: ClientRegistrationData
+): Promise<any> {
+  return apiPost<any>("/auth/register", registrationData);
 }

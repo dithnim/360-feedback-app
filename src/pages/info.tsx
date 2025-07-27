@@ -33,7 +33,7 @@ const ParticipantInformation = () => {
     reset(); // Clear form fields after submission
   };
 
-  const handleEdit = (index: number) => {
+  const handleEdit = (_index: number) => {
     // Implement edit logic here, e.g., populate form with data for editing
   };
 

@@ -141,7 +141,7 @@ const CreateCompetencies = () => {
     name: "sections",
   });
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (_data: FormData) => {
     // Handle survey save logic here
   };
 

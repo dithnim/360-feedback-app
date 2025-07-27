@@ -1,6 +1,5 @@
 import { useState } from "react";
 import PageNav from "../components/ui/pageNav";
-import { Button } from "../components/ui/Button";
 
 import TeamSvg from "../../imgs/team-svg.png";
 
@@ -14,19 +13,21 @@ const CreateTeam = () => {
     }[]
   >([]);
 
-  const handleAddMember = () => {
+  const _handleAddMember = () => {
     if (!email.trim() || !role.trim()) return;
 
     setTeamMembers([...teamMembers, { email, role }]);
     setEmail("");
     setRole("");
   };
+  void _handleAddMember;
 
-  const handleDeleteMember = (index: number) => {
-    setTeamMembers(teamMembers.filter((_, i) => i !== index));
+  const _handleDeleteMember = (_index: number) => {
+    setTeamMembers(teamMembers.filter((_, i) => i !== _index));
   };
+  void _handleDeleteMember;
 
-  const handleEditMember = (
+  const _handleEditMember = (
     index: number,
     updatedEmail: string,
     updatedRole: string
@@ -35,6 +36,7 @@ const CreateTeam = () => {
     updatedMembers[index] = { email: updatedEmail, role: updatedRole };
     setTeamMembers(updatedMembers);
   };
+  void _handleEditMember;
 
   const Card = ({ TeamName }: { TeamName: string }) => (
     <div className="flex flex-col items-center justify-center border border-gray-300 rounded-xl py-15 w-80 h-auto cursor-pointer">

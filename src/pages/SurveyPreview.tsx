@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
 import PageNav from "../components/ui/pageNav";
 
 const SurveyPreview = () => {

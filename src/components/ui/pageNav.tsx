@@ -71,7 +71,7 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
     navigate("/create-team");
   };
 
-  const menuItems: (MenuItem & { onClick?: () => void })[] = [
+  const _menuItems: (MenuItem & { onClick?: () => void })[] = [
     { icon: business, label: "Business", onClick: () => navigate("/business") },
     { icon: company, label: "Company", onClick: navigateToCompany },
     {
@@ -83,6 +83,7 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
     { icon: resource, label: "Resource", onClick: () => navigate("/resource") },
     { icon: insights, label: "Insights", onClick: () => navigate("/insights") },
   ];
+  void _menuItems;
 
   const Hr = () => (
     <div

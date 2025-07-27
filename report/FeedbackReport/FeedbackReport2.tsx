@@ -8,7 +8,6 @@ import DraggableComp from "../Draggable/DraggableComp";
 import Footer from "../footer/Footer";
 import ReportHeader from "../shared/ReportHeader";
 
-import CircularProgressChart from "../shared/charts/CircularProgressChart/CircularProgressChart";
 import PieChart from "../shared/charts/PieChart/PieChart";
 import BarChart from "../shared/charts/BarChart/BarChart";
 
@@ -17,7 +16,6 @@ import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore
 import { openEndedFeedbackDataStore } from "../utils/data/store/openEndedFeedbackDataStore";
 
 import coverLogo from "../imgs/templates/Dash.png";
-import CompanyImage from "../imgs/templates/cover_2.png";
 
 // Types and interfaces
 interface EditState {
@@ -249,7 +247,7 @@ const FeedbackReport: React.FC = () => {
 
   const [userName, setUserName] = useState("John Doe");
   const [reportedDate, setReportedDate] = useState("2025-01-01");
-  const [developmentPlanContent, setDevelopmentPlanContent] = useState(
+  const [developmentPlanContent] = useState(
     "<div>Type your development plan here...</div>"
   );
   const [respondentData, setRespondentData] = useState([
@@ -260,7 +258,7 @@ const FeedbackReport: React.FC = () => {
   ]);
 
   // Edit states for draggable/minimizable panels
-  const [editStates, setEditStates] = useState<{ [key: string]: EditState }>({
+  useState<{ [key: string]: EditState }>({
     title: {
       minimized: false,
       position: { x: 40, y: 100 },
@@ -293,20 +291,18 @@ const FeedbackReport: React.FC = () => {
     },
   });
 
-  const [editDynamicStates, setEditDynamicStates] = useState<EditState[]>([]);
+  const [_editDynamicStates, setEditDynamicStates] = useState<EditState[]>([]);
 
   // Data states
   const [sumOfComRating, setSumOfComRating] = useState<any[]>(
     sumOfComRateDataStore
   );
   const [paginatedRatings, setPaginatedRatings] = useState<any[][]>([]);
-  const [openEndedFeedback, setOpenEndedFeedback] = useState<any[]>(
-    openEndedFeedbackDataStore
-  );
-  const [paginatedOpenEndedFeedback, setPaginatedOpenEndedFeedback] = useState<
+  const [openEndedFeedback] = useState<any[]>(openEndedFeedbackDataStore);
+  const [_paginatedOpenEndedFeedback, setPaginatedOpenEndedFeedback] = useState<
     any[]
   >([]);
-  const [paginatedDevPlanContent, setPaginatedDevPlanContent] = useState<
+  const [_paginatedDevPlanContent, setPaginatedDevPlanContent] = useState<
     string[]
   >([]);
 
@@ -325,8 +321,8 @@ const FeedbackReport: React.FC = () => {
     }
     return [];
   });
-  const [categories, setCategories] = useState<string[]>([]);
-  const [series, setSeries] = useState<any[]>([]);
+  const [_categories, setCategories] = useState<string[]>([]);
+  const [_series, setSeries] = useState<any[]>([]);
 
   // Drag and drop refs
   const dragAnimationFrameRef = useRef<number>(0);
@@ -336,7 +332,7 @@ const FeedbackReport: React.FC = () => {
   const boundTouchEndRef = useRef<any>(null);
   const boundTouchCancelRef = useRef<any>(null);
 
-  const [summaryOfRatings, setSummaryOfRatings] = useState<any[]>([
+  const [summaryOfRatings] = useState<any[]>([
     {
       category: "Leadership",
       ratings: [
@@ -564,6 +560,7 @@ const FeedbackReport: React.FC = () => {
     const words = content.split(" ");
     let currentPage = "";
     let currentHeight = 0;
+    void currentHeight;
 
     for (const word of words) {
       const testPage = currentPage + (currentPage ? " " : "") + word;
@@ -653,7 +650,7 @@ const FeedbackReport: React.FC = () => {
   };
 
   // CSV Upload functionality
-  const onCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const _onCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -668,6 +665,7 @@ const FeedbackReport: React.FC = () => {
       },
     });
   };
+  void _onCSVUpload;
 
   // Cover image upload functionality
   const onCoverImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -703,8 +701,9 @@ const FeedbackReport: React.FC = () => {
 
   // Generate competency data from CSV
   const generateCompetencyData = (data: FeedbackEntry[]) => {
-    const avg = (arr: number[]) =>
+    const _avg = (arr: number[]) =>
       arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    void _avg;
 
     const processedData = data.map((entry) => ({
       category: entry.CATEGORY,
@@ -1170,7 +1169,7 @@ const FeedbackReport: React.FC = () => {
                         });
                       })()
                     : (() => {
-                        return respondentData.map((row: any, idx: number) => {
+                        return respondentData.map((row: any, _idx: number) => {
                           let completionRate =
                             row.nominated > 0
                               ? Math.round(

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import BarChart from "../../report/shared/charts/BarChart/BarChart";
 import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
