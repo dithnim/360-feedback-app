@@ -1,9 +1,9 @@
 // src/lib/apiService.ts
-// API service for communicating with Spring Boot backend on localhost:3010
+// API service for communicating with Spring Boot backend on Railway
 
 import { clearAuthData } from "./util";
 
-const BASE_URL = "http://localhost:3010/api/v1";
+const BASE_URL = "https://360-backend-production-8ab2.up.railway.app/api/v1";
 
 // Function to handle unauthorized responses
 const handleUnauthorized = () => {
