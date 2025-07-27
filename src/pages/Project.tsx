@@ -3,7 +3,7 @@ import { apiPost } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { data, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
 
