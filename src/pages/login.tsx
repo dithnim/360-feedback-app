@@ -60,7 +60,6 @@ const Login: React.FC = () => {
       } else if (response.data) {
         token = response.data;
       }
-
       localStorage.setItem("token", token);
       const userData = getUserFromToken(token);
       if (userData) {
