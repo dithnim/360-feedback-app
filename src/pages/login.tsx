@@ -4,6 +4,7 @@ import { apiPost } from "../lib/apiService";
 import { useUser } from "../context/UserContext";
 import { getUserFromToken } from "../lib/util";
 import Loader from "../components/ui/loader";
+import dashLogo from "../../imgs/dash-logo.png";
 
 interface AuthResponse {
   data: string;
@@ -14,6 +15,8 @@ interface AuthResponse {
 const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { setUser, isAuthenticated, isLoading } = useUser();
 
@@ -27,10 +30,10 @@ const Login: React.FC = () => {
   // Show loading while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f5] to-[#e8e8e8]">
         <div className="text-center">
           <Loader text="Loading..." />
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-[#656464]">Loading...</p>
         </div>
       </div>
     );
@@ -43,6 +46,9 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+
     try {
       const response = await apiPost<AuthResponse>("/auth", {
         username,
@@ -60,7 +66,6 @@ const Login: React.FC = () => {
       } else if (response.data) {
         token = response.data;
       }
-
       localStorage.setItem("token", token);
       const userData = getUserFromToken(token);
       if (userData) {
@@ -70,56 +75,231 @@ const Login: React.FC = () => {
         throw new Error("Invalid token received");
       }
     } catch (error) {
-      alert("Login failed. Please check your credentials.");
+      setError("Login failed. Please check your credentials.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label
-              htmlFor="username"
-              className="block text-gray-700 text-sm font-bold mb-2"
-            >
-              Username:
-            </label>
-            <input
-              type="text"
-              id="username"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label
-              htmlFor="password"
-              className="block text-gray-700 text-sm font-bold mb-2"
-            >
-              Password:
-            </label>
-            <input
-              type="password"
-              id="password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f5] to-[#e8e8e8] relative overflow-hidden">
+      {/* Animated background decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-full">
+        {/* Large floating gradient orb - top left */}
+        <div className="absolute top-16 left-8 w-40 h-40 bg-gradient-to-br from-[#ee3f40] via-[#ed3f41] to-[#d53739] rounded-full opacity-15 animate-float-slow blur-sm"></div>
+
+        {/* Medium floating gradient orb - bottom right */}
+        <div className="absolute bottom-24 right-12 w-32 h-32 bg-gradient-to-tl from-[#3848ab] via-[#4c5bc7] to-[#5d6dd8] rounded-full opacity-12 animate-float-reverse blur-sm"></div>
+
+        {/* Small floating gradient orb - middle left */}
+        <div className="absolute top-1/2 left-1/6 w-24 h-24 bg-gradient-to-tr from-[#008a24] via-[#00a100] to-[#10b810] rounded-full opacity-10 animate-float-diagonal blur-sm"></div>
+
+        {/* Extra small accent orb - top right */}
+        <div className="absolute top-32 right-1/4 w-16 h-16 bg-gradient-to-bl from-[#ee3f40] via-[#a10000] to-[#8b0000] rounded-full opacity-8 animate-float-gentle blur-sm"></div>
+
+        {/* Tiny accent orb - bottom left */}
+        <div className="absolute bottom-1/3 left-12 w-12 h-12 bg-gradient-to-tr from-[#3848ab] to-[#656464] rounded-full opacity-6 animate-float-subtle blur-sm"></div>
+
+        {/* Morphing shapes */}
+        <div className="absolute top-1/4 right-8 w-20 h-20 bg-gradient-to-r from-[#ed3f41] to-transparent rounded-full opacity-8 animate-morph-shape blur-sm"></div>
+      </div>
+
+      {/* Add custom animations */}
+      <style>{`
+        @keyframes float-slow {
+          0%, 100% { 
+            transform: translateY(0px) translateX(0px) rotate(0deg); 
+          }
+          25% { 
+            transform: translateY(-20px) translateX(10px) rotate(90deg); 
+          }
+          50% { 
+            transform: translateY(-10px) translateX(20px) rotate(180deg); 
+          }
+          75% { 
+            transform: translateY(-30px) translateX(5px) rotate(270deg); 
+          }
+        }
+        
+        @keyframes float-reverse {
+          0%, 100% { 
+            transform: translateY(0px) translateX(0px) rotate(360deg); 
+          }
+          33% { 
+            transform: translateY(15px) translateX(-15px) rotate(240deg); 
+          }
+          66% { 
+            transform: translateY(-5px) translateX(-25px) rotate(120deg); 
+          }
+        }
+        
+        @keyframes float-diagonal {
+          0%, 100% { 
+            transform: translateY(0px) translateX(0px) scale(1); 
+          }
+          50% { 
+            transform: translateY(-15px) translateX(15px) scale(1.1); 
+          }
+        }
+        
+        @keyframes float-gentle {
+          0%, 100% { 
+            transform: translateY(0px) rotate(0deg) scale(1); 
+          }
+          50% { 
+            transform: translateY(-8px) rotate(180deg) scale(0.9); 
+          }
+        }
+        
+        @keyframes float-subtle {
+          0%, 100% { 
+            transform: translateY(0px) translateX(0px); 
+            opacity: 0.06; 
+          }
+          50% { 
+            transform: translateY(-5px) translateX(5px); 
+            opacity: 0.12; 
+          }
+        }
+        
+        @keyframes morph-shape {
+          0%, 100% { 
+            transform: rotate(0deg) scale(1); 
+            border-radius: 50%; 
+          }
+          25% { 
+            transform: rotate(90deg) scale(1.2); 
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; 
+          }
+          50% { 
+            transform: rotate(180deg) scale(0.8); 
+            border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; 
+          }
+          75% { 
+            transform: rotate(270deg) scale(1.1); 
+            border-radius: 30% 70% 30% 70% / 70% 30% 70% 30%; 
+          }
+        }
+        
+        .animate-float-slow {
+          animation: float-slow 8s ease-in-out infinite;
+        }
+        
+        .animate-float-reverse {
+          animation: float-reverse 10s ease-in-out infinite;
+        }
+        
+        .animate-float-diagonal {
+          animation: float-diagonal 6s ease-in-out infinite;
+        }
+        
+        .animate-float-gentle {
+          animation: float-gentle 7s ease-in-out infinite;
+        }
+        
+        .animate-float-subtle {
+          animation: float-subtle 9s ease-in-out infinite;
+        }
+        
+        .animate-morph-shape {
+          animation: morph-shape 12s ease-in-out infinite;
+        }
+      `}</style>
+
+      <div className="relative z-10 w-full max-w-md mx-4">
+        {/* Logo and branding */}
+        <div className="text-center mb-8">
+          <img
+            src={dashLogo}
+            alt="TalentBoozt Logo"
+            className="w-64 h-auto mx-auto mb-6 drop-shadow-lg"
+          />
+          <h1 className="text-3xl font-bold text-[#333] mb-2">Welcome Back</h1>
+          <p className="text-[#656464] text-lg">
+            Sign in to your 360° Feedback Dashboard
+          </p>
+        </div>
+
+        {/* Login form */}
+        <div className="bg-white p-8 rounded-2xl shadow-2xl border border-gray-200 backdrop-blur-sm">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-[#a10000] text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-[#333] text-sm font-semibold mb-2"
+              >
+                Username
+              </label>
+              <input
+                type="text"
+                id="username"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-[#ee3f40] focus:ring-2 focus:ring-[#ee3f40] focus:ring-opacity-20 transition-all duration-200 text-[#333] placeholder-gray-400"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-[#333] text-sm font-semibold mb-2"
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-[#ee3f40] focus:ring-2 focus:ring-[#ee3f40] focus:ring-opacity-20 transition-all duration-200 text-[#333] placeholder-gray-400"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-[#ee3f40] to-[#ed3f41] hover:from-[#d53739] hover:to-[#d53739] text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ee3f40] focus:ring-opacity-50 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
             >
-              Sign In
+              {isSubmitting ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing In...</span>
+                </div>
+              ) : (
+                "Sign In"
+              )}
             </button>
+          </form>
+
+          {/* Additional features */}
+          <div className="mt-6 text-center">
+            <p className="text-[#656464] text-sm">
+              Forgot your password?{" "}
+              <button className="text-[#ee3f40] hover:text-[#d53739] font-medium transition-colors duration-200">
+                Reset it here
+              </button>
+            </p>
           </div>
-        </form>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-[#656464] text-sm">
+            © 2025 TalentBoozt. Empowering growth through feedback.
+          </p>
+        </div>
       </div>
     </div>
   );
