@@ -1393,7 +1393,7 @@ const Project = () => {
             </div>
             <Button
               variant="save"
-              className="mt-10 p-6 text-lg cursor-pointer"
+              className={`mt-10 p-6 text-lg  ${selectedUsers.size === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
               onClick={handleAddUserGroup}
               disabled={selectedUsers.size === 0}
             >

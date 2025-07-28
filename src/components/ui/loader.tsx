@@ -1,23 +1,28 @@
 import "./loader.scss";
 
 const Loader = ({ text }: { text: string }) => (
-  <div id="wifi-loader">
-    <svg className="circle-outer" viewBox="0 0 86 86">
-      <circle className="back" cx="43" cy="43" r="40"></circle>
-      <circle className="front" cx="43" cy="43" r="40"></circle>
-      <circle className="new" cx="43" cy="43" r="40"></circle>
-    </svg>
-    <svg className="circle-middle" viewBox="0 0 60 60">
-      <circle className="back" cx="30" cy="30" r="27"></circle>
-      <circle className="front" cx="30" cy="30" r="27"></circle>
-    </svg>
-    <svg className="circle-inner" viewBox="0 0 34 34">
-      <circle className="back" cx="17" cy="17" r="14"></circle>
-      <circle className="front" cx="17" cy="17" r="14"></circle>
-    </svg>
-    <div className="text" data-text={text}></div>
+  <div id="modern-loader">
+    <div className="loader-container">
+      <svg className="loader-svg" viewBox="0 0 120 120">
+        <circle 
+          className="loader-track"
+          cx="60" 
+          cy="60" 
+          r="54"
+        />
+        <circle 
+          className="loader-progress"
+          cx="60" 
+          cy="60" 
+          r="54"
+        />
+      </svg>
+      <div className="loader-center">
+        <div className="loader-dot"></div>
+      </div>
+    </div>
+    <div className="loader-text">{text}</div>
   </div>
 );
 
 export default Loader;
-/* HTML: <div class="loader"></div> */
