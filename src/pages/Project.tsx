@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "../components/ui/Button";
 import { apiPost } from "../lib/apiService";
 import { useForm } from "react-hook-form";
@@ -733,19 +734,13 @@ const Project = () => {
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={() => {
-                    setIsSubmitting(true);
-                    try {
-                      if (participants.length > 0 && !isSubmitting) {
-                        localStorage.setItem(
-                          "Participants",
-                          JSON.stringify(participants)
-                        );
-                        handleNext();
-                      }
-                    } catch (error) {
-                      console.error("Error creating users:", error);
-                    } finally {
-                      setIsSubmitting(false);
+                    if (participants.length > 0) {
+                      // Save to localStorage and proceed to next step
+                      localStorage.setItem(
+                        "Participants",
+                        JSON.stringify(participants)
+                      );
+                      handleNext();
                     }
                   }}
                 >
