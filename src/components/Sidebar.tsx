@@ -169,8 +169,8 @@ const Sidebar = () => {
       className={`w-full cursor-pointer flex flex-col justify-center flex-1 min-h-0 group ${className || ""}`.trim()}
       style={{ minHeight: 0 }}
     >
-      <label 
-        htmlFor={htmlFor} 
+      <label
+        htmlFor={htmlFor}
         className="ms-8 font-bold text-lg text-white/90 group-hover:text-white transition-all duration-300 cursor-pointer flex items-center gap-2 py-2"
       >
         <div className="w-2 h-2 bg-white/60 rounded-full group-hover:bg-white group-hover:scale-125 transition-all duration-300"></div>
@@ -207,7 +207,7 @@ const Sidebar = () => {
       <div className="flex flex-col justify-between items-center w-full h-[95vh] relative">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none"></div>
-        
+
         <div className="bg-transparent flex items-center justify-center w-full relative z-10">
           {isSidebarExpanded ? (
             <div className="flex items-center justify-between px-8 w-full border-b border-white/20 pb-6 backdrop-blur-sm">
@@ -237,7 +237,7 @@ const Sidebar = () => {
             </div>
           )}
         </div>
-        
+
         {isSidebarExpanded ? (
           <div className="expanded-menu text-white w-full flex flex-col h-screen relative z-10 animate-fadeIn">
             {sidebarSections.map((section, idx) => (
@@ -256,10 +256,10 @@ const Sidebar = () => {
                 onClick={item.onClick}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <img 
-                  src={item.icon} 
-                  alt={item.label} 
-                  className="w-8 h-8 drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-300 relative z-10 filter brightness-0 invert group-hover:scale-110" 
+                <img
+                  src={item.icon}
+                  alt={item.label}
+                  className="w-8 h-8 drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-300 relative z-10 filter brightness-0 invert group-hover:scale-110"
                 />
               </div>
             ))}
