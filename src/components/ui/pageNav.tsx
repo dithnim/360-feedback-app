@@ -21,20 +21,46 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
   const { isSidebarExpanded, toggleSidebar } = useSidebar();
   const navigate = useNavigate();
 
-  // Add custom styles for slide animation
+  // Add custom styles for animations
   React.useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
       @keyframes slideInLeft {
         from {
           transform: translateX(-100%);
+          opacity: 0;
         }
         to {
           transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
         }
       }
       .animate-slideInLeft {
-        animation: slideInLeft 0.3s ease-out forwards;
+        animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+      .animate-pulse-hover:hover {
+        animation: pulse 0.6s ease-in-out;
       }
     `;
     document.head.appendChild(style);
@@ -87,9 +113,11 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
 
   const Hr = () => (
     <div
-      className="border-b border-gray-200/50 w-full flex-shrink-0"
+      className="border-b border-white/20 w-full flex-shrink-0 my-2 relative"
       style={{ minHeight: 0 }}
-    ></div>
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent h-px"></div>
+    </div>
   );
 
   // Sidebar section data
@@ -144,23 +172,31 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
   // Sidebar section component
   const SidebarSection = ({ label, htmlFor, children, className }: any) => (
     <div
-      className={`border-gray-200/50 w-full cursor-pointer flex flex-col justify-center flex-1 min-h-0 ${className || ""}`.trim()}
+      className={`w-full cursor-pointer flex flex-col justify-center flex-1 min-h-0 group ${className || ""}`.trim()}
       style={{ minHeight: 0 }}
     >
-      <label htmlFor={htmlFor} className="ms-8 font-semibold text-lg">
+      <label
+        htmlFor={htmlFor}
+        className="ms-8 font-bold text-lg text-white/90 group-hover:text-white transition-all duration-300 cursor-pointer flex items-center gap-2 py-2"
+      >
+        <div className="w-2 h-2 bg-white/60 rounded-full group-hover:bg-white group-hover:scale-125 transition-all duration-300"></div>
         {label}
       </label>
       {Array.isArray(children) && (
-        <div className="ms-4 flex flex-col">
+        <div className="ms-4 flex flex-col space-y-1">
           {children.map((child, idx) => (
             <button
               key={idx}
               type="button"
-              className={`ms-10 text-sm mb-1 cursor-pointer text-left bg-transparent border-none outline-none focus:underline hover:underline`}
+              className={`ms-12 text-sm py-2 px-3 cursor-pointer text-left bg-transparent border-none outline-none text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 transform hover:translate-x-1 hover:scale-105 relative overflow-hidden group`}
               onClick={child.onClick}
               style={{ color: "inherit" }}
             >
-              {child.label}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center gap-2">
+                <i className="w-1 h-1 bg-white/40 rounded-full group-hover:bg-white group-hover:scale-150 transition-all duration-300"></i>
+                {child.label}
+              </span>
             </button>
           ))}
         </div>
@@ -176,28 +212,36 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
     <div className="relative">
       {/* Sidebar Overlay */}
       <div
-        className={`fixed inset-0 z-50 flex transition-opacity duration-300 ${isSidebarExpanded ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-50 flex transition-all duration-500 ${isSidebarExpanded ? "opacity-100 backdrop-blur-sm" : "opacity-0 pointer-events-none"}`}
       >
         <div className="relative h-full">
           <div
-            className={`h-[100vh] bg-[#ed3f41] flex justify-center py-7 z-1000 transition-all duration-300 ease-in-out absolute top-0 w-[240px] transform ${isSidebarExpanded ? "translate-x-0 animate-slideInLeft" : "-translate-x-full"}`}
+            className={`h-[100vh] bg-gradient-to-b from-[#ed3f41] via-[#e63439] to-[#d63336] flex justify-center py-7 z-1000 transition-all duration-500 ease-out absolute top-0 w-[280px] transform shadow-2xl ${isSidebarExpanded ? "translate-x-0 animate-slideInLeft" : "-translate-x-full"}`}
           >
-            <div className="flex flex-col justify-between items-center w-full h-[93vh]">
-              <div className="bg-[#ed3f41] flex items-center justify-center w-full">
-                <div className="flex items-center justify-between px-8 w-full border-b-1 border-gray-200/50 pb-8">
-                  <img
-                    src={homeVector}
-                    alt="home"
-                    className="cursor-pointer w-8 h-8"
-                    onClick={navigateHome}
-                  />
-                  <i
-                    className="bxr bx-menu text-gray-100 text-[40px] m-0 p-0 cursor-pointer"
+            <div className="flex flex-col justify-between items-center w-full h-[93vh] relative">
+              {/* Decorative gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none"></div>
+
+              <div className="bg-transparent flex items-center justify-center w-full relative z-10">
+                <div className="flex items-center justify-between px-8 w-full border-b border-white/20 pb-6 backdrop-blur-sm">
+                  <div className="group cursor-pointer transform hover:scale-110 transition-all duration-300 animate-pulse-hover">
+                    <img
+                      src={homeVector}
+                      alt="home"
+                      className="cursor-pointer w-10 h-10 drop-shadow-lg group-hover:drop-shadow-xl filter brightness-0 invert"
+                      onClick={navigateHome}
+                    />
+                  </div>
+                  <button
+                    className="group cursor-pointer transform hover:scale-110 transition-all duration-300 p-2 rounded-xl hover:bg-white/10"
                     onClick={toggleSidebar}
-                  ></i>
+                  >
+                    <i className="bx bx-x text-white text-[32px] m-0 p-0 group-hover:rotate-90 transition-transform duration-300"></i>
+                  </button>
                 </div>
               </div>
-              <div className="expanded-menu text-white w-full flex flex-col h-screen">
+
+              <div className="expanded-menu text-white w-full flex flex-col h-screen relative z-10 animate-fadeIn">
                 {sidebarSections.map((section, idx) => (
                   <React.Fragment key={section.label}>
                     <SidebarSection {...section} />
@@ -208,8 +252,11 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
             </div>
           </div>
         </div>
-        {/* Click outside to close */}
-        <div className="flex-1" onClick={toggleSidebar} />
+        {/* Click outside to close with backdrop */}
+        <div
+          className="flex-1 bg-black/20 backdrop-blur-sm transition-all duration-300"
+          onClick={toggleSidebar}
+        />
       </div>
 
       <nav className="flex items-center justify-between pe-6 bg-[#F8F6F7] rounded-t-lg border-b-2 border-[#E0E0E0]">
@@ -219,12 +266,15 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
             className="bg-[#ee3e41] w-25 h-25 flex items-center justify-center me-6 cursor-pointer hover:bg-[#d63336] transition-colors duration-200"
             onClick={toggleSidebar}
           >
-            <i className="bx bx-menu font-bold text-3xl text-white"></i>{" "}
+            {/* Animated background effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-700 transform -translate-x-full"></div>
+            <i className="bx bx-menu font-bold text-2xl text-white relative z-10 group-hover:rotate-180 transition-transform duration-500"></i>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[#ee3e41] text-xl font-medium">{title}</span>
           </div>
         </div>
+
         {/* Right: User info */}
         <div className="flex items-center">
           <div className="w-12 h-12 rounded-full bg-[#E0E0E0] flex items-center justify-center mr-3">
@@ -234,6 +284,7 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              className="transition-colors duration-300"
             >
               <circle cx="12" cy="8" r="4" fill="#C4C4C4" />
               <ellipse cx="12" cy="17" rx="7" ry="4" fill="#C4C4C4" />
