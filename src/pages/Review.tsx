@@ -1,5 +1,5 @@
 import Navbar from "../components/Navbar";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import ApprovedSVG from "../../imgs/approved.png";

@@ -118,6 +118,27 @@ export async function deleteOrganization(companyId: string): Promise<any> {
   return response.json();
 }
 
+// Delete a user by company ID
+export async function deleteUserByCompanyId(companyId: string): Promise<any> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+  const response = await fetch(`${BASE_URL}/company/user/${companyId}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
+    throw new Error(
+      `DELETE /company/user/${companyId} failed: ${response.status}`
+    );
+  }
+  return response.json();
+}
+
 // Authentication types
 export interface LoginData {
   email: string;
