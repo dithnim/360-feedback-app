@@ -1,6 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
-import PublicNavbar from "../components/PublicNavbar";
 
 const SurveyDemo = () => {
   const navigate = useNavigate();
