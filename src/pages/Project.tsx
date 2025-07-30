@@ -63,6 +63,7 @@ const Project = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
+  const [showCompletionPopup, setShowCompletionPopup] = useState(false);
 
   //!Page data states
   const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
@@ -1645,44 +1646,12 @@ const Project = () => {
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={async () => {
                     setIsSubmitting(true);
-                    try {
-                      // Create user data from groups for API submission
-                      const allUsersData: any[] = [];
-                      userGroups.forEach((group) => {
-                        if (group.appraisee) {
-                          allUsersData.push({
-                            participantName: group.appraisee.name,
-                            name: group.appraisee.name,
-                            email: group.appraisee.email,
-                            designation: group.appraisee.designation,
-                            appraisee: "Appraisee",
-                            role: group.appraisee.role,
-                          });
-                        }
-                        group.appraisers.forEach((appraiser) => {
-                          allUsersData.push({
-                            participantName: appraiser.name,
-                            name: appraiser.name,
-                            email: appraiser.email,
-                            designation: appraiser.designation,
-                            appraisee: "Appraiser",
-                            role: appraiser.role,
-                          });
-                        });
-                      });
-
-                      if (allUsersData.length > 0) {
-                        await handlerUserCreation(allUsersData);
-                      }
-                    } catch (error) {
-                      console.error("Error creating users:", error);
-                    } finally {
-                      setIsSubmitting(false);
-                    }
+                    setShowCompletionPopup(true);
+                    setIsSubmitting(false);
                   }}
-                  disabled={userGroups.length === 0}
+                  disabled={userGroups.length === 0 || isSubmitting}
                 >
-                  Finish
+                  {isSubmitting ? "Processing..." : "Finish"}
                 </Button>
               </div>
             </div>
@@ -1793,8 +1762,12 @@ const Project = () => {
                             {group.appraisee ? (
                               <div className="flex items-start space-x-3 max-w-sm">
                                 <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-500 p-4 rounded-lg w-full shadow-sm hover:shadow-md transition-shadow duration-200">
-                                  <div className="font-semibold text-gray-900 text-base mb-1">
+                                  <div className="font-semibold text-gray-900 text-base mb-1 flex items-center justify-between">
                                     {group.appraisee.name}
+                                    <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap shadow-sm">
+                                      <i className="bx bx-user-check mr-1"></i>
+                                      {group.appraisee.role}
+                                    </span>
                                   </div>
                                   <div className="text-sm text-gray-600 mb-1 flex items-center">
                                     <i className="bx bx-envelope text-gray-400 mr-1"></i>
@@ -1805,10 +1778,6 @@ const Project = () => {
                                     {group.appraisee.designation}
                                   </div>
                                 </div>
-                                <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap shadow-sm">
-                                  <i className="bx bx-user-check mr-1"></i>
-                                  {group.appraisee.role}
-                                </span>
                               </div>
                             ) : (
                               <div className="flex items-center text-gray-400 text-sm italic bg-gray-50 px-4 py-3 rounded-lg border border-dashed border-gray-300">
@@ -1827,8 +1796,12 @@ const Project = () => {
                                     className="flex items-start space-x-3"
                                   >
                                     <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 p-4 rounded-lg w-full shadow-sm hover:shadow-md transition-shadow duration-200">
-                                      <div className="font-semibold text-gray-900 text-base mb-1">
+                                      <div className="font-semibold text-gray-900 text-base mb-1 flex items-center justify-between">
                                         {appraiser.name}
+                                        <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200 whitespace-nowrap shadow-sm">
+                                          <i className="bx bx-user-voice mr-1"></i>
+                                          {appraiser.role}
+                                        </span>
                                       </div>
                                       <div className="text-sm text-gray-600 mb-1 flex items-center">
                                         <i className="bx bx-envelope text-gray-400 mr-1"></i>
@@ -1839,10 +1812,6 @@ const Project = () => {
                                         {appraiser.designation}
                                       </div>
                                     </div>
-                                    <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200 whitespace-nowrap shadow-sm">
-                                      <i className="bx bx-user-voice mr-1"></i>
-                                      {appraiser.role}
-                                    </span>
                                   </div>
                                 ))}
                               </div>
@@ -1946,7 +1915,225 @@ const Project = () => {
     default:
       pageContent = null;
   }
-  return pageContent;
+
+  // Completion Popup Component
+  const CompletionPopup = () => {
+    if (!showCompletionPopup) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div
+          className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-500 ease-out"
+          style={{
+            animation: showCompletionPopup
+              ? "popupSlideIn 0.5s ease-out forwards"
+              : "popupSlideOut 0.3s ease-in forwards",
+          }}
+        >
+          {/* Animated background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 rounded-2xl opacity-5 animate-pulse"></div>
+
+          {/* Close button */}
+          <button
+            onClick={() => setShowCompletionPopup(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 z-10"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+
+          <div className="p-8 text-center">
+            {/* Animated success icon */}
+            <div className="relative mb-6">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                <svg
+                  className="w-10 h-10 text-white transform transition-all duration-700 ease-out"
+                  style={{
+                    animation: "checkmarkDraw 0.8s ease-out 0.3s forwards",
+                    opacity: 0,
+                  }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                    style={{
+                      strokeDasharray: "30",
+                      strokeDashoffset: "30",
+                      animation: "checkmarkDraw 0.8s ease-out 0.3s forwards",
+                    }}
+                  />
+                </svg>
+              </div>
+              {/* Floating particles */}
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-2 h-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"
+                    style={{
+                      top: `${20 + Math.random() * 60}%`,
+                      left: `${20 + Math.random() * 60}%`,
+                      animation: `float ${2 + Math.random() * 2}s ease-in-out ${Math.random() * 2}s infinite`,
+                      opacity: 0.7,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Success message */}
+            <div className="space-y-4 mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 transform transition-all duration-500 delay-300">
+                🎉 Feedback Plan Completed!
+              </h2>
+              <div className="space-y-2">
+                <p className="text-lg text-gray-700 font-medium transform transition-all duration-500 delay-400">
+                  Your 360° feedback project has been successfully created
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 transform transition-all duration-500 delay-500">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <svg
+                        className="w-5 h-5 text-blue-600 mt-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-blue-800">
+                        📧 Automated Email Notifications Sent
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        All participants have been notified automatically. No
+                        manual intervention required!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 transform transition-all duration-500 delay-600">
+              <Button
+                variant="next"
+                onClick={() => {
+                  setShowCompletionPopup(false);
+                  // Redirect to dashboard or projects page
+                  window.location.href = "/dashboard";
+                }}
+                className="flex-1 py-3 px-6 text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v0a2 2 0 002-2h6.5l4.5 4.5v.5"
+                    />
+                  </svg>
+                  View Dashboard
+                </span>
+              </Button>
+              <Button
+                variant="previous"
+                onClick={() => setShowCompletionPopup(false)}
+                className="flex-1 py-3 px-6 text-sm font-medium"
+              >
+                Stay Here
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes popupSlideIn {
+            0% {
+              opacity: 0;
+              transform: translateY(-50px) scale(0.9);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @keyframes popupSlideOut {
+            0% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+            100% {
+              opacity: 0;
+              transform: translateY(-50px) scale(0.9);
+            }
+          }
+
+          @keyframes checkmarkDraw {
+            0% {
+              stroke-dashoffset: 30;
+              opacity: 0;
+            }
+            50% {
+              opacity: 1;
+            }
+            100% {
+              stroke-dashoffset: 0;
+              opacity: 1;
+            }
+          }
+
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px) scale(1);
+              opacity: 0.7;
+            }
+            50% {
+              transform: translateY(-20px) scale(1.1);
+              opacity: 1;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {pageContent}
+      <CompletionPopup />
+    </>
+  );
 };
 
 export default Project;
