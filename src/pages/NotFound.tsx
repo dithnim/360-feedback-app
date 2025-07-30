@@ -29,14 +29,16 @@ const NotFound: React.FC = () => {
         <div className="absolute top-32 right-1/4 w-16 h-16 bg-gradient-to-bl from-[#ee3f40] via-[#a10000] to-[#8b0000] rounded-full opacity-5 animate-float-gentle blur-sm"></div>
         <div className="absolute bottom-1/3 left-12 w-12 h-12 bg-gradient-to-tr from-[#ed3f41] to-[#656464] rounded-full opacity-4 animate-float-subtle blur-sm"></div>
         <div className="absolute top-1/4 right-8 w-20 h-20 bg-gradient-to-r from-[#ed3f41] to-transparent rounded-full opacity-6 animate-morph-shape blur-sm"></div>
-        
+
         {/* Additional scattered elements */}
         <div className="absolute top-3/4 left-1/3 w-6 h-6 bg-[#ed3f41] rounded-full opacity-20 animate-bounce-slow"></div>
         <div className="absolute bottom-1/5 right-1/3 w-8 h-8 bg-gradient-to-r from-[#ee3f40] to-[#ed3f41] rounded-full opacity-12 animate-spin-slow"></div>
       </div>
 
       {/* Main Content */}
-      <div className={`relative z-10 min-h-screen flex items-center justify-center px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div
+        className={`relative z-10 min-h-screen flex items-center justify-center px-4 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+      >
         <div className="text-center max-w-2xl mx-auto">
           {/* 404 Number with animation */}
           <div className="relative mb-8">
@@ -55,8 +57,9 @@ const NotFound: React.FC = () => {
               Oops! Page Not Found
             </h2>
             <p className="text-lg text-[#656464] leading-relaxed animate-fade-in-up-delay">
-              The page you're looking for seems to have wandered off into the digital wilderness. 
-              Don't worry, even the best explorers sometimes take a wrong turn!
+              The page you're looking for seems to have wandered off into the
+              digital wilderness. Don't worry, even the best explorers sometimes
+              take a wrong turn!
             </p>
           </div>
 
@@ -79,7 +82,7 @@ const NotFound: React.FC = () => {
                 <span>Go Home</span>
               </div>
             </button>
-            
+
             <button
               onClick={handleGoBack}
               className="group bg-white hover:bg-gray-50 text-[#ed3f41] font-semibold py-3 px-8 rounded-lg border-2 border-[#ed3f41] transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#ee3f40] focus:ring-opacity-50 animate-bounce-in-delay"
