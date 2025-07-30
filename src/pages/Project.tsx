@@ -3,7 +3,6 @@ import { apiPost } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
 import ImageUpload from "../components/ui/ImageUpload";
@@ -59,12 +58,14 @@ const Project = () => {
     formState: { errors },
     watch,
   } = useForm<ProjectFormData>();
-  const navigate = useNavigate();
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
+
+  //!Page data states
+  const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
 
   const [participants, setParticipants] = useState<
     {
@@ -89,13 +90,61 @@ const Project = () => {
     register: registerCompany,
     handleSubmit: handleSubmitCompany,
     formState: { errors: errorsCompany },
-    reset: resetCompany,
+    setValue: setCompanyValue,
+    watch: watchCompany,
   } = useForm<CompanyFormData>();
 
   const [users, setUsers] = useState<UserData[]>([]);
 
   // Load participants from localStorage when pageCase changes to 4
   useEffect(() => {
+    if (pageCase === 1) {
+      const savedCompanyData = localStorage.getItem("Company");
+      if (savedCompanyData) {
+        try {
+          const parsedCompanyData = JSON.parse(savedCompanyData);
+          setCompanyData(parsedCompanyData);
+        } catch (error) {
+          console.error("Error parsing saved company data:", error);
+          setCompanyData(null);
+        }
+      } else {
+        setCompanyData(null);
+      }
+
+      // Load saved company form data
+      const savedCompanyFormData = localStorage.getItem("CompanyFormData");
+      if (savedCompanyFormData) {
+        try {
+          const parsedFormData = JSON.parse(savedCompanyFormData);
+          if (parsedFormData.companyName)
+            setCompanyValue("companyName", parsedFormData.companyName);
+          if (parsedFormData.description)
+            setCompanyValue("description", parsedFormData.description);
+          if (parsedFormData.contactPerson)
+            setCompanyValue("contactPerson", parsedFormData.contactPerson);
+          if (parsedFormData.email)
+            setCompanyValue("email", parsedFormData.email);
+          if (parsedFormData.phone)
+            setCompanyValue("phone", parsedFormData.phone);
+        } catch (error) {
+          console.error("Error parsing saved company form data:", error);
+        }
+      }
+    }
+    if (pageCase === 2) {
+      // Load saved participants when entering case 2
+      const savedParticipants = localStorage.getItem("Participants");
+      if (savedParticipants) {
+        try {
+          const parsedParticipants = JSON.parse(savedParticipants);
+          setParticipants(parsedParticipants);
+        } catch (error) {
+          console.error("Error parsing saved participants:", error);
+          setParticipants([]);
+        }
+      }
+    }
     if (pageCase === 4) {
       const participantsFromStorage = localStorage.getItem("Participants");
       if (participantsFromStorage) {
@@ -125,6 +174,36 @@ const Project = () => {
       }
     }
   }, [pageCase]);
+
+  // Watch company form values to save to localStorage
+  const watchedCompanyValues = watchCompany();
+
+  // Save company form data to localStorage whenever form values change
+  useEffect(() => {
+    if (
+      pageCase === 1 &&
+      watchedCompanyValues &&
+      Object.keys(watchedCompanyValues).length > 0
+    ) {
+      const hasNonEmptyValue = Object.values(watchedCompanyValues).some(
+        (value) => value && value.toString().trim() !== ""
+      );
+      if (hasNonEmptyValue) {
+        localStorage.setItem(
+          "CompanyFormData",
+          JSON.stringify(watchedCompanyValues)
+        );
+      }
+    }
+  }, [watchedCompanyValues, pageCase]);
+
+  // Save participants array to localStorage whenever it changes
+  useEffect(() => {
+    if (participants.length > 0) {
+      localStorage.setItem("Participants", JSON.stringify(participants));
+    }
+  }, [participants]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
@@ -232,12 +311,6 @@ const Project = () => {
     setPageCase((prev) => prev - 1);
   }, []);
 
-  const handleFinish = useCallback(() => {
-    localStorage.removeItem("Company");
-    localStorage.removeItem("Project");
-    navigate("/create");
-  }, [navigate]);
-
   const handleEdit = useCallback(
     (index: number) => {
       const participant = participants[index];
@@ -251,7 +324,17 @@ const Project = () => {
 
   const handleDelete = useCallback(
     (index: number) => {
-      setParticipants((prev) => prev.filter((_, i) => i !== index));
+      const updatedParticipants = participants.filter((_, i) => i !== index);
+      setParticipants(updatedParticipants);
+
+      // Update localStorage with the updated participants list
+      if (updatedParticipants.length > 0) {
+        localStorage.setItem(
+          "Participants",
+          JSON.stringify(updatedParticipants)
+        );
+      }
+
       if (editIndex === index) {
         setEditIndex(null);
         resetInfo({
@@ -263,10 +346,9 @@ const Project = () => {
         });
       }
     },
-    [editIndex, resetInfo]
+    [participants, editIndex, resetInfo]
   );
 
-  // Handler function for company creation, now has access to resetCompany
   const handlerCompanyCreation = useCallback(
     async (data: CompanyFormData) => {
       const payload = {
@@ -274,13 +356,13 @@ const Project = () => {
         email: data.email,
         contactNumber: data.phone,
         contactPerson: data.contactPerson,
-        logoImg: companyLogoUrl || "https://example.com/images/acme-logo.png",
+        logoImg: companyLogoUrl,
         createdAt: new Date().toISOString(),
       };
       console.log("Sending company creation payload:", payload);
       setIsSubmitting(true);
       try {
-        const token = localStorage.getItem("token") || ""; // Get token from localStorage
+        const token = localStorage.getItem("token") || "";
         const response = await apiPost<any>(
           "/company",
           payload,
@@ -289,8 +371,25 @@ const Project = () => {
         console.log("RAW API response:", response);
         // Save the backend response data to localStorage if it contains an id
         if (response && response.id) {
+          // Store the API response
           localStorage.setItem("Company", JSON.stringify(response));
-          resetCompany();
+
+          // Keep the form data with the company logo URL for display purposes
+          const formDataWithLogo = {
+            ...data,
+            logoImg: companyLogoUrl,
+            id: response.id,
+            createdAt: response.createdAt || new Date().toISOString(),
+          };
+          localStorage.setItem(
+            "CompanyFormData",
+            JSON.stringify(formDataWithLogo)
+          );
+
+          // Update company data state
+          setCompanyData(formDataWithLogo);
+
+          // Don't reset the form - keep the data visible
           setCompanyLogoUrl(""); // Clear the logo URL
           setUploadError(""); // Clear any upload errors
         } else {
@@ -304,7 +403,7 @@ const Project = () => {
         setIsSubmitting(false);
       }
     },
-    [companyLogoUrl, resetCompany, setCompanyLogoUrl, setUploadError]
+    [companyLogoUrl, setCompanyLogoUrl, setUploadError]
   );
 
   const onSubmitCompany = useCallback(
@@ -667,6 +766,58 @@ const Project = () => {
                 {isSubmitting ? "Saving..." : "Save"}
               </Button>
             </form>
+
+            {/* Display saved company data */}
+            {companyData && (
+              <div className="mt-10 p-6 bg-green-50 border border-green-200 rounded-lg">
+                <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Company Information Saved Successfully
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">
+                      Company Name:
+                    </span>
+                    <p className="text-gray-900">{companyData.companyName}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">
+                      Contact Person:
+                    </span>
+                    <p className="text-gray-900">{companyData.contactPerson}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Email:</span>
+                    <p className="text-gray-900">{companyData.email}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Phone:</span>
+                    <p className="text-gray-900">{companyData.phone}</p>
+                  </div>
+                  {companyData.description && (
+                    <div className="md:col-span-2">
+                      <span className="font-medium text-gray-700">
+                        Description:
+                      </span>
+                      <p className="text-gray-900">{companyData.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -1336,122 +1487,128 @@ const Project = () => {
             </Button>
             <div className="review-section mt-8">
               {userGroups.length > 0 && (
-                <div>
+                <div className="mb-10">
                   <h3 className="text-2xl font-semibold mb-4 text-gray-800">
                     Selected User Groups
                   </h3>
-                  <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
                     <table className="min-w-full">
-                      <thead className="bg-gray-50">
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr className="border-b border-gray-300">
+                          <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                             Group #
                           </th>
-                          <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                          <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                             Appraisee
                           </th>
-                          <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                            Appraisee Role
-                          </th>
-                          <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                          <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                             Appraisers
                           </th>
-                          <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                            Appraiser Roles
-                          </th>
-                          <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                          <th className="text-center py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {userGroups.map((group) => (
+                      <tbody className="divide-y divide-gray-100">
+                        {userGroups.map((group, index) => (
                           <tr
                             key={group.id}
-                            className="border-b border-gray-200 hover:bg-gray-50"
+                            className={`transition-all duration-200 hover:bg-gray-50 hover:shadow-sm ${
+                              index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                            }`}
                           >
-                            <td className="py-4 px-4 font-medium text-gray-900">
-                              #{group.id}
+                            <td className="py-6 px-6 align-top">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                  {group.id}
+                                </div>
+                              </div>
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-6 px-6 align-top">
                               {group.appraisee ? (
-                                <div className="bg-green-50 border-l-4 border-green-400 p-3 rounded-r">
-                                  <div className="font-medium text-gray-900">
-                                    {group.appraisee.name}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {group.appraisee.email}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {group.appraisee.designation}
+                                <div className="flex items-start space-x-3 max-w-sm">
+                                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-500 p-4 rounded-lg w-full shadow-sm hover:shadow-md transition-shadow duration-200">
+                                    <div className="font-semibold text-gray-900 text-base mb-1 flex items-center justify-between">
+                                      {group.appraisee.name}
+                                      <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap shadow-sm">
+                                        <i className="bx bx-user-check mr-1"></i>
+                                        {group.appraisee.role}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-gray-600 mb-1 flex items-center">
+                                      <i className="bx bx-envelope text-gray-400 mr-1"></i>
+                                      {group.appraisee.email}
+                                    </div>
+                                    <div className="text-sm text-gray-600 flex items-center">
+                                      <i className="bx bx-briefcase text-gray-400 mr-1"></i>
+                                      {group.appraisee.designation}
+                                    </div>
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-gray-400 text-sm">
+                                <div className="flex items-center text-gray-400 text-sm italic bg-gray-50 px-4 py-3 rounded-lg border border-dashed border-gray-300">
+                                  <i className="bx bx-user-x mr-2"></i>
                                   No appraisee assigned
-                                </span>
+                                </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
-                              {group.appraisee ? (
-                                <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                                  {group.appraisee.role}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4">
+
+                            <td className="py-6 px-6 align-top">
                               {group.appraisers.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-3 max-w-sm">
                                   {group.appraisers.map((appraiser) => (
                                     <div
                                       key={appraiser.id}
-                                      className="bg-red-50 border-l-4 border-red-400 p-2 rounded-r"
+                                      className="flex items-start space-x-3"
                                     >
-                                      <div className="font-medium text-gray-900 text-sm">
-                                        {appraiser.name}
-                                      </div>
-                                      <div className="text-xs text-gray-600">
-                                        {appraiser.email}
-                                      </div>
-                                      <div className="text-xs text-gray-600">
-                                        <div>{appraiser.designation}</div>
-                                        <div>{appraiser.role}</div>
+                                      <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 p-4 rounded-lg w-full shadow-sm hover:shadow-md transition-shadow duration-200">
+                                        <div className="font-semibold text-gray-900 text-base mb-1 flex items-center justify-between">
+                                          {appraiser.name}
+                                          <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200 whitespace-nowrap shadow-sm ">
+                                            <i className="bx bx-user-voice mr-1"></i>
+                                            {appraiser.role}
+                                          </span>
+                                        </div>
+                                        <div className="text-sm text-gray-600 mb-1 flex items-center">
+                                          <i className="bx bx-envelope text-gray-400 mr-1"></i>
+                                          {appraiser.email}
+                                        </div>
+                                        <div className="text-sm text-gray-600 flex items-center">
+                                          <i className="bx bx-briefcase text-gray-400 mr-1"></i>
+                                          {appraiser.designation}
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-gray-400 text-sm">
+                                <div className="flex items-center text-gray-400 text-sm italic bg-gray-50 px-4 py-3 rounded-lg border border-dashed border-gray-300">
+                                  <i className="bx bx-user-x mr-2"></i>
                                   No appraisers assigned
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4">
-                              {group.appraisers.length > 0 ? (
-                                <div className="space-y-2">
-                                  {group.appraisers.map((appraiser) => (
-                                    <span
-                                      key={appraiser.id}
-                                      className="block text-sm font-medium text-red-600 bg-red-100 px-2 py-1 rounded"
-                                    >
-                                      {appraiser.role}
-                                    </span>
-                                  ))}
                                 </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
                               )}
                             </td>
-                            <td className="py-4 px-4">
-                              <Button
-                                variant="delete"
-                                onClick={() => handleRemoveUserGroup(group.id)}
-                                className="p-2 text-sm"
-                              >
-                                <i className="bx bxs-trash"></i>
-                              </Button>
+
+                            <td className="py-6 px-6 align-top">
+                              <div className="flex items-center justify-center space-x-2">
+                                <Button
+                                  variant="delete"
+                                  className="p-3 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg transition-all duration-200 hover:shadow-md group"
+                                  title="Edit Group"
+                                >
+                                  <i className="bx bxs-pencil group-hover:scale-110 transition-transform duration-200"></i>
+                                </Button>
+                                <Button
+                                  variant="delete"
+                                  onClick={() =>
+                                    handleRemoveUserGroup(group.id)
+                                  }
+                                  className="p-3 text-sm bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-all duration-200 hover:shadow-md group"
+                                  title="Delete Group"
+                                >
+                                  <i className="bx bxs-trash group-hover:scale-110 transition-transform duration-200"></i>
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1521,7 +1678,6 @@ const Project = () => {
                       console.error("Error creating users:", error);
                     } finally {
                       setIsSubmitting(false);
-                      handleFinish();
                     }
                   }}
                   disabled={userGroups.length === 0}
@@ -1599,166 +1755,123 @@ const Project = () => {
                   </div>
                 </div>
 
-                {userGroups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
-                  >
-                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Feedback Group {group.id}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {group.appraisee ? 1 : 0} Appraisee •{" "}
-                        {group.appraisers.length} Appraiser
-                        {group.appraisers.length !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-
-                    <div className="p-6">
-                      {group.appraisee && (
-                        <div className="mb-6">
-                          <div className="flex items-center mb-3">
-                            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                            <h4 className="text-md font-medium text-green-700">
-                              Appraisee
-                            </h4>
-                          </div>
-                          <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h5 className="font-semibold text-gray-900 text-lg">
-                                  {group.appraisee.name}
-                                </h5>
-                                <p className="text-gray-600 mt-1">
-                                  {group.appraisee.email}
-                                </p>
-                                <div className="flex items-center mt-2 space-x-4">
-                                  <div className="flex items-center">
-                                    <svg
-                                      className="w-4 h-4 text-gray-500 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v2a2 2 0 002 2h2a2 2 0 002-2V6z"
-                                      />
-                                    </svg>
-                                    <span className="text-sm text-gray-600">
-                                      {group.appraisee.designation}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center">
-                                    <svg
-                                      className="w-4 h-4 text-gray-500 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                      />
-                                    </svg>
-                                    <span className="text-sm text-gray-600">
-                                      {group.appraisee.role}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Being Evaluated
-                                </span>
+                {/* Table View for User Groups */}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
+                  <table className="min-w-full">
+                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                      <tr className="border-b border-gray-300">
+                        <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                          Group #
+                        </th>
+                        <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                          Appraisee
+                        </th>
+                        <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                          Appraisers
+                        </th>
+                        <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {userGroups.map((group, index) => (
+                        <tr
+                          key={group.id}
+                          className={`transition-all duration-200 hover:bg-gray-50 hover:shadow-sm ${
+                            index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                          }`}
+                        >
+                          <td className="py-6 px-6 align-top">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                {group.id}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {group.appraisers.length > 0 && (
-                        <div>
-                          <div className="flex items-center mb-3">
-                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                            <h4 className="text-md font-medium text-red-700">
-                              Appraisers ({group.appraisers.length})
-                            </h4>
-                          </div>
-                          <div className="grid gap-3">
-                            {group.appraisers.map(
-                              (appraiser, appraiserIndex) => (
-                                <div
-                                  key={appraiser.id}
-                                  className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg"
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <h5 className="font-semibold text-gray-900">
-                                        {appraiser.name}
-                                      </h5>
-                                      <p className="text-gray-600 text-sm mt-1">
-                                        {appraiser.email}
-                                      </p>
-                                      <div className="flex items-center mt-2 space-x-4">
-                                        <div className="flex items-center">
-                                          <svg
-                                            className="w-4 h-4 text-gray-500 mr-1"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                          >
-                                            <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              strokeWidth={2}
-                                              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v2a2 2 0 002 2h2a2 2 0 002-2V6z"
-                                            />
-                                          </svg>
-                                          <span className="text-sm text-gray-600">
-                                            {appraiser.designation}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center">
-                                          <svg
-                                            className="w-4 h-4 text-gray-500 mr-1"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                          >
-                                            <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              strokeWidth={2}
-                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                            />
-                                          </svg>
-                                          <span className="text-sm text-gray-600">
-                                            {appraiser.role}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="ml-4">
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        Evaluator #{appraiserIndex + 1}
-                                      </span>
-                                    </div>
+                          </td>
+                          <td className="py-6 px-6 align-top">
+                            {group.appraisee ? (
+                              <div className="flex items-start space-x-3 max-w-sm">
+                                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-500 p-4 rounded-lg w-full shadow-sm hover:shadow-md transition-shadow duration-200">
+                                  <div className="font-semibold text-gray-900 text-base mb-1">
+                                    {group.appraisee.name}
+                                  </div>
+                                  <div className="text-sm text-gray-600 mb-1 flex items-center">
+                                    <i className="bx bx-envelope text-gray-400 mr-1"></i>
+                                    {group.appraisee.email}
+                                  </div>
+                                  <div className="text-sm text-gray-600 flex items-center">
+                                    <i className="bx bx-briefcase text-gray-400 mr-1"></i>
+                                    {group.appraisee.designation}
                                   </div>
                                 </div>
-                              )
+                                <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap shadow-sm">
+                                  <i className="bx bx-user-check mr-1"></i>
+                                  {group.appraisee.role}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center text-gray-400 text-sm italic bg-gray-50 px-4 py-3 rounded-lg border border-dashed border-gray-300">
+                                <i className="bx bx-user-x mr-2"></i>
+                                No appraisee assigned
+                              </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                          </td>
+
+                          <td className="py-6 px-6 align-top">
+                            {group.appraisers.length > 0 ? (
+                              <div className="space-y-3 max-w-sm">
+                                {group.appraisers.map((appraiser) => (
+                                  <div
+                                    key={appraiser.id}
+                                    className="flex items-start space-x-3"
+                                  >
+                                    <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 p-4 rounded-lg w-full shadow-sm hover:shadow-md transition-shadow duration-200">
+                                      <div className="font-semibold text-gray-900 text-base mb-1">
+                                        {appraiser.name}
+                                      </div>
+                                      <div className="text-sm text-gray-600 mb-1 flex items-center">
+                                        <i className="bx bx-envelope text-gray-400 mr-1"></i>
+                                        {appraiser.email}
+                                      </div>
+                                      <div className="text-sm text-gray-600 flex items-center">
+                                        <i className="bx bx-briefcase text-gray-400 mr-1"></i>
+                                        {appraiser.designation}
+                                      </div>
+                                    </div>
+                                    <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200 whitespace-nowrap shadow-sm">
+                                      <i className="bx bx-user-voice mr-1"></i>
+                                      {appraiser.role}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex items-center text-gray-400 text-sm italic bg-gray-50 px-4 py-3 rounded-lg border border-dashed border-gray-300">
+                                <i className="bx bx-user-x mr-2"></i>
+                                No appraisers assigned
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-6 px-6 align-top">
+                            <div className="flex flex-col space-y-2">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                                <i className="bx bx-check-circle mr-1"></i>
+                                Ready to Deploy
+                              </span>
+                              <div className="text-xs text-gray-500">
+                                {group.appraisee ? 1 : 0} Appraisee •{" "}
+                                {group.appraisers.length} Appraiser
+                                {group.appraisers.length !== 1 ? "s" : ""}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mt-6">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">
