@@ -6,6 +6,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
+import ImageUpload from "../components/ui/ImageUpload";
 
 interface ProjectFormData {
   projectName: string;
@@ -62,6 +63,8 @@ const Project = () => {
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
+  const [uploadError, setUploadError] = useState<string>("");
 
   const [participants, setParticipants] = useState<
     {
@@ -264,43 +267,52 @@ const Project = () => {
   );
 
   // Handler function for company creation, now has access to resetCompany
-  const handlerCompanyCreation = async (data: CompanyFormData) => {
-    const payload = {
-      name: data.companyName,
-      email: data.email,
-      contactNumber: data.phone,
-      contactPerson: data.contactPerson,
-      logoImg: "https://example.com/images/acme-logo.png",
-      createdAt: new Date().toISOString(),
-    };
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("token") || ""; // Get token from localStorage
-      const response = await apiPost<any>(
-        "/company",
-        payload,
-        token ? { Authorization: `Bearer ${token}` } : {}
-      );
-      console.log("RAW API response:", response);
-      // Save the backend response data to localStorage if it contains an id
-      if (response && response.id) {
-        localStorage.setItem("Company", JSON.stringify(response));
-        resetCompany();
-      } else {
-        console.error("Invalid response from API:", response);
+  const handlerCompanyCreation = useCallback(
+    async (data: CompanyFormData) => {
+      const payload = {
+        name: data.companyName,
+        email: data.email,
+        contactNumber: data.phone,
+        contactPerson: data.contactPerson,
+        logoImg: companyLogoUrl || "https://example.com/images/acme-logo.png",
+        createdAt: new Date().toISOString(),
+      };
+      console.log("Sending company creation payload:", payload);
+      setIsSubmitting(true);
+      try {
+        const token = localStorage.getItem("token") || ""; // Get token from localStorage
+        const response = await apiPost<any>(
+          "/company",
+          payload,
+          token ? { Authorization: `Bearer ${token}` } : {}
+        );
+        console.log("RAW API response:", response);
+        // Save the backend response data to localStorage if it contains an id
+        if (response && response.id) {
+          localStorage.setItem("Company", JSON.stringify(response));
+          resetCompany();
+          setCompanyLogoUrl(""); // Clear the logo URL
+          setUploadError(""); // Clear any upload errors
+        } else {
+          console.error("Invalid response from API:", response);
+        }
+      } catch (error) {
+        // Handle error (e.g., show error message)
+        console.log("Error caught:", error);
+        console.error("Error creating company:", error);
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      // Handle error (e.g., show error message)
-      console.log("Error caught:", error);
-      console.error("Error creating company:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    [companyLogoUrl, resetCompany, setCompanyLogoUrl, setUploadError]
+  );
 
-  const onSubmitCompany = useCallback((data: CompanyFormData) => {
-    handlerCompanyCreation(data);
-  }, []);
+  const onSubmitCompany = useCallback(
+    (data: CompanyFormData) => {
+      handlerCompanyCreation(data);
+    },
+    [handlerCompanyCreation]
+  );
 
   // TODO Handler function for project creation
   const handlerProjectCreation = async (data: ProjectFormData) => {
@@ -497,34 +509,56 @@ const Project = () => {
                   </p>
                 )}
               </div>
-              <div className="mb-5">
-                <label
-                  htmlFor="description"
-                  className="block mb-2 text-lg text-gray-500"
-                >
-                  Description*
-                </label>
-                <textarea
-                  id="description"
-                  className={`bg-gray-50 border ${
-                    errorsCompany.description
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5`}
-                  rows={7}
-                  {...registerCompany("description", {
-                    required: "Description is required",
-                    minLength: {
-                      value: 10,
-                      message: "Description must be at least 10 characters",
-                    },
-                  })}
-                ></textarea>
-                {errorsCompany.description && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errorsCompany.description.message}
-                  </p>
-                )}
+              <div className="flex justify-between items-center mb-5">
+                <div className="me-10 w-full">
+                  <label
+                    htmlFor="description"
+                    className="block mb-2 text-lg text-gray-500"
+                  >
+                    Description*
+                  </label>
+                  <textarea
+                    id="description"
+                    className={`bg-gray-50 border ${
+                      errorsCompany.description
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5`}
+                    rows={7}
+                    {...registerCompany("description", {
+                      required: "Description is required",
+                      minLength: {
+                        value: 10,
+                        message: "Description must be at least 10 characters",
+                      },
+                    })}
+                  ></textarea>
+                  {errorsCompany.description && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errorsCompany.description.message}
+                    </p>
+                  )}
+                </div>
+                <div className=" w-full">
+                  <label className="block mb-2 text-lg text-gray-500">
+                    Company Logo
+                  </label>
+                  <ImageUpload
+                    onUploadSuccess={(imageUrl) => {
+                      setCompanyLogoUrl(imageUrl);
+                      setUploadError(""); // Clear any previous errors
+                    }}
+                    onUploadError={(error) => {
+                      setUploadError(error);
+                    }}
+                    currentImageUrl={companyLogoUrl}
+                    disabled={isSubmitting}
+                    className="w-full"
+                  />
+                  {uploadError && (
+                    <p className="mt-1 text-sm text-red-500">{uploadError}</p>
+                  )}
+                </div>
               </div>
               <div className="flex justify-between items-center mb-5">
                 <div className="w-full me-10">
@@ -586,7 +620,7 @@ const Project = () => {
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <div className="w-full me-10">
+                <div className="w-full">
                   <label
                     htmlFor="phone"
                     className="block mb-2 text-lg text-gray-500"
@@ -623,20 +657,6 @@ const Project = () => {
                       {errorsCompany.phone.message}
                     </p>
                   )}
-                </div>
-                <div className="cursor-pointer">
-                  <label
-                    className="block mb-2 text-lg text-gray-500 cursor-pointer"
-                    htmlFor="file_input"
-                  >
-                    Upload file
-                  </label>
-                  <input
-                    className="bg-gray-50 border border-gray-300 text-gray-800 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5 cursor-pointer"
-                    id="user_avatar"
-                    type="file"
-                    {...registerCompany("file")}
-                  />
                 </div>
               </div>
               <Button

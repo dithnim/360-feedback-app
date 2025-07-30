@@ -42,6 +42,7 @@ function Home() {
       try {
         setError(null);
         const data = await getCompanies();
+        console.log("Fetched organizations:", data);
         setOrganizations(data);
       } catch (error) {
         console.error("Failed to fetch organizations:", error);
@@ -182,7 +183,7 @@ function Home() {
                   key={org.id}
                   className="w-full md:w-[321px] h-[266px] rounded-[10px] overflow-hidden p-0 relative"
                   style={{
-                    backgroundImage: `url(${org.image})`,
+                    backgroundImage: `url(${org.logoImg})`,
                     backgroundSize: "cover",
                     backgroundPosition: "50% 50%",
                   }}
