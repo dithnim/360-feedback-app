@@ -123,9 +123,6 @@ const Project = () => {
     }
   }, [pageCase]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<
-    "Appraisee" | "Appraiser" | "All"
-  >("All");
   const [filterDesignation, setFilterDesignation] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
   const [userTypes, setUserTypes] = useState<Record<number, string>>({});
@@ -272,12 +269,11 @@ const Project = () => {
       const matchesSearch = user.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      const matchesType = filterType === "All" || user.type === filterType;
       const matchesDesignation =
         filterDesignation === "" || user.designation === filterDesignation;
-      return matchesSearch && matchesType && matchesDesignation;
+      return matchesSearch && matchesDesignation;
     });
-  }, [users, searchTerm, filterType, filterDesignation]);
+  }, [users, searchTerm, filterDesignation]);
 
   const uniqueDesignations = useMemo(
     () => Array.from(new Set(users.map((user) => user.designation))),
@@ -1264,22 +1260,6 @@ const Project = () => {
                       d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
                     />
                   </svg>
-                </div>
-                <div className="flex ms-3">
-                  <Button
-                    variant="success"
-                    className="me-3 h-13"
-                    onClick={() => setFilterType("Appraisee")}
-                  >
-                    Appraisee
-                  </Button>
-                  <Button
-                    variant="save"
-                    onClick={() => setFilterType("Appraiser")}
-                    className="me-3 h-13"
-                  >
-                    Appraiser
-                  </Button>
                 </div>
               </div>
               <select
