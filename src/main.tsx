@@ -29,7 +29,7 @@ import SurveyParticipation from "./pages/SurveyParticipation";
 import SurveyThankYou from "./pages/SurveyThankYou";
 import SurveyDemo from "./pages/SurveyDemo";
 import ErrorBoundary from "./components/ErrorBoundary";
-import NotFound from "./pages/NotFound";
+import NotFound from "./pages/NotFound.tsx";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
