@@ -1375,7 +1375,7 @@ const Project = () => {
                         >
                           <option value="">Select Role</option>
                           <option value="Peer">Peer</option>
-                          <option value="Manager">Manager</option>
+                          <option value="Self">Self</option>
                           <option value="Boss">Boss</option>
                           <option value="Subordinate">Subordinate</option>
                         </select>

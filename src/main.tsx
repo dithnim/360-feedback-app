@@ -25,6 +25,9 @@ import Loader from "./components/ui/loader";
 import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
 import SurveyPreview from "./pages/SurveyPreview";
 import CreateFromTemplate from "./pages/CreateFromTemplate";
+import SurveyParticipation from "./pages/SurveyParticipation";
+import SurveyThankYou from "./pages/SurveyThankYou";
+import SurveyDemo from "./pages/SurveyDemo";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -51,6 +54,10 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      {/* Public survey routes - no authentication required */}
+      <Route path="/survey/participate" element={<SurveyParticipation />} />
+      <Route path="/survey-thank-you" element={<SurveyThankYou />} />
+      <Route path="/survey-demo" element={<SurveyDemo />} />
       <Route
         path="/"
         element={

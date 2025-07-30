@@ -199,3 +199,66 @@ export async function registerClient(
 ): Promise<any> {
   return apiPost<any>("/auth/register", registrationData);
 }
+
+// Survey related types and functions
+export interface SurveyQuestion {
+  id: number;
+  text: string;
+  options: string[];
+}
+
+export interface SurveyCompetency {
+  id: number;
+  name: string;
+  description: string;
+  questions: SurveyQuestion[];
+}
+
+export interface Survey {
+  id: string;
+  title: string;
+  employee: string;
+  competencies: SurveyCompetency[];
+}
+
+export interface SurveyResponse {
+  questionId: number;
+  answer: string;
+  comment?: string;
+}
+
+// Get survey data by token (public endpoint - no auth required)
+export async function getSurveyByToken(token: string): Promise<Survey> {
+  const response = await fetch(`${BASE_URL}/survey/public/${token}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch survey: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// Submit survey responses (public endpoint - no auth required)
+export async function submitSurveyResponse(
+  token: string,
+  responses: SurveyResponse[]
+): Promise<any> {
+  const response = await fetch(`${BASE_URL}/survey/public/${token}/submit`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ responses }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to submit survey: ${response.status}`);
+  }
+
+  return response.json();
+}
