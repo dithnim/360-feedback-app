@@ -3,6 +3,17 @@ import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import { Card, CardContent, CardFooter } from "./components/ui/Card";
 import { Avatar } from "./components/ui/Avatar";
+import { Skeleton } from "./components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./components/ui/alert-dialog";
 import { PlusIcon, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,13 +21,19 @@ import { useNavigate } from "react-router-dom";
 //?Sidebar Context
 import { useSidebar } from "./context/SidebarContext";
 
-import { getCompanies, deleteOrganization } from "./lib/apiService";
-import Loader from "./components/ui/loader";
+import {
+  getCompanies,
+  deleteOrganization,
+  deleteUserByCompanyId,
+} from "./lib/apiService";
 
 function Home() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [organizationToDelete, setOrganizationToDelete] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { isSidebarExpanded, setSidebarExpanded } = useSidebar();
 
@@ -39,6 +56,33 @@ function Home() {
 
   const navigate = useNavigate();
 
+  // Skeleton loading component
+  const OrganizationCardSkeleton = () => (
+    <Card className="w-full md:w-[321px] h-[266px] rounded-[10px] overflow-hidden p-0 relative">
+      {/* Background skeleton */}
+      <Skeleton className="w-full h-full rounded-[10px]" />
+
+      {/* Organization name skeleton */}
+      <div className="absolute top-[172px] left-4">
+        <Skeleton className="h-6 w-32" />
+      </div>
+
+      {/* Card footer */}
+      <CardFooter className="absolute bottom-0 left-0 w-full h-[40px] bg-white rounded-[0px_0px_10px_10px] flex justify-between items-center px-4 py-0">
+        <div className="flex">
+          {/* Avatar skeletons */}
+          <Skeleton className="w-[30px] h-[30px] rounded-[15px]" />
+          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
+          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
+          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
+          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
+        </div>
+
+        <Skeleton className="h-4 w-12" />
+      </CardFooter>
+    </Card>
+  );
+
   // Handler for viewing an organization
   const handleViewOrganization = (org: any) => {
     navigate("/current-projects", { state: { org } });
@@ -49,24 +93,39 @@ function Home() {
     navigate("/project");
   };
 
-  const deleteOrganizationHandler = async (org: any) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the organization '${org.name}'? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
-    setLoading(true);
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (!organizationToDelete) return;
+
+    setDeleteLoading(true);
     try {
-      await deleteOrganization(org.id);
-      setOrganizations((prev) => prev.filter((o) => o.id !== org.id));
+      await deleteOrganization(organizationToDelete.id);
+      await deleteUserByCompanyId(organizationToDelete.id);
+      setOrganizations((prev) =>
+        prev.filter((o) => o.id !== organizationToDelete.id)
+      );
+      setOrganizationToDelete(null);
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Failed to delete organization:", error);
       alert("Failed to delete organization. Please try again.");
     } finally {
-      setLoading(false);
+      setDeleteLoading(false);
     }
+  };
+
+  const deleteOrganizationHandler = async (
+    org: any,
+    event: React.MouseEvent
+  ) => {
+    event.stopPropagation(); // Prevent card click handler from being triggered
+    setOrganizationToDelete(org);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setIsDeleteDialogOpen(false);
+    setOrganizationToDelete(null);
   };
 
   return (
@@ -98,8 +157,11 @@ function Home() {
           </h1>
 
           {loading ? (
-            <div className="flex justify-center items-center h-[calc(100vh-370px)]">
-              <Loader text="Loading..." />
+            <div className="w-full grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-370px)]">
+              {/* Show 8 skeleton cards while loading */}
+              {Array.from({ length: 8 }).map((_, index) => (
+                <OrganizationCardSkeleton key={index} />
+              ))}
             </div>
           ) : error ? (
             <div className="flex justify-center items-center h-[calc(100vh-370px)]">
@@ -149,7 +211,7 @@ function Home() {
 
                     <label
                       className="font-['Poppins',Helvetica] font-semibold text-[#ed3f41] p-0 cursor-pointer flex items-center justify-center"
-                      onClick={() => deleteOrganizationHandler(org)}
+                      onClick={(event) => deleteOrganizationHandler(org, event)}
                     >
                       Delete
                     </label>
@@ -195,6 +257,35 @@ function Home() {
       <div className="fixed bottom-0 left-0 w-full">
         <Footer />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the organization '
+              {organizationToDelete?.name}'? This action cannot be undone and
+              will permanently remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDialogClose}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
