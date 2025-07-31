@@ -14,12 +14,26 @@ const defaultOptions = [
 ];
 
 const SurvayScratch = () => {
-  type Question = { id: number; text: string; options: string[] };
+  type QuestionType =
+    | "multiple-choice"
+    | "rating-scale"
+    | "open-ended"
+    | "yes-no";
+  type Question = {
+    id: number;
+    text: string;
+    type: QuestionType;
+    options: string[];
+    isRequired?: boolean;
+  };
+
   const [competency, setCompetency] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [input, setInput] = useState("");
+  const [questionType, setQuestionType] =
+    useState<QuestionType>("multiple-choice");
   const [editId, setEditId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
 
@@ -41,18 +55,56 @@ const SurvayScratch = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const getDefaultOptionsForType = (type: QuestionType): string[] => {
+    switch (type) {
+      case "multiple-choice":
+        return [
+          "Strongly Agree",
+          "Agree",
+          "Neutral",
+          "Disagree",
+          "Strongly Disagree",
+        ];
+      case "rating-scale":
+        return ["1", "2", "3", "4", "5"];
+      case "yes-no":
+        return ["Yes", "No"];
+      case "open-ended":
+        return [];
+      default:
+        return defaultOptions;
+    }
+  };
+
   const handleQuestionAdd = () => {
     if (input.trim() === "") return;
     setQuestions([
       ...questions,
-      { id: Date.now(), text: input, options: [...defaultOptions] },
+      {
+        id: Date.now(),
+        text: input,
+        type: questionType,
+        options: getDefaultOptionsForType(questionType),
+        isRequired: true,
+      },
     ]);
     setInput("");
   };
 
   const handleAdd = () => {
-    if (!competency.trim()) return;
-    if (questions.length === 0) return;
+    console.log("handleAdd called", {
+      competency: competency.trim(),
+      questionsLength: questions.length,
+    });
+
+    if (!competency.trim()) {
+      alert("Please enter a competency name");
+      return;
+    }
+    if (questions.length === 0) {
+      alert("Please add at least one question");
+      return;
+    }
 
     const newCompetency = {
       templateName,
@@ -71,6 +123,7 @@ const SurvayScratch = () => {
       setEditPreviewIndex(null);
     } else {
       // Add new
+      console.log("Adding new competency:", newCompetency);
       setTemplatePreviews((prev) => [...prev, newCompetency]);
     }
     setIsEditingPreview(false);
@@ -79,6 +132,7 @@ const SurvayScratch = () => {
     setDescription("");
     setQuestions([]);
     setInput("");
+    setQuestionType("multiple-choice"); // Reset question type to default
   };
 
   const handleDelete = (id: number) => {
@@ -132,6 +186,7 @@ const SurvayScratch = () => {
     setDescription("");
     setQuestions([]);
     setInput("");
+    setQuestionType("multiple-choice"); // Reset question type to default
   };
 
   const PreviewCompetency = ({
@@ -179,8 +234,24 @@ const SurvayScratch = () => {
       </div>
       <ul className="list-disc ml-6">
         {questions.map((q) => (
-          <li key={q.id} className="mb-1">
-            {q.text}
+          <li key={q.id} className="mb-2">
+            <div className="font-medium">{q.text}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              Type:{" "}
+              {q.type.charAt(0).toUpperCase() +
+                q.type.slice(1).replace("-", " ")}
+              {q.isRequired && " • Required"}
+            </div>
+            {q.type !== "open-ended" && q.options.length > 0 && (
+              <div className="text-sm text-gray-600 ml-4 mt-1">
+                Options: {q.options.join(", ")}
+              </div>
+            )}
+            {q.type === "open-ended" && (
+              <div className="text-sm text-gray-500 ml-4 mt-1 italic">
+                Open-ended text response
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -200,7 +271,7 @@ const SurvayScratch = () => {
           await createQuestion({
             competencyId,
             question: q.text,
-            optionType: "string", // Adjust if needed
+            optionType: q.type === "open-ended" ? "text" : "string", // Adjust based on your API
             options: q.options,
           });
         }
@@ -260,28 +331,60 @@ const SurvayScratch = () => {
 
           <div className="mb-4">
             <label
+              htmlFor="questionType"
+              className="mb-2 block text-md font-medium text-gray-700"
+            >
+              Question Type*
+            </label>
+            <select
+              id="questionType"
+              className="border border-gray-300 rounded-lg p-2 w-full mb-4"
+              value={questionType}
+              onChange={(e) => setQuestionType(e.target.value as QuestionType)}
+            >
+              <option value="multiple-choice">Multiple Choice</option>
+              <option value="open-ended">Open Ended</option>
+              <option value="rating-scale" disabled>
+                Rating Scale (1-5)
+              </option>
+              <option value="yes-no" disabled>
+                Yes/No
+              </option>
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label
               htmlFor="questions"
               className="mb-2 block text-md font-medium text-gray-700"
             >
               Questions*
             </label>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <input
-                type="text"
-                id="questions"
-                className="border border-gray-300 rounded-lg p-2 w-full"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter question..."
-              />
-              <button
-                type="button"
-                className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center cursor-pointer w-full sm:w-auto"
-                onClick={handleQuestionAdd}
-                aria-label="Add question"
-              >
-                <i className="bxr  bx-plus"></i>
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="text"
+                  id="questions"
+                  className="border border-gray-300 rounded-lg p-2 w-full"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Enter question..."
+                />
+                <button
+                  type="button"
+                  className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-3 flex items-center justify-center cursor-pointer w-full sm:w-auto"
+                  onClick={handleQuestionAdd}
+                  aria-label="Add question"
+                >
+                  <i className="bxr  bx-plus"></i>
+                </button>
+              </div>
+              {questionType !== "open-ended" && (
+                <div className="text-sm text-gray-600 ml-1">
+                  Preview options:{" "}
+                  {getDefaultOptionsForType(questionType).join(", ")}
+                </div>
+              )}
             </div>
           </div>
 
@@ -306,12 +409,20 @@ const SurvayScratch = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-1">
-                    <input
-                      type="text"
-                      className="border border-gray-300 rounded-lg p-2 w-full"
-                      value={q.text}
-                      readOnly
-                    />
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        className="border border-gray-300 rounded-lg p-2 w-full"
+                        value={q.text}
+                        readOnly
+                      />
+                      <div className="text-xs text-gray-500 mt-1 ml-2">
+                        Type:{" "}
+                        {q.type.charAt(0).toUpperCase() +
+                          q.type.slice(1).replace("-", " ")}
+                        {q.isRequired && " • Required"}
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <button
                         className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
@@ -332,19 +443,30 @@ const SurvayScratch = () => {
                     </div>
                   </div>
                 )}
-                <div className="flex flex-wrap gap-4 ml-2 text-gray-700 text-md items-center">
-                  {q.options.map((opt: string) => (
-                    <span key={opt}>• {opt}</span>
-                  ))}
-                  <button
-                    className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center ml-2 cursor-pointer"
-                    style={{ width: 32, height: 32 }}
-                    onClick={() => handleEditOpts(q.id, q.options)}
-                    aria-label="Edit options"
-                  >
-                    <span style={{ fontSize: 16 }}>✎</span>
-                  </button>
-                </div>
+
+                {/* Show options only for non-open-ended questions */}
+                {q.type !== "open-ended" && (
+                  <div className="flex flex-wrap gap-4 ml-2 text-gray-700 text-md items-center">
+                    {q.options.map((opt: string) => (
+                      <span key={opt}>• {opt}</span>
+                    ))}
+                    <button
+                      className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center ml-2 cursor-pointer"
+                      style={{ width: 32, height: 32 }}
+                      onClick={() => handleEditOpts(q.id, q.options)}
+                      aria-label="Edit options"
+                    >
+                      <span style={{ fontSize: 16 }}>✎</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Show placeholder for open-ended questions */}
+                {q.type === "open-ended" && (
+                  <div className="ml-2 text-gray-500 text-sm italic">
+                    Open-ended text response
+                  </div>
+                )}
                 {/* Modal for editing options */}
                 {editOptsId !== null && (
                   <div
@@ -420,6 +542,13 @@ const SurvayScratch = () => {
 
           {/* Preview Section */}
           <div className="mt-12 border-t border-gray-300/50 pt-8">
+            <h3 className="text-lg font-semibold mb-4">Competency Preview</h3>
+            {templatePreviews.length === 0 && (
+              <p className="text-gray-500 italic">
+                No competencies added yet. Add a competency and questions to see
+                the preview.
+              </p>
+            )}
             {templatePreviews.length > 0 && (
               <div>
                 {templatePreviews.map((item, idx) => (
@@ -457,7 +586,7 @@ const SurvayScratch = () => {
           </div>
         </div>
 
-        {/* Example CompetencySection below, not changed */}
+        {/* Example CompetencySection below, updated for new question types */}
         {templatePreviews.map((item, idx) => (
           <div key={idx}>
             <CompetencySection
@@ -465,17 +594,11 @@ const SurvayScratch = () => {
               questions={item.questions.map((q) => ({
                 id: q.id.toString(),
                 text: q.text,
+                type: q.type,
+                options: q.options,
               }))}
               commentLabel="Additional Comments"
             />
-            <div className="flex justify-center mt-4">
-              <Button
-                className="bg-[#008235] text-white font-semibold px-6 py-2 rounded cursor-pointer"
-                onClick={() => {}}
-              >
-                NEXT
-              </Button>
-            </div>
           </div>
         ))}
 

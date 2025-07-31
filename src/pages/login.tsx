@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../lib/apiService";
 import { useUser } from "../context/UserContext";
-import { getUserFromToken } from "../lib/util";
+import { getUserFromToken, storeUserData } from "../lib/util";
 import Loader from "../components/ui/loader";
 import dashLogo from "../../imgs/dash-logo.png";
 
@@ -66,16 +66,40 @@ const Login: React.FC = () => {
       } else if (response.data) {
         token = response.data;
       }
-      localStorage.setItem("token", token);
-      const userData = getUserFromToken(token);
-      if (userData) {
-        setUser(userData);
-        // Let the useEffect handle navigation when isAuthenticated becomes true
-      } else {
-        throw new Error("Invalid token received");
+
+      if (!token) {
+        throw new Error("No token received from server");
       }
+
+      // Decode JWT and extract user data
+      const userData = getUserFromToken(token);
+      if (!userData) {
+        throw new Error("Invalid token format or unable to decode user data");
+      }
+
+      // Store token and user data in localStorage using utility function
+      const storedUserData = storeUserData(userData, token);
+      if (!storedUserData) {
+        throw new Error("Failed to store user data");
+      }
+
+      // Update user context
+      setUser(userData);
+
+      console.log("Login successful:", {
+        userId: userData.id,
+        userName: userData.name,
+        userEmail: userData.email,
+      });
+
+      // Let the useEffect handle navigation when isAuthenticated becomes true
     } catch (error) {
-      setError("Login failed. Please check your credentials.");
+      console.error("Login error:", error);
+      setError(
+        error instanceof Error && error.message.includes("token")
+          ? "Invalid response from server. Please try again."
+          : "Login failed. Please check your credentials."
+      );
     } finally {
       setIsSubmitting(false);
     }

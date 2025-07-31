@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { isTokenExpired, getUserFromToken, clearAuthData } from "../lib/util";
+import {
+  isTokenExpired,
+  getUserFromToken,
+  clearAuthData,
+  getStoredUserData,
+} from "../lib/util";
 
 // Define the shape of user data (customize as needed)
 export interface User {
@@ -38,6 +43,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initializeAuth = () => {
       const token = localStorage.getItem("token");
+      const storedUserData = getStoredUserData();
+
       if (token) {
         // Check if token is expired
         if (isTokenExpired(token)) {
@@ -45,14 +52,34 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
         } else {
           // Token is valid, get user data
-          const userData = getUserFromToken(token);
+          let userData = getUserFromToken(token);
+
+          // If we have stored user data, merge it with JWT data
+          if (storedUserData && userData) {
+            userData = {
+              ...userData,
+              ...storedUserData,
+              // JWT data takes precedence for security-critical fields
+              id: userData.id,
+              email: userData.email,
+            };
+          }
+
           if (userData) {
             setUser(userData);
+            console.log("User authenticated from stored token:", {
+              userId: userData.id,
+              userName: userData.name,
+              userEmail: userData.email,
+            });
           } else {
             clearAuthData();
             setUser(null);
           }
         }
+      } else {
+        // No token, clean up any stored user data
+        clearAuthData();
       }
       setIsLoading(false);
     };
@@ -63,6 +90,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const clearUser = () => {
     clearAuthData();
     setUser(null);
+    console.log("User logged out and data cleared");
   };
 
   return (

@@ -70,26 +70,44 @@ const Sidebar = () => {
 
   const navigateToCompany = () => {
     navigate("/project");
+    if (isSidebarExpanded) {
+      toggleSidebar();
+    }
   };
 
   const navigateToTemplateView = () => {
     navigate("/view-templates");
+    if (isSidebarExpanded) {
+      toggleSidebar();
+    }
   };
 
   const navigateToCreateTemplate = () => {
     navigate("/create-template");
+    if (isSidebarExpanded) {
+      toggleSidebar();
+    }
   };
 
   const navigateHome = () => {
     navigate("/");
+    if (isSidebarExpanded) {
+      toggleSidebar();
+    }
   };
 
   const navigateToCreateTeam = () => {
     navigate("/create-team");
+    if (isSidebarExpanded) {
+      toggleSidebar();
+    }
   };
 
   const navigateToViewTeam = () => {
     navigate("/view-team");
+    if (isSidebarExpanded) {
+      toggleSidebar();
+    }
   };
 
   const menuItems: (MenuItem & { onClick?: () => void })[] = [
@@ -119,8 +137,8 @@ const Sidebar = () => {
     {
       label: "Dashboard",
       htmlFor: "dash",
-      children: null,
       className: "",
+      onClick: navigateHome,
     },
     {
       label: "Organization",

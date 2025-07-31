@@ -4,39 +4,28 @@ import { Button } from "../components/ui/Button";
 
 // TODO: Integrate with the backend
 const defaultPermissions = [
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo",
+  "You Can Write",
+  "You Can Read",
+  "You Can Update",
+  "You Can Delete",
 ];
 
-// const initialTeams = [
-//   {
-//     email: "example1@example.com",
-//     role: "Overseeing Recruitment Process",
-//     permissions: [0, 1, 2],
-//   },
-//   {
-//     email: "example2@example.com",
-//     role: "Overseeing Recruitment Process",
-//     permissions: [0, 1],
-//   },
-//   {
-//     email: "example3@example.com",
-//     role: "Overseeing Recruitment Process",
-//     permissions: [0, 1, 2, 3],
-//   },
-// ];
+const initialTeams = [
+  {
+    email: "example1@example.com",
+    role: "Overseeing Recruitment Process",
+    permissions: ["You Can Update", "You Can Read"],
+  },
+];
 
 const CreateTeam = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
-  const [teams, setTeams] = useState<
-    { email: string; role: string; permissions: number[] }[]
-  >([]);
+  const [teams, setTeams] =
+    useState<{ email: string; role: string; permissions: string[] }[]>(
+      initialTeams
+    );
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [permissions] = useState<string[]>(defaultPermissions);
   // Modal state
@@ -54,11 +43,22 @@ const CreateTeam = () => {
     if (!email || !role) return;
     if (editIndex !== null) {
       const updated = [...teams];
-      updated[editIndex] = { email, role, permissions: selectedPermissions };
+      updated[editIndex] = {
+        email,
+        role,
+        permissions: selectedPermissions.map((idx) => permissions[idx]),
+      };
       setTeams(updated);
       setEditIndex(null);
     } else {
-      setTeams([...teams, { email, role, permissions: selectedPermissions }]);
+      setTeams([
+        ...teams,
+        {
+          email,
+          role,
+          permissions: selectedPermissions.map((idx) => permissions[idx]),
+        },
+      ]);
     }
     setEmail("");
     setRole("");
@@ -69,7 +69,11 @@ const CreateTeam = () => {
     setEditIndex(idx);
     setEmail(teams[idx].email);
     setRole(teams[idx].role);
-    setSelectedPermissions(teams[idx].permissions);
+    setSelectedPermissions(
+      teams[idx].permissions
+        .map((perm) => permissions.indexOf(perm))
+        .filter((i) => i !== -1)
+    );
   };
 
   const handleDelete = (idx: number) => {
@@ -205,6 +209,9 @@ const CreateTeam = () => {
                       onChange={() => handlePermissionChange(idx)}
                       className="accent-[#ed3f41]"
                     />
+                    <label htmlFor={`permission-label-${idx}`} className="text-sm ms-2 text-gray-700">
+                      {permissions[idx]}
+                    </label>
                   </div>
                 ))}
               </tbody>
