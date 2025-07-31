@@ -1,5 +1,4 @@
 import dashLogo from "../../imgs/dash-logo.png";
-import proPic from "../../imgs/Qrio-retouched-final.jpg";
 import { useNavigate } from "react-router-dom";
 
 //?User Context
@@ -32,11 +31,9 @@ const Navbar = () => {
           <>
             <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-3   transition-all duration-300 ">
               <div className="relative group">
-                <img
-                  className="w-14 h-14 rounded-full object-cover ring-4 ring-blue-100 group-hover:ring-blue-200 transition-all duration-300 shadow-md"
-                  src={proPic}
-                  alt="profile"
-                />
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md ring-4 ring-blue-100 group-hover:ring-blue-200 transition-all duration-300">
+                  {user.name?.charAt(0).toUpperCase() || "U"}
+                </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
               </div>
               <div className="flex flex-col">

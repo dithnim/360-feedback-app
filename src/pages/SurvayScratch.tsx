@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
-import { createCompetency, createQuestion } from "../lib/apiService";
+import { createQuestion } from "../lib/apiService";
+import { createCompetency } from "@/lib/createSurveyService";
 import { useNavigate } from "react-router-dom";
 
 const defaultOptions = [
@@ -38,7 +39,7 @@ const SurvayScratch = () => {
   const [editText, setEditText] = useState("");
 
   // New state to track if editing preview
-  const [_isEditingPreview, setIsEditingPreview] = useState(false);
+  const [isEditingPreview, setIsEditingPreview] = useState(false);
 
   // New: array of competencies
   const [templatePreviews, setTemplatePreviews] = useState<
@@ -100,10 +101,15 @@ const SurvayScratch = () => {
     if (!competency.trim()) {
       alert("Please enter a competency name");
       return;
-    }
-    if (questions.length === 0) {
+    } else if (questions.length === 0) {
       alert("Please add at least one question");
       return;
+    } else {
+      try {
+        createCompetency(competency.trim());
+      } catch (error) {
+        console.error("Error creating competency:", error);
+      }
     }
 
     const newCompetency = {

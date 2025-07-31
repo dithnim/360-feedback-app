@@ -207,11 +207,6 @@ export async function getCompanies(): Promise<Company[]> {
 }
 
 // Create a new competency
-export async function createCompetency(competency: string) {
-  return apiPost<{ id: string; competency: string }>("/competency", {
-    competency,
-  });
-}
 
 // Create a new question for a competency
 export async function createQuestion(data: {

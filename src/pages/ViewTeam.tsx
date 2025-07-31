@@ -36,7 +36,7 @@ const ViewTeam = () => {
 
   const TeamCard = ({ team }: { team: Team }) => (
     <div
-      className="flex flex-col items-center justify-center border border-gray-300 rounded-xl py-8 px-4 w-80 h-48 cursor-pointer hover:shadow-lg transition-shadow"
+      className="flex flex-col items-center justify-center border border-gray-300 rounded-xl w-100 h-60 cursor-pointer hover:shadow-lg transition-shadow"
       onClick={() => handleTeamClick(team)}
     >
       <img src={TeamSvg} alt="team-svg" className="h-12 w-12 mb-4" />
@@ -90,7 +90,7 @@ const ViewTeam = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 xl:gap-x-40 md:gap-x-20 xl:gap-y-20 md:gap-y-10 pe-20">
             {isLoading ? (
               // Show skeleton loaders while loading
               Array.from({ length: 8 }).map((_, index) => (
