@@ -32,7 +32,42 @@ export const getTokenExpiration = (token: string): number | null => {
 // Utility function to clear authentication data
 export const clearAuthData = () => {
   localStorage.removeItem("token");
+  localStorage.removeItem("userData");
   sessionStorage.removeItem("token"); // Clean up any old sessionStorage tokens
+};
+
+// Utility function to store user data in localStorage
+export const storeUserData = (userData: any, token: string) => {
+  try {
+    const userDataToStore = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      loginTime: new Date().toISOString(),
+    };
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("userData", JSON.stringify(userDataToStore));
+
+    return userDataToStore;
+  } catch (error) {
+    console.error("Error storing user data:", error);
+    return null;
+  }
+};
+
+// Utility function to retrieve stored user data
+export const getStoredUserData = () => {
+  try {
+    const storedData = localStorage.getItem("userData");
+    if (storedData) {
+      return JSON.parse(storedData);
+    }
+    return null;
+  } catch (error) {
+    console.error("Error retrieving stored user data:", error);
+    return null;
+  }
 };
 
 // Utility function to get user data from token

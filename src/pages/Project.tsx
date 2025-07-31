@@ -770,58 +770,6 @@ const Project = () => {
                 {isSubmitting ? "Saving..." : "Save"}
               </Button>
             </form>
-
-            {/* Display saved company data */}
-            {companyData && (
-              <div className="mt-10 p-6 bg-green-50 border border-green-200 rounded-lg">
-                <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Company Information Saved Successfully
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Company Name:
-                    </span>
-                    <p className="text-gray-900">{companyData.companyName}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Contact Person:
-                    </span>
-                    <p className="text-gray-900">{companyData.contactPerson}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Email:</span>
-                    <p className="text-gray-900">{companyData.email}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Phone:</span>
-                    <p className="text-gray-900">{companyData.phone}</p>
-                  </div>
-                  {companyData.description && (
-                    <div className="md:col-span-2">
-                      <span className="font-medium text-gray-700">
-                        Description:
-                      </span>
-                      <p className="text-gray-900">{companyData.description}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       );
