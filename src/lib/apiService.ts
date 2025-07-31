@@ -302,3 +302,23 @@ export async function submitSurveyResponse(
 
   return response.json();
 }
+
+// Team-related types and functions
+export interface CreateTeamData {
+  teamName: string;
+  createdUserId: string;
+}
+
+export interface TeamResponse {
+  id: string;
+  teamName: string;
+  createdUserId: string;
+  createdAt: string;
+}
+
+// Create a new team
+export async function createTeamAPI(
+  teamData: CreateTeamData
+): Promise<TeamResponse> {
+  return apiPost<TeamResponse>("/team", teamData) as Promise<TeamResponse>;
+}

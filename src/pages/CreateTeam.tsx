@@ -1,40 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
-
-// TODO: Integrate with the backend
-const defaultPermissions = [
-  "You Can Write",
-  "You Can Read",
-  "You Can Update",
-  "You Can Delete",
-];
-
-const initialTeams = [
-  {
-    email: "example1@example.com",
-    role: "Overseeing Recruitment Process",
-    permissions: ["You Can Update", "You Can Read"],
-  },
-];
+import { Skeleton } from "../components/ui/skeleton";
+import { useUser } from "../context/UserContext";
+import { createTeam, getTeamRules } from "../lib/teamService";
+import type {
+  CreateTeamRequest,
+  CreateTeamResponse,
+  TeamValidationError,
+} from "../lib/teamService";
 
 const CreateTeam = () => {
+  const { user } = useUser();
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<TeamValidationError>(
+    {}
+  );
+
+  useEffect(() => {
+    const fetchRules = async () => {
+      setIsLoadingPermissions(true);
+      const fetchedRules = await getTeamRules();
+      setPermissions(fetchedRules);
+      setIsLoadingPermissions(false);
+      console.log("Fetched rules:", fetchedRules);
+    };
+    fetchRules();
+  }, []);
+
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
-  const [teams, setTeams] =
-    useState<{ email: string; role: string; permissions: string[] }[]>(
-      initialTeams
-    );
+  const [teamPermissions, setTeamPermissions] = useState<number[]>([]);
+  const [teams, setTeams] = useState<{ email: string; role: string }[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [permissions] = useState<string[]>(defaultPermissions);
+  const [permissions, setPermissions] = useState<any[]>([]);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
 
   const handlePermissionChange = (idx: number) => {
-    setSelectedPermissions((prev) =>
+    setTeamPermissions((prev) =>
       prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
     );
   };
@@ -46,7 +53,6 @@ const CreateTeam = () => {
       updated[editIndex] = {
         email,
         role,
-        permissions: selectedPermissions.map((idx) => permissions[idx]),
       };
       setTeams(updated);
       setEditIndex(null);
@@ -56,24 +62,17 @@ const CreateTeam = () => {
         {
           email,
           role,
-          permissions: selectedPermissions.map((idx) => permissions[idx]),
         },
       ]);
     }
     setEmail("");
     setRole("");
-    setSelectedPermissions([]);
   };
 
   const handleEdit = (idx: number) => {
     setEditIndex(idx);
     setEmail(teams[idx].email);
     setRole(teams[idx].role);
-    setSelectedPermissions(
-      teams[idx].permissions
-        .map((perm) => permissions.indexOf(perm))
-        .filter((i) => i !== -1)
-    );
   };
 
   const handleDelete = (idx: number) => {
@@ -82,7 +81,52 @@ const CreateTeam = () => {
       setEditIndex(null);
       setEmail("");
       setRole("");
-      setSelectedPermissions([]);
+    }
+  };
+
+  const handleSaveTeam = async () => {
+    if (!teamName || !teamDescription) return;
+
+    if (!user?.id) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    setIsCreatingTeam(true);
+    setValidationErrors({});
+
+    try {
+      // Create the team using the API specification
+      const teamData: CreateTeamRequest = {
+        teamName: teamName,
+        description: teamDescription,
+        createdUserId: user.id,
+      };
+
+      const response: CreateTeamResponse = await createTeam(teamData);
+      localStorage.setItem("team", JSON.stringify(response));
+      console.log("Team created successfully:", response);
+
+      // Reset form on success
+      setTeamName("");
+      setTeamDescription("");
+      setTeamPermissions([]);
+      setIsModalOpen(false);
+
+      // You can add success notification here
+      alert("Team created successfully!");
+    } catch (error: any) {
+      console.error("Error creating team:", error);
+
+      // Handle validation errors from the API
+      if (error.message && error.message.includes("400")) {
+        setValidationErrors({ teamName: "Team name is required" });
+      } else {
+        // Handle other errors
+        alert("Failed to create team. Please try again.");
+      }
+    } finally {
+      setIsCreatingTeam(false);
     }
   };
 
@@ -115,25 +159,10 @@ const CreateTeam = () => {
                 />
               </div>
             </div>
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2 text-lg">Permissions</h3>
-              <div className="flex flex-col gap-2 mb-10 ">
-                {permissions.map((perm: string, idx: number) => (
-                  <label key={idx} className="flex items-center gap-2 text-md">
-                    <input
-                      type="checkbox"
-                      checked={selectedPermissions.includes(idx)}
-                      onChange={() => handlePermissionChange(idx)}
-                      className="accent-[#ed3f41]"
-                    />
-                    {perm}
-                  </label>
-                ))}
-              </div>
-            </div>
             <button
-              className="bg-[#ed3f41] text-white rounded px-6 py-2 font-semibold mt-2 cursor-pointer"
+              className="bg-[#ed3f41] text-white rounded px-6 py-2 font-semibold mt-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleAdd}
+              disabled={!email || !role}
             >
               {editIndex !== null ? "Update" : "Add"}
             </button>
@@ -186,11 +215,28 @@ const CreateTeam = () => {
             <label className="block text-md mb-1">Team Name*</label>
             <input
               type="text"
-              className="border border-gray-300 rounded-lg p-2 w-[45%] mb-4"
+              className={`border rounded-lg p-2 w-[45%] mb-1 ${
+                validationErrors.teamName ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Team Name"
               value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
+              onChange={(e) => {
+                setTeamName(e.target.value);
+                // Clear validation error when user starts typing
+                if (validationErrors.teamName) {
+                  setValidationErrors({
+                    ...validationErrors,
+                    teamName: undefined,
+                  });
+                }
+              }}
             />
+            {validationErrors.teamName && (
+              <p className="text-red-500 text-sm mb-4">
+                {validationErrors.teamName}
+              </p>
+            )}
+            {!validationErrors.teamName && <div className="mb-4" />}
             <label className="block text-md mb-1">Description*</label>
             <textarea
               className="border border-gray-300 rounded-lg p-2 w-full mb-4"
@@ -199,23 +245,59 @@ const CreateTeam = () => {
               onChange={(e) => setTeamDescription(e.target.value)}
               rows={3}
             />
-            <table className="min-w-full bg-white">
-              <tbody>
-                {teams.map((_team, idx) => (
-                  <div>
-                    <input
-                      type="checkbox"
-                      checked={selectedPermissions.includes(idx)}
-                      onChange={() => handlePermissionChange(idx)}
-                      className="accent-[#ed3f41]"
-                    />
-                    <label htmlFor={`permission-label-${idx}`} className="text-sm ms-2 text-gray-700">
-                      {permissions[idx]}
-                    </label>
-                  </div>
-                ))}
-              </tbody>
-            </table>
+
+            <div className="mb-4">
+              <h3 className="font-semibold mb-2 text-lg">Team Permissions</h3>
+              <div className="flex flex-col gap-2 mb-4">
+                {isLoadingPermissions
+                  ? // Show skeleton loaders in modal while permissions are loading
+                    Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Skeleton className="w-4 h-4 rounded" />
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                    ))
+                  : permissions.map((perm: any, idx: number) => (
+                      <label
+                        key={idx}
+                        className="flex items-center gap-2 text-md"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={teamPermissions.includes(idx)}
+                          onChange={() => handlePermissionChange(idx)}
+                          className="accent-[#ed3f41]"
+                        />
+                        {perm.rule || perm}
+                      </label>
+                    ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="font-semibold mb-2 text-lg">Team Members</h3>
+              <div className="max-h-40 overflow-y-auto">
+                {teams.length === 0 ? (
+                  <p className="text-gray-500 text-sm">
+                    No team members added yet
+                  </p>
+                ) : (
+                  teams.map((member, idx) => (
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded mb-2"
+                    >
+                      <div>
+                        <span className="font-medium">{member.email}</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          ({member.role})
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
             <div className="flex justify-end gap-2 mt-4">
               <button
                 className="bg-gray-200 text-gray-700 rounded px-4 py-2"
@@ -224,10 +306,19 @@ const CreateTeam = () => {
                 Cancel
               </button>
               <button
-                className="bg-[#a02a2b] text-white rounded px-4 py-2 font-semibold"
-                onClick={() => setIsModalOpen(false)}
+                className="bg-[#a02a2b] text-white rounded px-4 py-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={handleSaveTeam}
+                disabled={
+                  !teamName ||
+                  !teamDescription ||
+                  isLoadingPermissions ||
+                  isCreatingTeam
+                }
               >
-                Save Team
+                {isCreatingTeam && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                {isCreatingTeam ? "Creating..." : "Save Team"}
               </button>
             </div>
           </div>
