@@ -1,5 +1,6 @@
 import { Button } from "../components/ui/Button";
-import { apiPost } from "../lib/apiService";
+import { apiPost, createCompanyUsers } from "../lib/apiService";
+import type { CreateUserData } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -69,6 +70,8 @@ const Project = () => {
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(initialCase);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingUsers, setIsCreatingUsers] = useState(false);
+  const [userCreationError, setUserCreationError] = useState<string>("");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
@@ -82,8 +85,8 @@ const Project = () => {
       participantName: string;
       email: string;
       designation: string;
-      appraisee: string;
-      role: string;
+      appraisee?: string;
+      role?: string;
     }[]
   >([]);
   const {
@@ -170,10 +173,15 @@ const Project = () => {
         try {
           const parsedParticipants = JSON.parse(savedParticipants);
           setParticipants(parsedParticipants);
+          // Reset error state when loading participants
+          setUserCreationError("");
         } catch (error) {
           console.error("Error parsing saved participants:", error);
           setParticipants([]);
+          setUserCreationError("");
         }
+      } else {
+        setUserCreationError("");
       }
     }
     if (pageCase === 4) {
@@ -372,10 +380,60 @@ const Project = () => {
     [participants, setValue]
   );
 
+  // Function to create users in the backend
+  const createUsers = useCallback(async (participantsData: any[]) => {
+    setIsCreatingUsers(true);
+    setUserCreationError("");
+    try {
+      const companyStr = localStorage.getItem("Company");
+      let companyId = "";
+      if (companyStr) {
+        try {
+          const companyObj = JSON.parse(companyStr);
+          companyId = companyObj.id || "";
+        } catch (e) {
+          console.error("Error parsing company data:", e);
+          setUserCreationError("Failed to get company information");
+          return false;
+        }
+      }
+
+      if (!companyId) {
+        console.error("No company ID found");
+        setUserCreationError("Company must be created before adding users");
+        return false;
+      }
+
+      // Transform participants data to match API structure
+      const usersPayload: CreateUserData[] = participantsData.map(
+        (participant) => ({
+          name: participant.participantName,
+          email: participant.email,
+          designation: participant.designation,
+          companyId: companyId,
+        })
+      );
+
+      const response = await createCompanyUsers(usersPayload);
+      console.log("Users created successfully:", response);
+      setUserCreationError("");
+      return true;
+    } catch (error) {
+      console.error("Error creating users:", error);
+      setUserCreationError("Failed to create users. Please try again.");
+      return false;
+    } finally {
+      setIsCreatingUsers(false);
+    }
+  }, []);
+
   const handleDelete = useCallback(
     (index: number) => {
       const updatedParticipants = participants.filter((_, i) => i !== index);
       setParticipants(updatedParticipants);
+
+      // Reset error state since participants have changed
+      setUserCreationError("");
 
       // Update localStorage with the updated participants list
       if (updatedParticipants.length > 0) {
@@ -383,6 +441,9 @@ const Project = () => {
           "Participants",
           JSON.stringify(updatedParticipants)
         );
+      } else {
+        // If no participants left, remove from localStorage
+        localStorage.removeItem("Participants");
       }
 
       if (editIndex === index) {
@@ -523,22 +584,31 @@ const Project = () => {
   const handleParticipantSubmit = useCallback(
     (data: ParticipantFormData) => {
       if (editIndex !== null) {
-        setParticipants((prev) =>
-          prev.map((p, i) => (i === editIndex ? { ...p, ...data } : p))
+        // Update existing participant
+        const updatedParticipants = participants.map((p, i) =>
+          i === editIndex ? { ...p, ...data } : p
         );
+        setParticipants(updatedParticipants);
         setEditIndex(null);
       } else {
-        setParticipants((prev) => [...prev, { ...data, id: Date.now() }]);
+        // Add new participant
+        const newParticipant = { ...data, id: Date.now() };
+        const updatedParticipants = [...participants, newParticipant];
+        setParticipants(updatedParticipants);
       }
+
+      // Reset saved state since participants have changed
+      setUserCreationError("");
+
+      // Just update UI, don't call backend yet
       resetInfo({
         participantName: "",
         email: "",
         designation: "",
       });
     },
-    [editIndex, resetInfo]
+    [editIndex, resetInfo, participants]
   );
-
   const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: ReturnType<typeof setTimeout>;
     return (...args: any[]) => {
@@ -793,20 +863,27 @@ const Project = () => {
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={() => {
+                    // Save to localStorage before navigating
                     if (participants.length > 0) {
-                      // Save to localStorage and proceed to next step
                       localStorage.setItem(
                         "Participants",
                         JSON.stringify(participants)
                       );
-                      handleNext();
                     }
+                    handleNext();
                   }}
                 >
                   next
                 </Button>
               </div>
             </div>
+            {userCreationError && (
+              <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Error:</strong> {userCreationError}
+                </p>
+              </div>
+            )}
             <form
               onSubmit={handleSubmitInfo(handleParticipantSubmit)}
               className="mt-5"
@@ -1579,6 +1656,11 @@ const Project = () => {
         <div>
           <PageNav position="CEO" title="Review Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            {isSubmitting && (
+              <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
+                <Loader text="Creating Users & Finalizing..." />
+              </div>
+            )}
             <div className="flex justify-between items-center mb-10">
               <label className="text-3xl font-semibold">
                 Review User Groups
@@ -1597,15 +1679,42 @@ const Project = () => {
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={async () => {
                     setIsSubmitting(true);
+
+                    // Create users before finishing if participants exist
+                    const participantsData =
+                      localStorage.getItem("Participants");
+                    if (participantsData) {
+                      try {
+                        const participants = JSON.parse(participantsData);
+                        if (participants.length > 0) {
+                          const success = await createUsers(participants);
+                          if (!success) {
+                            setIsSubmitting(false);
+                            return; // Don't proceed if user creation failed
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error parsing participants:", error);
+                      }
+                    }
+
                     setShowCompletionPopup(true);
                     setIsSubmitting(false);
                   }}
                   disabled={userGroups.length === 0 || isSubmitting}
                 >
-                  {isSubmitting ? "Processing..." : "Finish"}
+                  {isSubmitting ? "Creating Users & Finishing..." : "Finish"}
                 </Button>
               </div>
             </div>
+
+            {userCreationError && (
+              <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Error:</strong> {userCreationError}
+                </p>
+              </div>
+            )}
 
             {userGroups.length === 0 ? (
               <div className="text-center py-20">

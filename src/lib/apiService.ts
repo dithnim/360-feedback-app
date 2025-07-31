@@ -139,6 +139,46 @@ export async function deleteUserByCompanyId(companyId: string): Promise<any> {
   return response.json();
 }
 
+// Create users for a company
+export interface CreateUserData {
+  name: string;
+  email: string;
+  designation: string;
+  companyId: string;
+}
+
+export async function createCompanyUsers(
+  users: CreateUserData[]
+): Promise<any> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const response = await fetch(`${BASE_URL}/company/user/set`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(users),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log("Error response body:", errorText);
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
+    throw new Error(`POST /company/user/set failed: ${response.status}`);
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return response.json();
+  } else {
+    return response.text();
+  }
+}
+
 // Authentication types
 export interface LoginData {
   email: string;
