@@ -27,6 +27,36 @@ const deleteProject = async (projectId: string) => {
   return await apiDelete(`/project/${projectId}`);
 };
 
+const getCompanies = async (companyId: string) => {
+  try {
+    const response = await apiGet(`/company/${companyId}`);
+    if (response && typeof response === "object") {
+      localStorage.setItem("Company", JSON.stringify(response));
+      console.log("Company data saved to localStorage:", response);
+      return response;
+    }
+    throw new Error("Invalid response from API");
+  } catch (error) {
+    console.error("Error fetching company details:", error);
+    throw error;
+  }
+};
+
+const getParticipants = async (companyId: string) => {
+  const response = await apiGet(`/user/company/${companyId}`);
+  try {
+    if (response && Array.isArray(response)) {
+      localStorage.setItem("Participants", JSON.stringify(response));
+      console.log("Participants data saved to localStorage:", response);
+      return response;
+    }
+    throw new Error("Invalid response from API");
+  } catch (error) {
+    console.error("Error fetching participants:", error);
+    throw error;
+  }
+};
+
 interface Project {
   id: string;
   project_name: string;
@@ -156,11 +186,40 @@ export default function CurrentProjectsPage() {
       <div className="flex-1 flex flex-col">
         <PageNav position="CEO" title="Current Projects" />
         <main className="p-8">
-          <h2 className="text-3xl font-semibold mb-6">
-            {org?.name
-              ? `${org.name} - Project Dashboard`
-              : "Project Dashboard"}
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-semibold">
+              {org?.name
+                ? `${org.name} - Project Dashboard`
+                : "Project Dashboard"}
+            </h2>
+            <Button
+              variant="black"
+              className="text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
+              onClick={async () => {
+                try {
+                  if (companyId) {
+                    console.log("Fetching company and Participant details for ID:", companyId);
+                    await getCompanies(companyId);
+                    await getParticipants(companyId);
+                    console.log("Company and Participant details fetched successfully");
+                  } else {
+                    console.warn("No company ID available");
+                  }
+                  navigate("/project", { state: { initialCase: 3 } });
+                } catch (error) {
+                  console.error("Failed to fetch company details:", error);
+                  // Navigate anyway, but without company data pre-filled
+                  alert(
+                    "Failed to load company details. You'll need to enter them manually in the project form."
+                  );
+                  navigate("/project", { state: { initialCase: 3 } });
+                }
+              }}
+            >
+              <i className="bx bx-plus text-xl"></i>
+              Create New Project
+            </Button>
+          </div>
           <div className="mb-4">
             <h3 className="font-medium text-xl mb-2">Active Projects</h3>
             <div className="flex items-center gap-2 mt-2 justify-between pe-2">
@@ -330,10 +389,40 @@ export default function CurrentProjectsPage() {
           )}
 
           {!loading && !error && projects.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-12 text-gray-500">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-medium mb-2">No Projects Found</h3>
-              <p>There are no projects available for this company.</p>
+              <p className="mb-6">
+                There are no projects available for this company.
+              </p>
+              <Button
+                variant="next"
+                className="bg-[#ee3f40] hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg"
+                onClick={async () => {
+                  try {
+                    if (companyId) {
+                      console.log(
+                        "Fetching company details for ID:",
+                        companyId
+                      );
+                      await getCompanies(companyId);
+                      console.log("Company details fetched successfully");
+                    } else {
+                      console.warn("No company ID available");
+                    }
+                    navigate("/project", { state: { initialCase: 3 } });
+                  } catch (error) {
+                    console.error("Failed to fetch company details:", error);
+                    // Navigate anyway, but without company data pre-filled
+                    alert(
+                      "Failed to load company details. You'll need to enter them manually in the project form."
+                    );
+                    navigate("/project", { state: { initialCase: 3 } });
+                  }
+                }}
+              >
+                Create Your First Project
+              </Button>
             </div>
           )}
         </main>

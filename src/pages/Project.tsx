@@ -7,7 +7,7 @@ import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
 import ImageUpload from "../components/ui/ImageUpload";
 import CompletionPopup from "../components/ui/CompletionPopup";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface ProjectFormData {
   projectName: string;
@@ -55,6 +55,10 @@ function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
 
 const Project = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get initial page case from location state, default to 1
+  const initialCase = location.state?.initialCase || 1;
 
   const {
     register: registerProject,
@@ -63,7 +67,7 @@ const Project = () => {
     watch,
   } = useForm<ProjectFormData>();
   const startDate = watch("startDate");
-  const [pageCase, setPageCase] = useState(1);
+  const [pageCase, setPageCase] = useState(initialCase);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
@@ -109,6 +113,21 @@ const Project = () => {
         try {
           const parsedCompanyData = JSON.parse(savedCompanyData);
           setCompanyData(parsedCompanyData);
+
+          // Pre-fill the form with the API response data (prioritize this over form data)
+          if (parsedCompanyData.name) {
+            setCompanyValue("companyName", parsedCompanyData.name);
+          }
+          if (parsedCompanyData.contactPerson) {
+            setCompanyValue("contactPerson", parsedCompanyData.contactPerson);
+          }
+          if (parsedCompanyData.email) {
+            setCompanyValue("email", parsedCompanyData.email);
+          }
+          if (parsedCompanyData.contactNumber) {
+            setCompanyValue("phone", parsedCompanyData.contactNumber);
+          }
+          // Note: API response doesn't include description, so we'll load that from form data if available
         } catch (error) {
           console.error("Error parsing saved company data:", error);
           setCompanyData(null);
@@ -117,21 +136,28 @@ const Project = () => {
         setCompanyData(null);
       }
 
-      // Load saved company form data
+      // Load saved company form data (only if API data didn't provide some fields)
       const savedCompanyFormData = localStorage.getItem("CompanyFormData");
       if (savedCompanyFormData) {
         try {
           const parsedFormData = JSON.parse(savedCompanyFormData);
-          if (parsedFormData.companyName)
-            setCompanyValue("companyName", parsedFormData.companyName);
+
+          // Only use form data for fields not provided by API response
+          if (!savedCompanyData) {
+            // If no API data, load all form data
+            if (parsedFormData.companyName)
+              setCompanyValue("companyName", parsedFormData.companyName);
+            if (parsedFormData.contactPerson)
+              setCompanyValue("contactPerson", parsedFormData.contactPerson);
+            if (parsedFormData.email)
+              setCompanyValue("email", parsedFormData.email);
+            if (parsedFormData.phone)
+              setCompanyValue("phone", parsedFormData.phone);
+          }
+
+          // Always load description from form data (not available in API response)
           if (parsedFormData.description)
             setCompanyValue("description", parsedFormData.description);
-          if (parsedFormData.contactPerson)
-            setCompanyValue("contactPerson", parsedFormData.contactPerson);
-          if (parsedFormData.email)
-            setCompanyValue("email", parsedFormData.email);
-          if (parsedFormData.phone)
-            setCompanyValue("phone", parsedFormData.phone);
         } catch (error) {
           console.error("Error parsing saved company form data:", error);
         }
@@ -176,6 +202,25 @@ const Project = () => {
       } else {
         // Clear users if no participants in localStorage
         setUsers([]);
+      }
+    }
+    if (pageCase === 3) {
+      // Load company data when starting directly in project creation step
+      const savedCompanyData = localStorage.getItem("Company");
+      if (savedCompanyData) {
+        try {
+          const parsedCompanyData = JSON.parse(savedCompanyData);
+          setCompanyData(parsedCompanyData);
+          console.log(
+            "Company data loaded for project creation:",
+            parsedCompanyData
+          );
+        } catch (error) {
+          console.error("Error parsing saved company data:", error);
+          setCompanyData(null);
+        }
+      } else {
+        setCompanyData(null);
       }
     }
   }, [pageCase]);
@@ -309,11 +354,11 @@ const Project = () => {
   );
 
   const handleNext = useCallback(() => {
-    setPageCase((prev) => prev + 1);
+    setPageCase((prev: number) => prev + 1);
   }, []);
 
   const handlePrev = useCallback(() => {
-    setPageCase((prev) => prev - 1);
+    setPageCase((prev: number) => prev - 1);
   }, []);
 
   const handleEdit = useCallback(
@@ -509,52 +554,6 @@ const Project = () => {
       }, 300),
     [debounce]
   );
-
-  // Handler function for user creation
-  // Batch handler for user creation
-  const handlerUserCreation = async (userList: any[]) => {
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const company = localStorage.getItem("company") || "";
-      // Get companyId from localStorage
-      let companyId = "";
-      const companyStr = localStorage.getItem("Company");
-      if (companyStr) {
-        try {
-          const companyObj = JSON.parse(companyStr);
-          companyId = companyObj.id || "";
-        } catch (e) {
-          // Fallback: try to parse company as JSON, otherwise use empty string
-          try {
-            const companyObj = JSON.parse(company);
-            companyId = companyObj.id || "";
-          } catch {
-            companyId = "";
-          }
-        }
-      }
-      // Map users to backend DTO
-      const payload = userList.map((data) => ({
-        name: data.participantName || data.name,
-        email: data.email,
-        designation: data.designation,
-        appraiser: data.appraisee === "Appraiser" ? true : false, // boolean: true if Appraiser, false otherwise
-        role: data.role,
-        companyId: companyId,
-      }));
-      const response = await apiPost<any>(
-        "/company/user/set",
-        payload,
-        token ? { Authorization: `Bearer ${token}` } : {}
-      );
-      console.log("RAW API response:", response);
-    } catch (error) {
-      console.error("Error creating users:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   // Remove unused form state for user creation since it's not being used
 
