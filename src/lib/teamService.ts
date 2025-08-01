@@ -29,18 +29,31 @@ export interface Team {
   createdAt: string;
 }
 
-/**
- * Create a new team
- *
- * @param teamData - The team data including teamName and createdUserId
- * @returns Promise<CreateTeamResponse> - The created team data
- *
- * API Specification:
- * POST /team
- * Request Body: { "teamName": "Development Team", "createdUserId": "685b9b5d31d84e2c5911ff11" }
- * Success Response (201): { "id": "686c135ac0e4965cb0e9cb90", "teamName": "Development Team", "createdUserId": "685b9b5d31d84e2c5911ff11", "createdAt": "2025-07-19T12:34:56Z" }
- * Validation Error (400): { "teamName": "Team name is required" }
- */
+export interface manageTeamUser {
+  email: string;
+  role: string;
+}
+
+export async function getTeamRules(): Promise<any> {
+  try {
+    const response = await apiGet<{ data: any }>("/team/rules");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching team rules:", error);
+    return [];
+  }
+}
+
+export async function getAllTeams(): Promise<Team[]> {
+  try {
+    const response = await apiGet<Team[]>("/team");
+    return response || [];
+  } catch (error) {
+    console.error("Error fetching teams:", error);
+    return [];
+  }
+}
+
 export async function createTeam(
   teamData: CreateTeamRequest
 ): Promise<CreateTeamResponse> {
@@ -53,31 +66,18 @@ export async function createTeam(
   }
 }
 
-// Get team rules/permissions (existing functionality)
-export async function getTeamRules(): Promise<any> {
+export async function addUser(
+  userData: manageTeamUser
+): Promise<manageTeamUser> {
   try {
-    const response = await apiGet<{ data: any }>("/team/rules");
-    return response.data;
+    const response = await apiPost<manageTeamUser>(
+      "/team/manage/user",
+      userData
+    );
+    console.log("User added to team successfully:", response);
+    return response as manageTeamUser;
   } catch (error) {
-    console.error("Error fetching team rules:", error);
-    return [];
-  }
-}
-
-/**
- * Get all teams
- * @returns Promise<Team[]> - List of all teams
- *
- * API Specification:
- * GET /team
- * Success Response (200): Array of team objects
- */
-export async function getAllTeams(): Promise<Team[]> {
-  try {
-    const response = await apiGet<Team[]>("/team");
-    return response || [];
-  } catch (error) {
-    console.error("Error fetching teams:", error);
-    return [];
+    console.error("Error adding user to team:", error);
+    throw error;
   }
 }

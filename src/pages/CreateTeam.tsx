@@ -3,18 +3,27 @@ import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/skeleton";
 import { useUser } from "../context/UserContext";
-import { createTeam, getTeamRules } from "../lib/teamService";
+import { createTeam, getTeamRules, addUser } from "../lib/teamService";
 import type {
   CreateTeamRequest,
   CreateTeamResponse,
   TeamValidationError,
+  manageTeamUser,
 } from "../lib/teamService";
+
+// Extended validation errors interface
+interface FormValidationError extends TeamValidationError {
+  email?: string;
+  role?: string;
+  teamDescription?: string;
+  general?: string;
+}
 
 const CreateTeam = () => {
   const { user } = useUser();
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<TeamValidationError>(
+  const [validationErrors, setValidationErrors] = useState<FormValidationError>(
     {}
   );
 
@@ -39,6 +48,64 @@ const CreateTeam = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
+  const [createdUsers, setCreatedUsers] = useState<manageTeamUser[]>([]);
+
+  // Validation functions
+  const validateEmail = (email: string): string | null => {
+    if (!email.trim()) {
+      return "Email is required";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    // Check for duplicate emails
+    if (
+      teams.some((team, index) => team.email === email && index !== editIndex)
+    ) {
+      return "This email is already added to the team";
+    }
+    return null;
+  };
+
+  const validateRole = (role: string): string | null => {
+    if (!role.trim()) {
+      return "Role is required";
+    }
+    if (role.trim().length < 2) {
+      return "Role must be at least 2 characters long";
+    }
+    if (role.trim().length > 100) {
+      return "Role must not exceed 100 characters";
+    }
+    return null;
+  };
+
+  const validateTeamName = (name: string): string | null => {
+    if (!name.trim()) {
+      return "Team name is required";
+    }
+    if (name.trim().length < 2) {
+      return "Team name must be at least 2 characters long";
+    }
+    if (name.trim().length > 50) {
+      return "Team name must not exceed 50 characters";
+    }
+    return null;
+  };
+
+  const validateTeamDescription = (description: string): string | null => {
+    if (!description.trim()) {
+      return "Description is required";
+    }
+    if (description.trim().length < 10) {
+      return "Description must be at least 10 characters long";
+    }
+    if (description.trim().length > 500) {
+      return "Description must not exceed 500 characters";
+    }
+    return null;
+  };
 
   const handlePermissionChange = (idx: number) => {
     setTeamPermissions((prev) =>
@@ -47,12 +114,26 @@ const CreateTeam = () => {
   };
 
   const handleAdd = () => {
-    if (!email || !role) return;
+    // Clear previous errors
+    setValidationErrors({});
+
+    // Validate email and role
+    const emailError = validateEmail(email);
+    const roleError = validateRole(role);
+
+    if (emailError || roleError) {
+      setValidationErrors({
+        email: emailError || undefined,
+        role: roleError || undefined,
+      });
+      return;
+    }
+
     if (editIndex !== null) {
       const updated = [...teams];
       updated[editIndex] = {
-        email,
-        role,
+        email: email.trim(),
+        role: role.trim(),
       };
       setTeams(updated);
       setEditIndex(null);
@@ -60,8 +141,8 @@ const CreateTeam = () => {
       setTeams([
         ...teams,
         {
-          email,
-          role,
+          email: email.trim(),
+          role: role.trim(),
         },
       ]);
     }
@@ -85,21 +166,40 @@ const CreateTeam = () => {
   };
 
   const handleSaveTeam = async () => {
-    if (!teamName || !teamDescription) return;
+    // Clear previous errors
+    setValidationErrors({});
 
+    // Validate team name and description
+    const teamNameError = validateTeamName(teamName);
+    const teamDescriptionError = validateTeamDescription(teamDescription);
+
+    if (teamNameError || teamDescriptionError) {
+      setValidationErrors({
+        teamName: teamNameError || undefined,
+        teamDescription: teamDescriptionError || undefined,
+      });
+      return;
+    }
+
+    // Check if user is authenticated
     if (!user?.id) {
-      console.error("User not authenticated");
+      setValidationErrors({ general: "User not authenticated" });
+      return;
+    }
+
+    // Check if at least one team member is added
+    if (teams.length === 0) {
+      setValidationErrors({ general: "Please add at least one team member" });
       return;
     }
 
     setIsCreatingTeam(true);
-    setValidationErrors({});
 
     try {
       // Create the team using the API specification
       const teamData: CreateTeamRequest = {
-        teamName: teamName,
-        description: teamDescription,
+        teamName: teamName.trim(),
+        description: teamDescription.trim(),
         createdUserId: user.id,
       };
 
@@ -123,7 +223,9 @@ const CreateTeam = () => {
         setValidationErrors({ teamName: "Team name is required" });
       } else {
         // Handle other errors
-        alert("Failed to create team. Please try again.");
+        setValidationErrors({
+          general: "Failed to create team. Please try again.",
+        });
       }
     } finally {
       setIsCreatingTeam(false);
@@ -142,30 +244,71 @@ const CreateTeam = () => {
                 <label className="block text-md mb-1">Email Address*</label>
                 <input
                   type="email"
-                  className="border border-gray-300 rounded-lg p-2 w-full"
+                  className={`border rounded-lg p-2 w-full ${
+                    validationErrors.email
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
                   placeholder="example@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    // Clear validation error when user starts typing
+                    if (validationErrors.email) {
+                      setValidationErrors({
+                        ...validationErrors,
+                        email: undefined,
+                      });
+                    }
+                  }}
                 />
+                {validationErrors.email && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.email}
+                  </p>
+                )}
               </div>
               <div className="flex-1">
                 <label className="block text-md mb-1">Role*</label>
                 <input
                   type="text"
-                  className="border border-gray-300 rounded-lg p-2 w-full"
+                  className={`border rounded-lg p-2 w-full ${
+                    validationErrors.role ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="Overseeing Recruitment Process"
                   value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                  onChange={(e) => {
+                    setRole(e.target.value);
+                    // Clear validation error when user starts typing
+                    if (validationErrors.role) {
+                      setValidationErrors({
+                        ...validationErrors,
+                        role: undefined,
+                      });
+                    }
+                  }}
                 />
+                {validationErrors.role && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.role}
+                  </p>
+                )}
               </div>
             </div>
             <button
               className="bg-[#ed3f41] text-white rounded px-6 py-2 font-semibold mt-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleAdd}
-              disabled={!email || !role}
+              disabled={!email.trim() || !role.trim()}
             >
               {editIndex !== null ? "Update" : "Add"}
             </button>
+            {validationErrors.general && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
+                <p className="text-red-600 text-sm">
+                  {validationErrors.general}
+                </p>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex-1 overflow-auto px-20">
@@ -200,7 +343,74 @@ const CreateTeam = () => {
           <Button
             variant="black"
             className="w-50 mt-8 flex items-center "
-            onClick={() => setIsModalOpen(true)}
+            onClick={async () => {
+              // Validate that there are team members before proceeding
+              if (teams.length === 0) {
+                setValidationErrors({
+                  general:
+                    "Please add at least one team member before creating the team",
+                });
+                return;
+              }
+
+              // Clear any previous validation errors
+              setValidationErrors({});
+              setIsModalOpen(true);
+
+              // Loop through all users in the teams array and add them to the database
+              if (teams.length > 0) {
+                console.log("Adding users to database...");
+                const addedUsers: manageTeamUser[] = [];
+
+                try {
+                  // Use a for loop to add each user to the database
+                  for (const teamMember of teams) {
+                    const addedUser = await addUser({
+                      email: teamMember.email,
+                      role: teamMember.role,
+                    });
+
+                    // Store the returned user details
+                    addedUsers.push(addedUser);
+
+                    console.log(
+                      `Added user: ${teamMember.email} with role: ${teamMember.role}`
+                    );
+                  }
+
+                  // Update state with the created users
+                  setCreatedUsers(addedUsers);
+
+                  // Store the created users in local storage
+                  localStorage.setItem(
+                    "createdUsers",
+                    JSON.stringify(addedUsers)
+                  );
+
+                  console.log(
+                    `Successfully added ${teams.length} users to the database`
+                  );
+                  console.log(
+                    "Created users stored in local storage:",
+                    addedUsers
+                  );
+
+                  alert(
+                    `Successfully added ${teams.length} users to the database!`
+                  );
+
+                  // Optional: Clear the teams array after successful addition
+                  setTeams([]);
+                } catch (error) {
+                  console.error("Error adding users to database:", error);
+                  setValidationErrors({
+                    general:
+                      "Failed to add users to database. Please try again.",
+                  });
+                  setIsModalOpen(false);
+                }
+              }
+            }}
           >
             <i className="bx bx-plus-circle text-2xl"></i>
             Create New Team
@@ -239,15 +449,41 @@ const CreateTeam = () => {
             {!validationErrors.teamName && <div className="mb-4" />}
             <label className="block text-md mb-1">Description*</label>
             <textarea
-              className="border border-gray-300 rounded-lg p-2 w-full mb-4"
+              className={`border rounded-lg p-2 w-full mb-1 ${
+                validationErrors.teamDescription
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
               placeholder="Description"
               value={teamDescription}
-              onChange={(e) => setTeamDescription(e.target.value)}
+              onChange={(e) => {
+                setTeamDescription(e.target.value);
+                // Clear validation error when user starts typing
+                if (validationErrors.teamDescription) {
+                  setValidationErrors({
+                    ...validationErrors,
+                    teamDescription: undefined,
+                  });
+                }
+              }}
               rows={3}
             />
+            {validationErrors.teamDescription && (
+              <p className="text-red-500 text-sm mb-4">
+                {validationErrors.teamDescription}
+              </p>
+            )}
+            {!validationErrors.teamDescription && <div className="mb-4" />}
 
             <div className="mb-4">
               <h3 className="font-semibold mb-2 text-lg">Team Permissions</h3>
+              {validationErrors.general && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p className="text-red-600 text-sm">
+                    {validationErrors.general}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-col gap-2 mb-4">
                 {isLoadingPermissions
                   ? // Show skeleton loaders in modal while permissions are loading
