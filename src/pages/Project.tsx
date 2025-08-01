@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "../components/ui/Button";
 import { apiPost, createCompanyUsers } from "../lib/apiService";
 import type { CreateUserData } from "../lib/apiService";
@@ -9,6 +10,7 @@ import { getUserFromToken } from "../lib/util";
 import ImageUpload from "../components/ui/ImageUpload";
 import CompletionPopup from "../components/ui/CompletionPopup";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getAllTeams } from "@/lib/teamService";
 
 interface ProjectFormData {
   projectName: string;
@@ -58,6 +60,11 @@ const Project = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  //?Navigations
+  const navigateToSurvey = () => {
+    navigate("/survey");
+  };
+
   // Get initial page case from location state, default to 1
   const initialCase = location.state?.initialCase || 1;
 
@@ -78,6 +85,13 @@ const Project = () => {
 
   //!Page data states
   const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
+  const [teams, setTeams] = useState<any[]>([]);
+
+  //Team data fetcher
+  const fetchTeamsData = async () => {
+    const fetchTeams = await getAllTeams();
+    setTeams(fetchTeams);
+  };
 
   const [participants, setParticipants] = useState<
     {
@@ -214,6 +228,7 @@ const Project = () => {
     }
     if (pageCase === 3) {
       // Load company data when starting directly in project creation step
+      fetchTeamsData();
       const savedCompanyData = localStorage.getItem("Company");
       if (savedCompanyData) {
         try {
@@ -1261,11 +1276,11 @@ const Project = () => {
                   })}
                 >
                   <option value="">Assigning Team</option>
-                  <option value="Maliban 360 Project 1">
-                    Maliban 360 Project 1
-                  </option>
-                  <option value="Team A">Team A</option>
-                  <option value="Team B">Team B</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.teamName}>
+                      {team.teamName}
+                    </option>
+                  ))}
                 </select>
                 {errors.assigningTeam && (
                   <p className="mt-1 text-sm text-red-500">
@@ -1697,9 +1712,8 @@ const Project = () => {
                         console.error("Error parsing participants:", error);
                       }
                     }
-
-                    setShowCompletionPopup(true);
                     setIsSubmitting(false);
+                    navigate("/create");
                   }}
                   disabled={userGroups.length === 0 || isSubmitting}
                 >
@@ -1976,18 +1990,7 @@ const Project = () => {
       pageContent = null;
   }
 
-  return (
-    <>
-      {pageContent}
-      <CompletionPopup
-        isVisible={showCompletionPopup}
-        onClose={() => {
-          setShowCompletionPopup(false);
-          navigate("/create");
-        }}
-      />
-    </>
-  );
+  return <>{pageContent}</>;
 };
 
 export default Project;

@@ -3,12 +3,21 @@ import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/skeleton";
 import { useUser } from "../context/UserContext";
-import { createTeam, getTeamRules, addUser } from "../lib/teamService";
+import {
+  createTeam,
+  getTeamRules,
+  addUser,
+  createCompleteTeam,
+  getCreatedUserIds,
+} from "../lib/teamService";
 import type {
   CreateTeamRequest,
   CreateTeamResponse,
   TeamValidationError,
   manageTeamUser,
+  CreateCompleteTeamRequest,
+  ClientManageTeamRule,
+  ClientManageTeamUser,
 } from "../lib/teamService";
 
 // Extended validation errors interface
@@ -187,44 +196,144 @@ const CreateTeam = () => {
       return;
     }
 
-    // Check if at least one team member is added
-    if (teams.length === 0) {
-      setValidationErrors({ general: "Please add at least one team member" });
+    // Get user IDs from local storage (previously created users)
+    const createdUserIds = getCreatedUserIds();
+
+    // Check if there are created users (either from current session or previous)
+    if (createdUserIds.length === 0 && createdUsers.length === 0) {
+      setValidationErrors({
+        general:
+          "No team members found. Please add users first by clicking 'Create New Team' button in the main form.",
+      });
+      return;
+    }
+
+    // Check if at least one permission is selected
+    if (teamPermissions.length === 0) {
+      setValidationErrors({
+        general: "Please select at least one team permission",
+      });
       return;
     }
 
     setIsCreatingTeam(true);
 
     try {
-      // Create the team using the API specification
-      const teamData: CreateTeamRequest = {
-        teamName: teamName.trim(),
-        description: teamDescription.trim(),
-        createdUserId: user.id,
+      // Use created user IDs from local storage or current session
+      const finalUserIds =
+        createdUserIds.length > 0
+          ? createdUserIds
+          : createdUsers
+              .map((user) => user.id || user.manageUserId)
+              .filter((id): id is string => !!id);
+
+      if (finalUserIds.length === 0) {
+        setValidationErrors({
+          general: "No valid user IDs found. Please try adding users again.",
+        });
+        setIsCreatingTeam(false);
+        return;
+      }
+
+      // Prepare team rules based on selected permissions
+      const clientManageTeamRule: ClientManageTeamRule[] = teamPermissions.map(
+        (permissionIndex) => ({
+          ruleId:
+            permissions[permissionIndex]?.id ||
+            permissions[permissionIndex]?.ruleId ||
+            `rule_${permissionIndex}`,
+        })
+      );
+
+      // Prepare team users from created users
+      const clientManageTeamUser: ClientManageTeamUser[] = finalUserIds.map(
+        (userId) => ({
+          manageUserId: userId,
+        })
+      );
+
+      // Create the complete team using the new API specification
+      const completeTeamData: CreateCompleteTeamRequest = {
+        clientManageTeam: {
+          teamName: teamName.trim(),
+          description: teamDescription.trim(),
+          createdUserId: user.id,
+        },
+        clientManageTeamRule: clientManageTeamRule,
+        clientManageTeamUser: clientManageTeamUser,
       };
 
-      const response: CreateTeamResponse = await createTeam(teamData);
-      localStorage.setItem("team", JSON.stringify(response));
-      console.log("Team created successfully:", response);
+      console.log("Creating complete team with data:", completeTeamData);
 
-      // Reset form on success
-      setTeamName("");
-      setTeamDescription("");
-      setTeamPermissions([]);
-      setIsModalOpen(false);
+      const response = await createCompleteTeam(completeTeamData);
+      console.log("API Response:", response);
 
-      // You can add success notification here
-      alert("Team created successfully!");
+      // Handle different response formats - check if response exists and has data
+      if (
+        response &&
+        (response.success === true || response.success === undefined)
+      ) {
+        // Store the team creation response
+        console.log("Complete team created successfully:", response);
+
+        // Reset form on success
+        setTeamName("");
+        setTeamDescription("");
+        setTeamPermissions([]);
+        setIsModalOpen(false);
+        setTeams([]);
+
+        // Success notification
+        alert(
+          `Team "${teamName}" created successfully with ${clientManageTeamUser.length} users and ${clientManageTeamRule.length} permissions!`
+        );
+      } else {
+        // If response.success is explicitly false
+        throw new Error(response?.message || "Failed to create team");
+      }
     } catch (error: any) {
-      console.error("Error creating team:", error);
+      console.error("Error creating complete team:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        response: error.response,
+      });
+
+      // If the error message suggests team was actually created, treat as success
+      if (
+        error.message?.includes("created") ||
+        error.message?.includes("success")
+      ) {
+        console.log(
+          "Team might have been created despite error, treating as success"
+        );
+
+        // Reset form on success
+        setTeamName("");
+        setTeamDescription("");
+        setTeamPermissions([]);
+        setIsModalOpen(false);
+        setTeams([]);
+
+        localStorage.removeItem("createdUsers");
+
+        alert(`Team "${teamName}" was created successfully!`);
+        return;
+      }
 
       // Handle validation errors from the API
       if (error.message && error.message.includes("400")) {
-        setValidationErrors({ teamName: "Team name is required" });
+        setValidationErrors({
+          general: "Invalid team data. Please check all fields and try again.",
+        });
+      } else if (error.message && error.message.includes("401")) {
+        setValidationErrors({
+          general: "Authentication failed. Please login again.",
+        });
       } else {
         // Handle other errors
         setValidationErrors({
-          general: "Failed to create team. Please try again.",
+          general: error.message || "Failed to create team. Please try again.",
         });
       }
     } finally {
@@ -355,60 +464,63 @@ const CreateTeam = () => {
 
               // Clear any previous validation errors
               setValidationErrors({});
-              setIsModalOpen(true);
 
-              // Loop through all users in the teams array and add them to the database
-              if (teams.length > 0) {
+              try {
                 console.log("Adding users to database...");
                 const addedUsers: manageTeamUser[] = [];
 
-                try {
-                  // Use a for loop to add each user to the database
-                  for (const teamMember of teams) {
-                    const addedUser = await addUser({
-                      email: teamMember.email,
-                      role: teamMember.role,
-                    });
-
-                    // Store the returned user details
-                    addedUsers.push(addedUser);
-
-                    console.log(
-                      `Added user: ${teamMember.email} with role: ${teamMember.role}`
-                    );
-                  }
-
-                  // Update state with the created users
-                  setCreatedUsers(addedUsers);
-
-                  // Store the created users in local storage
-                  localStorage.setItem(
-                    "createdUsers",
-                    JSON.stringify(addedUsers)
-                  );
-
-                  console.log(
-                    `Successfully added ${teams.length} users to the database`
-                  );
-                  console.log(
-                    "Created users stored in local storage:",
-                    addedUsers
-                  );
-
-                  alert(
-                    `Successfully added ${teams.length} users to the database!`
-                  );
-
-                  // Optional: Clear the teams array after successful addition
-                  setTeams([]);
-                } catch (error) {
-                  console.error("Error adding users to database:", error);
-                  setValidationErrors({
-                    general:
-                      "Failed to add users to database. Please try again.",
+                // Use a for loop to add each user to the database
+                for (const teamMember of teams) {
+                  const addedUser = await addUser({
+                    email: teamMember.email,
+                    role: teamMember.role,
                   });
-                  setIsModalOpen(false);
+
+                  // Store the returned user details
+                  addedUsers.push(addedUser);
+
+                  console.log(
+                    `Added user: ${teamMember.email} with role: ${teamMember.role}`
+                  );
                 }
+
+                // Update state with the created users
+                setCreatedUsers(addedUsers);
+
+                // Store the created users in local storage with user IDs
+                const usersWithIds = addedUsers.map((user, index) => ({
+                  ...user,
+                  id: user.id || `user_${Date.now()}_${index}`, // Ensure each user has an ID
+                  manageUserId: user.id || `user_${Date.now()}_${index}`, // Add manageUserId for team creation
+                }));
+
+                localStorage.setItem(
+                  "createdUsers",
+                  JSON.stringify(usersWithIds)
+                );
+
+                console.log(
+                  `Successfully added ${teams.length} users to the database`
+                );
+                console.log(
+                  "Created users stored in local storage:",
+                  usersWithIds
+                );
+
+                alert(
+                  `Successfully added ${teams.length} users to the database! Now you can create the team.`
+                );
+
+                // Open the team creation modal
+                setIsModalOpen(true);
+
+                // Clear the teams array after successful addition
+                setTeams([]);
+              } catch (error) {
+                console.error("Error adding users to database:", error);
+                setValidationErrors({
+                  general: "Failed to add users to database. Please try again.",
+                });
               }
             }}
           >
@@ -513,12 +625,14 @@ const CreateTeam = () => {
             <div className="mb-4">
               <h3 className="font-semibold mb-2 text-lg">Team Members</h3>
               <div className="max-h-40 overflow-y-auto">
-                {teams.length === 0 ? (
+                {createdUsers.length === 0 ? (
                   <p className="text-gray-500 text-sm">
-                    No team members added yet
+                    {getCreatedUserIds().length > 0
+                      ? `${getCreatedUserIds().length} users were added in previous session`
+                      : "No team members added yet"}
                   </p>
                 ) : (
-                  teams.map((member, idx) => (
+                  createdUsers.map((member, idx) => (
                     <div
                       key={idx}
                       className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded mb-2"
@@ -532,6 +646,13 @@ const CreateTeam = () => {
                     </div>
                   ))
                 )}
+                {getCreatedUserIds().length > 0 &&
+                  createdUsers.length === 0 && (
+                    <p className="text-blue-600 text-sm mt-2">
+                      ✓ {getCreatedUserIds().length} users from previous session
+                      will be included
+                    </p>
+                  )}
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">

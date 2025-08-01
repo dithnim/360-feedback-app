@@ -3,7 +3,7 @@ import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
 import { createQuestion } from "../lib/apiService";
-import { createCompetency } from "@/lib/createSurveyService";
+import { createCompetency } from "@/lib/surveyService";
 import { useNavigate } from "react-router-dom";
 
 const defaultOptions = [
@@ -92,24 +92,33 @@ const SurvayScratch = () => {
     setInput("");
   };
 
-  const handleAdd = () => {
-    console.log("handleAdd called", {
-      competency: competency.trim(),
-      questionsLength: questions.length,
-    });
+  const handleCompetencyCreation = async () => {
+    try {
+      // Loop through all competencies in templatePreviews and create them
+      for (const template of templatePreviews) {
+        if (template.competency.trim()) {
+          await createCompetency(template.competency.trim());
+          console.log(
+            `Successfully created competency: ${template.competency}`
+          );
+        }
+      }
+      console.log("All competencies created successfully");
+    } catch (error) {
+      console.error("Error creating competencies:", error);
+      throw error; // Re-throw to handle in the calling function
+    }
+  };
 
+  const handleAdd = () => {
     if (!competency.trim()) {
       alert("Please enter a competency name");
       return;
-    } else if (questions.length === 0) {
+    }
+
+    if (questions.length === 0) {
       alert("Please add at least one question");
       return;
-    } else {
-      try {
-        createCompetency(competency.trim());
-      } catch (error) {
-        console.error("Error creating competency:", error);
-      }
     }
 
     const newCompetency = {
@@ -612,7 +621,15 @@ const SurvayScratch = () => {
           <Button
             variant="edit"
             className="bg-[#8B1C13] font-medium text-md w-full sm:w-auto"
-            onClick={handleSaveTemplate}
+            onClick={async () => {
+              try {
+                await handleCompetencyCreation();
+                await handleSaveTemplate();
+              } catch (error) {
+                console.error("Error in save process:", error);
+                setSaveError("Failed to save survey. Please try again.");
+              }
+            }}
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save Survey"}
