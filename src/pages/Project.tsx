@@ -49,6 +49,21 @@ interface CompanyFormData {
   file?: FileList;
 }
 
+interface SurveyData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+  users: {
+    userId: string;
+    appraiser: boolean;
+    role: string;
+  }[];
+}
+
 // Helper function to format date as 2025-12-20T17:00:00Z
 function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
   const date = new Date(dateStr);
@@ -482,7 +497,7 @@ const Project = () => {
         email: data.email,
         contactNumber: data.phone,
         contactPerson: data.contactPerson,
-        logoImg: companyLogoUrl,
+        logoImg: companyLogoUrl || "",
         createdAt: new Date().toISOString(),
       };
       console.log("Sending company creation payload:", payload);
@@ -564,7 +579,7 @@ const Project = () => {
       const payload = {
         project_name: data.projectName,
         companyId: companyId,
-        assignTeamId: "687e79c59eb4f512d6c66155",
+        assignTeamId: data.assigningTeam,
         contactPerson: data.contactPerson,
         designation: data.designation,
         email: data.email,
@@ -1277,7 +1292,7 @@ const Project = () => {
                 >
                   <option value="">Assigning Team</option>
                   {teams.map((team) => (
-                    <option key={team.id} value={team.teamName}>
+                    <option key={team.id} value={team.id}>
                       {team.teamName}
                     </option>
                   ))}
@@ -1644,9 +1659,10 @@ const Project = () => {
                                 </Button>
                                 <Button
                                   variant="delete"
-                                  onClick={() =>
-                                    handleRemoveUserGroup(group.id)
-                                  }
+                                  onClick={() => {
+                                    handleRemoveUserGroup(group.id);
+                                    setGroupCounter((prev) => prev - 1);
+                                  }}
                                   className="p-3 text-sm bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-all duration-200 hover:shadow-md group"
                                   title="Delete Group"
                                 >
