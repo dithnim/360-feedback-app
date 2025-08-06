@@ -3,8 +3,8 @@
 
 import { clearAuthData } from "./util";
 
-// const BASE_URL = "https://360-backend-production-8ab2.up.railway.app/api/v1";
-const BASE_URL = "http://localhost:3010/api/v1";
+const BASE_URL = "https://360-backend-production-8ab2.up.railway.app/api/v1";
+// const BASE_URL = "http://localhost:3010/api/v1";
 
 // Function to handle unauthorized responses
 const handleUnauthorized = () => {
@@ -139,6 +139,46 @@ export async function deleteUserByCompanyId(companyId: string): Promise<any> {
   return response.json();
 }
 
+// Create users for a company
+export interface CreateUserData {
+  name: string;
+  email: string;
+  designation: string;
+  companyId: string;
+}
+
+export async function createCompanyUsers(
+  users: CreateUserData[]
+): Promise<any> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const response = await fetch(`${BASE_URL}/company/user/set`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(users),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log("Error response body:", errorText);
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
+    throw new Error(`POST /company/user/set failed: ${response.status}`);
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return response.json();
+  } else {
+    return response.text();
+  }
+}
+
 // Authentication types
 export interface LoginData {
   email: string;
@@ -167,11 +207,6 @@ export async function getCompanies(): Promise<Company[]> {
 }
 
 // Create a new competency
-export async function createCompetency(competency: string) {
-  return apiPost<{ id: string; competency: string }>("/competency", {
-    competency,
-  });
-}
 
 // Create a new question for a competency
 export async function createQuestion(data: {
@@ -261,4 +296,24 @@ export async function submitSurveyResponse(
   }
 
   return response.json();
+}
+
+// Team-related types and functions
+export interface CreateTeamData {
+  teamName: string;
+  createdUserId: string;
+}
+
+export interface TeamResponse {
+  id: string;
+  teamName: string;
+  createdUserId: string;
+  createdAt: string;
+}
+
+// Create a new team
+export async function createTeamAPI(
+  teamData: CreateTeamData
+): Promise<TeamResponse> {
+  return apiPost<TeamResponse>("/team", teamData) as Promise<TeamResponse>;
 }

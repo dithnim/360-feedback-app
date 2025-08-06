@@ -1,5 +1,7 @@
+import React from "react";
 import { Button } from "../components/ui/Button";
-import { apiPost } from "../lib/apiService";
+import { apiPost, createCompanyUsers } from "../lib/apiService";
+import type { CreateUserData } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -8,6 +10,7 @@ import { getUserFromToken } from "../lib/util";
 import ImageUpload from "../components/ui/ImageUpload";
 import CompletionPopup from "../components/ui/CompletionPopup";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getAllTeams } from "@/lib/teamService";
 
 interface ProjectFormData {
   projectName: string;
@@ -46,6 +49,21 @@ interface CompanyFormData {
   file?: FileList;
 }
 
+interface SurveyData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+  users: {
+    userId: string;
+    appraiser: boolean;
+    role: string;
+  }[];
+}
+
 // Helper function to format date as 2025-12-20T17:00:00Z
 function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
   const date = new Date(dateStr);
@@ -56,6 +74,11 @@ function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
 const Project = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  //?Navigations
+  const navigateToSurvey = () => {
+    navigate("/survey");
+  };
 
   // Get initial page case from location state, default to 1
   const initialCase = location.state?.initialCase || 1;
@@ -69,12 +92,21 @@ const Project = () => {
   const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(initialCase);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingUsers, setIsCreatingUsers] = useState(false);
+  const [userCreationError, setUserCreationError] = useState<string>("");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
 
   //!Page data states
   const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
+  const [teams, setTeams] = useState<any[]>([]);
+
+  //Team data fetcher
+  const fetchTeamsData = async () => {
+    const fetchTeams = await getAllTeams();
+    setTeams(fetchTeams);
+  };
 
   const [participants, setParticipants] = useState<
     {
@@ -82,8 +114,8 @@ const Project = () => {
       participantName: string;
       email: string;
       designation: string;
-      appraisee: string;
-      role: string;
+      appraisee?: string;
+      role?: string;
     }[]
   >([]);
   const {
@@ -170,10 +202,15 @@ const Project = () => {
         try {
           const parsedParticipants = JSON.parse(savedParticipants);
           setParticipants(parsedParticipants);
+          // Reset error state when loading participants
+          setUserCreationError("");
         } catch (error) {
           console.error("Error parsing saved participants:", error);
           setParticipants([]);
+          setUserCreationError("");
         }
+      } else {
+        setUserCreationError("");
       }
     }
     if (pageCase === 4) {
@@ -206,6 +243,7 @@ const Project = () => {
     }
     if (pageCase === 3) {
       // Load company data when starting directly in project creation step
+      fetchTeamsData();
       const savedCompanyData = localStorage.getItem("Company");
       if (savedCompanyData) {
         try {
@@ -372,10 +410,60 @@ const Project = () => {
     [participants, setValue]
   );
 
+  // Function to create users in the backend
+  const createUsers = useCallback(async (participantsData: any[]) => {
+    setIsCreatingUsers(true);
+    setUserCreationError("");
+    try {
+      const companyStr = localStorage.getItem("Company");
+      let companyId = "";
+      if (companyStr) {
+        try {
+          const companyObj = JSON.parse(companyStr);
+          companyId = companyObj.id || "";
+        } catch (e) {
+          console.error("Error parsing company data:", e);
+          setUserCreationError("Failed to get company information");
+          return false;
+        }
+      }
+
+      if (!companyId) {
+        console.error("No company ID found");
+        setUserCreationError("Company must be created before adding users");
+        return false;
+      }
+
+      // Transform participants data to match API structure
+      const usersPayload: CreateUserData[] = participantsData.map(
+        (participant) => ({
+          name: participant.participantName,
+          email: participant.email,
+          designation: participant.designation,
+          companyId: companyId,
+        })
+      );
+
+      const response = await createCompanyUsers(usersPayload);
+      console.log("Users created successfully:", response);
+      setUserCreationError("");
+      return true;
+    } catch (error) {
+      console.error("Error creating users:", error);
+      setUserCreationError("Failed to create users. Please try again.");
+      return false;
+    } finally {
+      setIsCreatingUsers(false);
+    }
+  }, []);
+
   const handleDelete = useCallback(
     (index: number) => {
       const updatedParticipants = participants.filter((_, i) => i !== index);
       setParticipants(updatedParticipants);
+
+      // Reset error state since participants have changed
+      setUserCreationError("");
 
       // Update localStorage with the updated participants list
       if (updatedParticipants.length > 0) {
@@ -383,6 +471,9 @@ const Project = () => {
           "Participants",
           JSON.stringify(updatedParticipants)
         );
+      } else {
+        // If no participants left, remove from localStorage
+        localStorage.removeItem("Participants");
       }
 
       if (editIndex === index) {
@@ -406,7 +497,7 @@ const Project = () => {
         email: data.email,
         contactNumber: data.phone,
         contactPerson: data.contactPerson,
-        logoImg: companyLogoUrl,
+        logoImg: companyLogoUrl || "",
         createdAt: new Date().toISOString(),
       };
       console.log("Sending company creation payload:", payload);
@@ -488,7 +579,7 @@ const Project = () => {
       const payload = {
         project_name: data.projectName,
         companyId: companyId,
-        assignTeamId: "687e79c59eb4f512d6c66155",
+        assignTeamId: data.assigningTeam,
         contactPerson: data.contactPerson,
         designation: data.designation,
         email: data.email,
@@ -523,22 +614,31 @@ const Project = () => {
   const handleParticipantSubmit = useCallback(
     (data: ParticipantFormData) => {
       if (editIndex !== null) {
-        setParticipants((prev) =>
-          prev.map((p, i) => (i === editIndex ? { ...p, ...data } : p))
+        // Update existing participant
+        const updatedParticipants = participants.map((p, i) =>
+          i === editIndex ? { ...p, ...data } : p
         );
+        setParticipants(updatedParticipants);
         setEditIndex(null);
       } else {
-        setParticipants((prev) => [...prev, { ...data, id: Date.now() }]);
+        // Add new participant
+        const newParticipant = { ...data, id: Date.now() };
+        const updatedParticipants = [...participants, newParticipant];
+        setParticipants(updatedParticipants);
       }
+
+      // Reset saved state since participants have changed
+      setUserCreationError("");
+
+      // Just update UI, don't call backend yet
       resetInfo({
         participantName: "",
         email: "",
         designation: "",
       });
     },
-    [editIndex, resetInfo]
+    [editIndex, resetInfo, participants]
   );
-
   const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: ReturnType<typeof setTimeout>;
     return (...args: any[]) => {
@@ -793,20 +893,27 @@ const Project = () => {
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={() => {
+                    // Save to localStorage before navigating
                     if (participants.length > 0) {
-                      // Save to localStorage and proceed to next step
                       localStorage.setItem(
                         "Participants",
                         JSON.stringify(participants)
                       );
-                      handleNext();
                     }
+                    handleNext();
                   }}
                 >
                   next
                 </Button>
               </div>
             </div>
+            {userCreationError && (
+              <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Error:</strong> {userCreationError}
+                </p>
+              </div>
+            )}
             <form
               onSubmit={handleSubmitInfo(handleParticipantSubmit)}
               className="mt-5"
@@ -1184,11 +1291,11 @@ const Project = () => {
                   })}
                 >
                   <option value="">Assigning Team</option>
-                  <option value="Maliban 360 Project 1">
-                    Maliban 360 Project 1
-                  </option>
-                  <option value="Team A">Team A</option>
-                  <option value="Team B">Team B</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.teamName}
+                    </option>
+                  ))}
                 </select>
                 {errors.assigningTeam && (
                   <p className="mt-1 text-sm text-red-500">
@@ -1552,9 +1659,10 @@ const Project = () => {
                                 </Button>
                                 <Button
                                   variant="delete"
-                                  onClick={() =>
-                                    handleRemoveUserGroup(group.id)
-                                  }
+                                  onClick={() => {
+                                    handleRemoveUserGroup(group.id);
+                                    setGroupCounter((prev) => prev - 1);
+                                  }}
                                   className="p-3 text-sm bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-all duration-200 hover:shadow-md group"
                                   title="Delete Group"
                                 >
@@ -1579,6 +1687,11 @@ const Project = () => {
         <div>
           <PageNav position="CEO" title="Review Users" />
           <div className="h-full px-4 sm:px-8 md:px-16 lg:px-32 pt-6 md:pt-10">
+            {isSubmitting && (
+              <div className="save-overley bg-black/30 w-full h-full absolute top-0 left-0 z-10 flex justify-center items-center flex-col">
+                <Loader text="Creating Users & Finalizing..." />
+              </div>
+            )}
             <div className="flex justify-between items-center mb-10">
               <label className="text-3xl font-semibold">
                 Review User Groups
@@ -1597,15 +1710,41 @@ const Project = () => {
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={async () => {
                     setIsSubmitting(true);
-                    setShowCompletionPopup(true);
+
+                    // Create users before finishing if participants exist
+                    const participantsData =
+                      localStorage.getItem("Participants");
+                    if (participantsData) {
+                      try {
+                        const participants = JSON.parse(participantsData);
+                        if (participants.length > 0) {
+                          const success = await createUsers(participants);
+                          if (!success) {
+                            setIsSubmitting(false);
+                            return; // Don't proceed if user creation failed
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error parsing participants:", error);
+                      }
+                    }
                     setIsSubmitting(false);
+                    navigate("/create");
                   }}
                   disabled={userGroups.length === 0 || isSubmitting}
                 >
-                  {isSubmitting ? "Processing..." : "Finish"}
+                  {isSubmitting ? "Creating Users & Finishing..." : "Finish"}
                 </Button>
               </div>
             </div>
+
+            {userCreationError && (
+              <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Error:</strong> {userCreationError}
+                </p>
+              </div>
+            )}
 
             {userGroups.length === 0 ? (
               <div className="text-center py-20">
@@ -1867,18 +2006,7 @@ const Project = () => {
       pageContent = null;
   }
 
-  return (
-    <>
-      {pageContent}
-      <CompletionPopup
-        isVisible={showCompletionPopup}
-        onClose={() => {
-          setShowCompletionPopup(false);
-          navigate("/create");
-        }}
-      />
-    </>
-  );
+  return <>{pageContent}</>;
 };
 
 export default Project;

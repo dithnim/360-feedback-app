@@ -89,6 +89,60 @@ export default function CurrentProjectsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [companyDataLoaded, setCompanyDataLoaded] = useState(false);
+
+  // Memoized function to fetch company and participant data only once
+  const fetchCompanyData = useCallback(async () => {
+    if (!companyId || companyDataLoaded) {
+      return; // Skip if no companyId or data already loaded
+    }
+
+    try {
+      console.log(
+        "Fetching company and participant details for ID:",
+        companyId
+      );
+
+      // Check if data already exists in localStorage
+      const existingCompany = localStorage.getItem("Company");
+      const existingParticipants = localStorage.getItem("Participants");
+
+      if (existingCompany && existingParticipants) {
+        console.log(
+          "Company and participant data already available in localStorage"
+        );
+        setCompanyDataLoaded(true);
+        return;
+      }
+
+      // Fetch both company and participants data in parallel
+      const [companyData, participantsData] = await Promise.all([
+        getCompanies(companyId),
+        getParticipants(companyId),
+      ]);
+
+      console.log("Company and participant details fetched successfully");
+      setCompanyDataLoaded(true);
+    } catch (error) {
+      console.error("Failed to fetch company details:", error);
+      throw error;
+    }
+  }, [companyId, companyDataLoaded]);
+
+  // Function to handle navigation to project creation
+  const handleCreateProject = useCallback(async () => {
+    try {
+      await fetchCompanyData();
+      navigate("/project", { state: { initialCase: 3 } });
+    } catch (error) {
+      console.error("Failed to fetch company details:", error);
+      // Navigate anyway, but without company data pre-filled
+      alert(
+        "Failed to load company details. You'll need to enter them manually in the project form."
+      );
+      navigate("/project", { state: { initialCase: 3 } });
+    }
+  }, [fetchCompanyData, navigate]);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -97,9 +151,7 @@ export default function CurrentProjectsPage() {
       const data = await getProjects(companyId);
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError("Failed to fetch projects");
       setProjects([]);
-      console.error("Error fetching projects:", err);
     } finally {
       setLoading(false);
     }
@@ -195,26 +247,7 @@ export default function CurrentProjectsPage() {
             <Button
               variant="black"
               className="text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
-              onClick={async () => {
-                try {
-                  if (companyId) {
-                    console.log("Fetching company and Participant details for ID:", companyId);
-                    await getCompanies(companyId);
-                    await getParticipants(companyId);
-                    console.log("Company and Participant details fetched successfully");
-                  } else {
-                    console.warn("No company ID available");
-                  }
-                  navigate("/project", { state: { initialCase: 3 } });
-                } catch (error) {
-                  console.error("Failed to fetch company details:", error);
-                  // Navigate anyway, but without company data pre-filled
-                  alert(
-                    "Failed to load company details. You'll need to enter them manually in the project form."
-                  );
-                  navigate("/project", { state: { initialCase: 3 } });
-                }
-              }}
+              onClick={handleCreateProject}
             >
               <i className="bx bx-plus text-xl"></i>
               Create New Project
@@ -388,41 +421,29 @@ export default function CurrentProjectsPage() {
             </div>
           )}
 
-          {!loading && !error && projects.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-xl font-medium mb-2">No Projects Found</h3>
-              <p className="mb-6">
-                There are no projects available for this company.
-              </p>
-              <Button
-                variant="next"
-                className="bg-[#ee3f40] hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg"
-                onClick={async () => {
-                  try {
-                    if (companyId) {
-                      console.log(
-                        "Fetching company details for ID:",
-                        companyId
-                      );
-                      await getCompanies(companyId);
-                      console.log("Company details fetched successfully");
-                    } else {
-                      console.warn("No company ID available");
-                    }
-                    navigate("/project", { state: { initialCase: 3 } });
-                  } catch (error) {
-                    console.error("Failed to fetch company details:", error);
-                    // Navigate anyway, but without company data pre-filled
-                    alert(
-                      "Failed to load company details. You'll need to enter them manually in the project form."
-                    );
-                    navigate("/project", { state: { initialCase: 3 } });
-                  }
-                }}
-              >
-                Create Your First Project
-              </Button>
+          {!loading && projects.length === 0 && !error && (
+            <div className="text-center py-16 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+              <div className="max-w-md mx-auto">
+                <div className="text-8xl mb-6 opacity-50">📋</div>
+                <h3 className="text-2xl font-semibold mb-3 text-gray-700">
+                  No Projects Found
+                </h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  {org?.name
+                    ? `There are no projects available for ${org.name} yet.`
+                    : "There are no projects available for this company yet."}
+                  <br />
+                  Get started by creating your first project.
+                </p>
+                <Button
+                  variant="next"
+                  className="bg-[#ee3f40] hover:bg-red-600 text-white font-semibold px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-3"
+                  onClick={handleCreateProject}
+                >
+                  <i className="bx bx-plus text-xl"></i>
+                  Create Your First Project
+                </Button>
+              </div>
             </div>
           )}
         </main>
