@@ -308,3 +308,26 @@ export async function createTeamAPI(
 ): Promise<TeamResponse> {
   return apiPost<TeamResponse>("/team", teamData) as Promise<TeamResponse>;
 }
+
+// Survey creation types and functions
+export interface SurveyCreationData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+  users: {
+    userId: string;
+    appraiser: boolean;
+    role: string;
+  }[];
+}
+
+// Create a complete survey with all data
+export async function createSurveyAll(
+  surveyData: SurveyCreationData
+): Promise<any> {
+  return apiPost<any>("/survey/all", surveyData);
+}
