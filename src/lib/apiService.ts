@@ -1,12 +1,7 @@
-// src/lib/apiService.ts
-// API service for communicating with Spring Boot backend on Railway
-
 import { clearAuthData } from "./util";
 
-// const BASE_URL = "https://360-backend-production-8ab2.up.railway.app/api/v1";
-const BASE_URL = "http://localhost:3010/api/v1";
+const BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 
-// Function to handle unauthorized responses
 const handleUnauthorized = () => {
   clearAuthData();
   window.location.href = "/login";
@@ -102,7 +97,6 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
-// Delete a company/organization by ID
 export async function deleteOrganization(companyId: string): Promise<any> {
   const token = localStorage.getItem("token");
   const headers: HeadersInit = token
@@ -206,9 +200,6 @@ export async function getCompanies(): Promise<Company[]> {
   return apiGet<Company[]>("/company");
 }
 
-// Create a new competency
-
-// Create a new question for a competency
 export async function createQuestion(data: {
   competencyId: string;
   question: string;
