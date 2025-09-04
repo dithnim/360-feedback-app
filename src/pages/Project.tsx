@@ -49,20 +49,7 @@ interface CompanyFormData {
   file?: FileList;
 }
 
-interface SurveyData {
-  survey: {
-    surveyName: string;
-    projectId: string;
-  };
-  questions: {
-    questionId: string;
-  }[];
-  users: {
-    userId: string;
-    appraiser: boolean;
-    role: string;
-  }[];
-}
+
 
 // Helper function to format date as 2025-12-20T17:00:00Z
 function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
@@ -1400,8 +1387,27 @@ const Project = () => {
                 </Button>
                 <Button
                   variant="next"
-                  className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={handleNext}
+                  className={`font-semibold text-xl flex items-center justify-center p-6 ${
+                    userGroups.length === 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    // Validate that user groups have been created
+                    if (userGroups.length === 0) {
+                      alert(
+                        "Please create at least one feedback group before proceeding."
+                      );
+                      return;
+                    }
+                    // Save the complete user groups data instead of just selected user IDs
+                    localStorage.setItem(
+                      "SurveyUsers",
+                      JSON.stringify(userGroups)
+                    );
+                    handleNext();
+                  }}
+                  disabled={userGroups.length === 0}
                 >
                   next
                 </Button>

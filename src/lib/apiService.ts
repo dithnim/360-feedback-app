@@ -1,24 +1,46 @@
-// src/lib/apiService.ts
-// API service for communicating with Spring Boot backend on Railway
-
 import { clearAuthData } from "./util";
 
-const BASE_URL = "https://360-backend-production-8ab2.up.railway.app/api/v1";
-// const BASE_URL = "http://localhost:3010/api/v1";
+const BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 
-// Function to handle unauthorized responses
+// Default network settings
+const DEFAULT_TIMEOUT_MS = 20_000; // 20s
+
+// Fetch with timeout and abort to avoid hanging requests consuming memory
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(input, { ...init, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 const handleUnauthorized = () => {
   clearAuthData();
   window.location.href = "/login";
 };
 
-export async function apiGet<T>(endpoint: string): Promise<T> {
+export async function apiGet<T>(
+  endpoint: string,
+  opts?: { timeoutMs?: number; headers?: HeadersInit }
+): Promise<T> {
   const token = localStorage.getItem("token"); // Get token from localStorage
-  const headers: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
+  const headers: HeadersInit = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(opts?.headers ?? {}),
+  };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, { headers });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}${endpoint}`,
+    { headers },
+    opts?.timeoutMs
+  );
   if (!response.ok) {
     if (response.status === 401) {
       handleUnauthorized();
@@ -31,7 +53,8 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
 export async function apiPost<T>(
   endpoint: string,
   data: any,
-  headers: Record<string, string> = {}
+  headers: Record<string, string> = {},
+  opts?: { timeoutMs?: number }
 ): Promise<T | string> {
   const token = localStorage.getItem("token");
   const mergedHeaders = {
@@ -40,11 +63,15 @@ export async function apiPost<T>(
     ...headers,
   };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: mergedHeaders,
-    body: JSON.stringify(data),
-  });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}${endpoint}`,
+    {
+      method: "POST",
+      headers: mergedHeaders,
+      body: JSON.stringify(data),
+    },
+    opts?.timeoutMs
+  );
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -60,18 +87,26 @@ export async function apiPost<T>(
   }
 }
 
-export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
+export async function apiPut<T>(
+  endpoint: string,
+  data: any,
+  opts?: { timeoutMs?: number }
+): Promise<T> {
   const token = localStorage.getItem("token");
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify(data),
-  });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}${endpoint}`,
+    {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(data),
+    },
+    opts?.timeoutMs
+  );
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -82,16 +117,23 @@ export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
   return response.json();
 }
 
-export async function apiDelete<T>(endpoint: string): Promise<T> {
+export async function apiDelete<T>(
+  endpoint: string,
+  opts?: { timeoutMs?: number }
+): Promise<T> {
   const token = localStorage.getItem("token");
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
     : {};
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    method: "DELETE",
-    headers,
-  });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}${endpoint}`,
+    {
+      method: "DELETE",
+      headers,
+    },
+    opts?.timeoutMs
+  );
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -102,13 +144,12 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
-// Delete a company/organization by ID
 export async function deleteOrganization(companyId: string): Promise<any> {
   const token = localStorage.getItem("token");
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
     : {};
-  const response = await fetch(`${BASE_URL}/company/${companyId}`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/company/${companyId}`, {
     method: "DELETE",
     headers,
   });
@@ -124,10 +165,13 @@ export async function deleteUserByCompanyId(companyId: string): Promise<any> {
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
     : {};
-  const response = await fetch(`${BASE_URL}/company/user/${companyId}`, {
-    method: "DELETE",
-    headers,
-  });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}/company/user/${companyId}`,
+    {
+      method: "DELETE",
+      headers,
+    }
+  );
   if (!response.ok) {
     if (response.status === 401) {
       handleUnauthorized();
@@ -156,7 +200,7 @@ export async function createCompanyUsers(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const response = await fetch(`${BASE_URL}/company/user/set`, {
+  const response = await fetchWithTimeout(`${BASE_URL}/company/user/set`, {
     method: "POST",
     headers,
     body: JSON.stringify(users),
@@ -206,9 +250,6 @@ export async function getCompanies(): Promise<Company[]> {
   return apiGet<Company[]>("/company");
 }
 
-// Create a new competency
-
-// Create a new question for a competency
 export async function createQuestion(data: {
   competencyId: string;
   question: string;
@@ -264,12 +305,15 @@ export interface SurveyResponse {
 
 // Get survey data by token (public endpoint - no auth required)
 export async function getSurveyByToken(token: string): Promise<Survey> {
-  const response = await fetch(`${BASE_URL}/survey/public/${token}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}/survey/public/${token}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to fetch survey: ${response.status}`);
@@ -283,13 +327,16 @@ export async function submitSurveyResponse(
   token: string,
   responses: SurveyResponse[]
 ): Promise<any> {
-  const response = await fetch(`${BASE_URL}/survey/public/${token}/submit`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ responses }),
-  });
+  const response = await fetchWithTimeout(
+    `${BASE_URL}/survey/public/${token}/submit`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ responses }),
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to submit survey: ${response.status}`);
@@ -316,4 +363,27 @@ export async function createTeamAPI(
   teamData: CreateTeamData
 ): Promise<TeamResponse> {
   return apiPost<TeamResponse>("/team", teamData) as Promise<TeamResponse>;
+}
+
+// Survey creation types and functions
+export interface SurveyCreationData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+  users: {
+    userId: string;
+    appraiser: boolean;
+    role: string;
+  }[];
+}
+
+// Create a complete survey with all data
+export async function createSurveyAll(
+  surveyData: SurveyCreationData
+): Promise<any> {
+  return apiPost<any>("/survey/all", surveyData);
 }

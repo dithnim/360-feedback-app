@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
-import * as Papa from "papaparse";
+// Heavy libraries are imported lazily to cut initial bundle size
+// import html2canvas from "html2canvas-pro";
+// import jsPDF from "jspdf";
+// import * as Papa from "papaparse";
 import "./FeedbackReport.scss";
 import DraggableComp from "../Draggable/DraggableComp";
 
@@ -494,14 +495,21 @@ const FeedbackReport: React.FC = () => {
     );
   }, [pieCharts]);
 
-  // Initialize component
+  // Initialize component (lightweight)
   useEffect(() => {
-    initDynamicEditStates();
     paginateRatings();
     paginateOpenEndedFeedbackRate();
     paginateDevPlan();
     prepareChartData();
   }, [sumOfComRating, openEndedFeedback, developmentPlanContent]);
+
+  // Defer heavy edit state setup until edit mode is enabled
+  useEffect(() => {
+    if (isEditMode && _editDynamicStates.length === 0) {
+      initDynamicEditStates();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
 
   // Initialize dynamic edit states
   const initDynamicEditStates = () => {
@@ -594,6 +602,10 @@ const FeedbackReport: React.FC = () => {
       const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
       const idle = () => new Promise((res) => requestIdleCallback(res));
 
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas-pro"),
+      ]);
       const pdf = new jsPDF("p", "mm", "a4");
       const pages =
         pdfSectionRef.current.querySelectorAll(":scope > .pdf-page");
@@ -605,7 +617,8 @@ const FeedbackReport: React.FC = () => {
         await idle();
 
         const canvas = await html2canvas(page, {
-          scale: 2,
+          // balance quality and memory footprint
+          scale: Math.min(window.devicePixelRatio || 1, 1.5),
           useCORS: true,
           allowTaint: true,
           backgroundColor: "#ffffff",
@@ -613,14 +626,28 @@ const FeedbackReport: React.FC = () => {
           windowWidth: page.scrollWidth,
           windowHeight: page.scrollHeight,
         });
-
-        const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg", 0.85);
         const imgWidth = 210;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         let position = 0;
 
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          0,
+          position,
+          imgWidth,
+          imgHeight,
+          undefined,
+          "FAST"
+        );
+
+        // Help GC: release large canvas memory
+        try {
+          canvas.width = 0;
+          canvas.height = 0;
+        } catch {}
 
         setExportProgress(((i + 1) / pages.length) * 100);
       }
@@ -635,12 +662,13 @@ const FeedbackReport: React.FC = () => {
   };
 
   // CSV Upload functionality
-  const _onCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const _onCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+    const Papa = await import("papaparse");
     Papa.parse(file, {
       header: true,
+      worker: true,
       complete: (results) => {
         const data = results.data as FeedbackEntry[];
         generateCompetencyData(data);

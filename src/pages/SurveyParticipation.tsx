@@ -236,7 +236,7 @@ const SurveyParticipation = () => {
       />
 
       <div className="py-8">
-        <div className="max-w-2xl mx-auto px-4">
+        <div className="max-w-2xl mx-auto px-4 bg-[#f8ba57]">
           {/* Survey Form */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             {/* Competency Header */}

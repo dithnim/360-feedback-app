@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
-import { createQuestion } from "../lib/apiService";
+import { createQuestion, createSurveyAll } from "../lib/apiService";
 import { createCompetency } from "@/lib/surveyService";
 import { useNavigate } from "react-router-dom";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 const defaultOptions = [
   "Strongly Agree",
@@ -26,6 +27,89 @@ const SurvayScratch = () => {
     type: QuestionType;
     options: string[];
     isRequired?: boolean;
+  };
+
+  interface SurveyData {
+    survey: {
+      surveyName: string;
+      projectId: string;
+    };
+    questions: {
+      questionId: string;
+    }[];
+    users: {
+      userId: string;
+      appraiser: boolean;
+      role: string;
+    }[];
+  }
+
+  // Function to create survey data from localStorage
+  const createSurveyFromLocalStorage = (): SurveyData | null => {
+    try {
+      // Get project data from localStorage
+      const projectData = JSON.parse(localStorage.getItem("Project") || "{}");
+      
+      // Get questions data from localStorage
+      const questionsData = JSON.parse(localStorage.getItem("savedQuestions") || "[]");
+      
+      // Get user groups data from localStorage
+      const userGroupsData = JSON.parse(localStorage.getItem("SurveyUsers") || "[]");
+      
+      if (!projectData.id || questionsData.length === 0 || userGroupsData.length === 0) {
+        console.error("Missing required data in localStorage");
+        return null;
+      }
+
+      // Transform questions data
+      const questions = questionsData.map((q: any) => ({
+        questionId: q.questionId
+      }));
+
+      // Transform users data - flatten all users from groups
+      const users: { userId: string; appraiser: boolean; role: string; }[] = [];
+      
+      userGroupsData.forEach((group: any) => {
+        // Add appraisee
+        if (group.appraisee) {
+          users.push({
+            userId: group.appraisee.id.toString(),
+            appraiser: false, // appraisee is not an appraiser
+            role: group.appraisee.role
+          });
+        }
+        
+        // Add appraisers
+        if (group.appraisers && Array.isArray(group.appraisers)) {
+          group.appraisers.forEach((appraiser: any) => {
+            users.push({
+              userId: appraiser.id.toString(),
+              appraiser: true, // these are appraisers
+              role: appraiser.role
+            });
+          });
+        }
+      });
+
+      // Remove duplicate users (same userId)
+      const uniqueUsers = users.filter((user, index, self) => 
+        index === self.findIndex(u => u.userId === user.userId)
+      );
+
+      const surveyData: SurveyData = {
+        survey: {
+          surveyName: projectData.project_name || "360 Feedback Survey",
+          projectId: projectData.id
+        },
+        questions,
+        users: uniqueUsers
+      };
+
+      return surveyData;
+    } catch (error) {
+      console.error("Error creating survey from localStorage:", error);
+      return null;
+    }
   };
 
   const [competency, setCompetency] = useState("");
@@ -55,6 +139,8 @@ const SurvayScratch = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const { setItem } = useLocalStorage();
 
   const getDefaultOptionsForType = (type: QuestionType): string[] => {
     switch (type) {
@@ -277,23 +363,83 @@ const SurvayScratch = () => {
     setIsSaving(true);
     setSaveError(null);
     try {
+      const savedQuestions: Array<{
+        questionId: string;
+        competencyId: string;
+        questionText: string;
+        competencyName: string;
+      }> = [];
+
       for (const comp of templatePreviews) {
         // 1. Create competency
         const compRes = await createCompetency(comp.competency);
         const competencyId = typeof compRes === "string" ? compRes : compRes.id;
+
         // 2. Create questions
         for (const q of comp.questions) {
-          await createQuestion({
+          const questionResponse = await createQuestion({
             competencyId,
             question: q.text,
             optionType: q.type === "open-ended" ? "text" : "string", // Adjust based on your API
             options: q.options,
           });
+
+          // Store question details
+          const questionId =
+            typeof questionResponse === "string"
+              ? questionResponse
+              : questionResponse.id;
+          savedQuestions.push({
+            questionId,
+            competencyId,
+            questionText: q.text,
+            competencyName: comp.competency,
+          });
         }
       }
+
+      // Store all question IDs in local storage
+      localStorage.setItem("savedQuestions", JSON.stringify(savedQuestions));
+
       alert("Template saved successfully!");
     } catch (err: any) {
       setSaveError(err.message || "Failed to save template");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Function to create and send survey data to API
+  const handleCreateSurveyData = async () => {
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+
+      const surveyData = createSurveyFromLocalStorage();
+      if (!surveyData) {
+        throw new Error("Failed to create survey data from localStorage. Please ensure all required data is available.");
+      }
+
+      console.log("Sending Survey Data to API:", surveyData);
+      
+      // Send data to /survey/all endpoint
+      const response = await createSurveyAll(surveyData);
+      
+      console.log("Survey creation response:", response);
+      
+      // Store the survey data and response in localStorage for later use
+      localStorage.setItem("SurveyData", JSON.stringify(surveyData));
+      localStorage.setItem("SurveyResponse", JSON.stringify(response));
+      
+      alert(`Survey created successfully!\n\nSurvey Name: ${surveyData.survey.surveyName}\nProject ID: ${surveyData.survey.projectId}\nQuestions: ${surveyData.questions.length}\nUsers: ${surveyData.users.length}`);
+      
+      // You can also navigate to another page or perform other actions here
+      // navigate("/survey-created", { state: { surveyData, response } });
+      
+    } catch (error: any) {
+      console.error("Error creating survey:", error);
+      setSaveError(error.message || "Failed to create survey. Please try again.");
+      alert(`Failed to create survey: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -642,6 +788,14 @@ const SurvayScratch = () => {
             }
           >
             Preview
+          </Button>
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg text-md w-full sm:w-auto"
+            variant="next"
+            onClick={handleCreateSurveyData}
+            disabled={isSaving}
+          >
+            {isSaving ? "Creating Survey..." : "Create & Send Survey"}
           </Button>
         </div>
         {saveError && <div className="text-red-600 mt-2">{saveError}</div>}

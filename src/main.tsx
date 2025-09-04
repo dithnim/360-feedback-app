@@ -1,35 +1,37 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./index.css";
-import Home from "./Home.tsx";
-// import Company from "./pages/Company.tsx";
-import Project from "./pages/Project.tsx";
-// import Info from "./pages/info.tsx";
-// import Users from "./pages/Users.tsx";
-// import Review from "./pages/Review.tsx";
-import CreateSurvay from "./pages/CreateSurvay.tsx";
-// import CreateCompetencies from "./pages/CreateCompetencies.tsx";
-import Templates from "./pages/Templates.tsx";
-import CreateTemplate from "./pages/CreateTemplate.tsx";
-import ViewTeam from "./pages/ViewTeam.tsx";
-import SurvayScratch from "./pages/SurvayScratch.tsx";
-import CreateTeam from "./pages/CreateTeam.tsx";
-import FeedbackReport from "../report/FeedbackReport/FeedbackReport.tsx";
-import FeedbackReport2 from "../report/FeedbackReport/FeedbackReport2.tsx";
-import Login from "./pages/login.tsx";
-import CurrentProjects from "./pages/currentProjects.tsx";
+// Route-level code splitting for faster initial load
+const Home = lazy(() => import("./Home.tsx"));
+const Project = lazy(() => import("./pages/Project.tsx"));
+const CreateSurvay = lazy(() => import("./pages/CreateSurvay.tsx"));
+const Templates = lazy(() => import("./pages/Templates.tsx"));
+const CreateTemplate = lazy(() => import("./pages/CreateTemplate.tsx"));
+const ViewTeam = lazy(() => import("./pages/ViewTeam.tsx"));
+const SurvayScratch = lazy(() => import("./pages/SurvayScratch.tsx"));
+const CreateTeam = lazy(() => import("./pages/CreateTeam.tsx"));
+const FeedbackReport = lazy(
+  () => import("../report/FeedbackReport/FeedbackReport.tsx")
+);
+const FeedbackReport2 = lazy(
+  () => import("../report/FeedbackReport/FeedbackReport2.tsx")
+);
+const Login = lazy(() => import("./pages/login.tsx"));
+const CurrentProjects = lazy(() => import("./pages/currentProjects.tsx"));
 import { UserProvider, useUser } from "./context/UserContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import Loader from "./components/ui/loader";
-import PreviewCurrentProject from "./pages/PreviewCurrentProject.tsx";
-import SurveyPreview from "./pages/SurveyPreview";
-import CreateFromTemplate from "./pages/CreateFromTemplate";
-import SurveyParticipation from "./pages/SurveyParticipation";
-import SurveyThankYou from "./pages/SurveyThankYou";
-import SurveyDemo from "./pages/SurveyDemo";
+const PreviewCurrentProject = lazy(
+  () => import("./pages/PreviewCurrentProject.tsx")
+);
+const SurveyPreview = lazy(() => import("./pages/SurveyPreview"));
+const CreateFromTemplate = lazy(() => import("./pages/CreateFromTemplate"));
+const SurveyParticipation = lazy(() => import("./pages/SurveyParticipation"));
+const SurveyThankYou = lazy(() => import("./pages/SurveyThankYou"));
+const SurveyDemo = lazy(() => import("./pages/SurveyDemo"));
 import ErrorBoundary from "./components/ErrorBoundary";
-import NotFound from "./pages/NotFound.tsx";
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -183,7 +185,18 @@ createRoot(document.getElementById("root")!).render(
       <UserProvider>
         <SidebarProvider>
           <BrowserRouter>
-            <AppRoutes />
+            <Suspense
+              fallback={
+                <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                  <div className="text-center">
+                    <Loader text="Loading..." />
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              }
+            >
+              <AppRoutes />
+            </Suspense>
           </BrowserRouter>
         </SidebarProvider>
       </UserProvider>
