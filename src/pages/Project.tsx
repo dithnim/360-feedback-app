@@ -49,8 +49,6 @@ interface CompanyFormData {
   file?: FileList;
 }
 
-
-
 // Helper function to format date as 2025-12-20T17:00:00Z
 function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
   const date = new Date(dateStr);
@@ -75,9 +73,10 @@ const Project = () => {
     handleSubmit: handleSubmitProject,
     formState: { errors },
     watch,
+    reset: resetProject,
   } = useForm<ProjectFormData>();
-  const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(initialCase);
+  const startDate = pageCase === 3 ? watch("startDate") : undefined;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingUsers, setIsCreatingUsers] = useState(false);
   const [userCreationError, setUserCreationError] = useState<string>("");
@@ -89,7 +88,7 @@ const Project = () => {
   const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
 
-  //Team data fetcher
+  //!Team data fetcher
   const fetchTeamsData = async () => {
     const fetchTeams = await getAllTeams();
     setTeams(fetchTeams);
@@ -120,6 +119,7 @@ const Project = () => {
     formState: { errors: errorsCompany },
     setValue: setCompanyValue,
     watch: watchCompany,
+    reset: resetCompany,
   } = useForm<CompanyFormData>();
 
   const [users, setUsers] = useState<UserData[]>([]);
@@ -250,8 +250,8 @@ const Project = () => {
     }
   }, [pageCase]);
 
-  // Watch company form values to save to localStorage
-  const watchedCompanyValues = watchCompany();
+  // Watch company form values to save to localStorage only when on company page
+  const watchedCompanyValues = pageCase === 1 ? watchCompany() : {};
 
   // Save company form data to localStorage whenever form values change
   useEffect(() => {
@@ -278,6 +278,18 @@ const Project = () => {
       localStorage.setItem("Participants", JSON.stringify(participants));
     }
   }, [participants]);
+
+  // Reset forms when switching pages to prevent cross-contamination
+  useEffect(() => {
+    // Reset participant form when not on participant page
+    if (pageCase !== 2 && editIndex === null) {
+      resetInfo();
+    }
+    // Reset project form when not on project page
+    if (pageCase !== 3) {
+      resetProject();
+    }
+  }, [pageCase, editIndex, resetInfo, resetProject]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("");
@@ -435,9 +447,13 @@ const Project = () => {
       console.log("Users created successfully:", response);
       setUserCreationError("");
       return true;
-    } catch (error) {
-      console.error("Error creating users:", error);
-      setUserCreationError("Failed to create users. Please try again.");
+    } catch (error: any) {
+      if (error.message && error.message.includes("dup key")) {
+        setUserCreationError("Duplicate emails found");
+      } else {
+        setUserCreationError("Failed to create users. Please try again.");
+      }
+
       return false;
     } finally {
       setIsCreatingUsers(false);
@@ -449,10 +465,8 @@ const Project = () => {
       const updatedParticipants = participants.filter((_, i) => i !== index);
       setParticipants(updatedParticipants);
 
-      // Reset error state since participants have changed
       setUserCreationError("");
 
-      // Update localStorage with the updated participants list
       if (updatedParticipants.length > 0) {
         localStorage.setItem(
           "Participants",
@@ -477,6 +491,7 @@ const Project = () => {
     [participants, editIndex, resetInfo]
   );
 
+  //? Company creation handler
   const handlerCompanyCreation = useCallback(
     async (data: CompanyFormData) => {
       const payload = {
@@ -541,7 +556,7 @@ const Project = () => {
     [handlerCompanyCreation]
   );
 
-  // TODO Handler function for project creation
+  //? Handler function for project creation
   const handlerProjectCreation = async (data: ProjectFormData) => {
     setIsSubmitting(true); // Set loading state immediately
     try {

@@ -101,15 +101,26 @@ function Home() {
     setDeleteLoading(true);
     try {
       await deleteOrganization(organizationToDelete.id);
-      await deleteUserByCompanyId(organizationToDelete.id);
+      try {
+        await deleteUserByCompanyId(organizationToDelete.id);
+      } catch (error: any) {
+        if (error.message && error.message.includes("404")) {
+          console.log("No users found for company");
+        } else {
+          console.warn("Failed to delete users for company:", error);
+        }
+      }
       setOrganizations((prev) =>
         prev.filter((o) => o.id !== organizationToDelete.id)
       );
       setOrganizationToDelete(null);
       setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to delete organization:", error);
-      alert("Failed to delete organization. Please try again.");
+    } catch (error: any) {
+      if (error.message && error.message.includes("404")) {
+        console.log("Company not found");
+      } else {
+        console.warn("Failed to delete Company: ", error);
+      }
     } finally {
       setDeleteLoading(false);
     }
@@ -119,7 +130,7 @@ function Home() {
     org: any,
     event: React.MouseEvent
   ) => {
-    event.stopPropagation(); // Prevent card click handler from being triggered
+    event.stopPropagation();
     setOrganizationToDelete(org);
     setIsDeleteDialogOpen(true);
   };

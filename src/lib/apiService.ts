@@ -156,7 +156,6 @@ export async function deleteOrganization(companyId: string): Promise<any> {
   if (!response.ok) {
     throw new Error(`DELETE /company/${companyId} failed: ${response.status}`);
   }
-  return response.json();
 }
 
 // Delete a user by company ID
@@ -172,15 +171,14 @@ export async function deleteUserByCompanyId(companyId: string): Promise<any> {
       headers,
     }
   );
+  console.log("Delete user response:", response);
   if (!response.ok) {
-    if (response.status === 401) {
-      handleUnauthorized();
-    }
     throw new Error(
       `DELETE /company/user/${companyId} failed: ${response.status}`
     );
   }
-  return response.json();
+
+  return response.status;
 }
 
 // Create users for a company
@@ -209,18 +207,13 @@ export async function createCompanyUsers(
   if (!response.ok) {
     const errorText = await response.text();
     console.log("Error response body:", errorText);
-    if (response.status === 401) {
-      handleUnauthorized();
-    }
-    throw new Error(`POST /company/user/set failed: ${response.status}`);
+    throw new Error(
+      errorText || `POST /company/user/set failed: ${response.status}`
+    );
   }
 
-  const contentType = response.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    return response.json();
-  } else {
-    return response.text();
-  }
+  const responseText = await response.text();
+  return responseText;
 }
 
 // Authentication types

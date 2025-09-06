@@ -142,7 +142,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="current-projects"
+        path="/current-projects"
         element={
           <ProtectedRoute>
             <CurrentProjects />

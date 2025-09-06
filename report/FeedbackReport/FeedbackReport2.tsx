@@ -17,6 +17,7 @@ import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore
 import { openEndedFeedbackDataStore } from "../utils/data/store/openEndedFeedbackDataStore";
 
 import coverLogo from "../imgs/templates/Dash.png";
+import reportLogo from "../imgs/templates/cover_2.png"
 
 // Types and interfaces
 interface EditState {
@@ -510,6 +511,16 @@ const FeedbackReport: React.FC = () => {
     );
   }, [pieCharts]);
 
+  // Initialize custom cover image from localStorage
+  useEffect(() => {
+    const savedCoverImage = localStorage.getItem(
+      CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY
+    );
+    if (savedCoverImage) {
+      setCustomCoverImage(savedCoverImage);
+    }
+  }, []);
+
   // Initialize component (lightweight)
   useEffect(() => {
     paginateRatings();
@@ -918,55 +929,176 @@ const FeedbackReport: React.FC = () => {
 
       {/* PDF Section: Wrap all .pdf-page elements in a single ref */}
       <div ref={pdfSectionRef}>
-        <div className="pdf-page text-left">
-          {/* Cover Page */}
-          <div className="px-10 flex justify-end w-full mb-4">
-            <img src={coverLogo} alt="Logo" className="logo" />
-          </div>
+        <div className="pdf-page text-left cover-page-new">
+          {/* Cover Page - New Design */}
 
-          <div className="flex justify-end w-full ">
-            {!isEditMode ? (
-              <p
-                className="paa px-10 mt-20 text-[#656464]"
-                style={{ marginBottom: "15mm" }}
-              >
-                {userName} | {formatDateWithSuffix(reportedDate)}
-              </p>
-            ) : (
-              <div className="banner-name-tag">
-                <input
-                  type="text"
-                  placeholder="User Name"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                />
-                <input
-                  type="date"
-                  placeholder="Date"
-                  value={reportedDate}
-                  onChange={(e) => setReportedDate(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
+          {/* Top Logos */}
+          <div className="cover-header">
+            <div className="cover-logos">
 
-          <div className="flex px-20">
-            <div className="flex flex-col">
-              <h1 className="title mb-2">
-                360-Degree <br /> Feedback <br /> Report
-              </h1>
-              <p className="para__light">Confidential Report</p>
+            </div>
+
+            {/* User Info */}
+            <div className="cover-user-info">
+              {!isEditMode ? (
+                <p className="user-date-info">
+                  {userName} | {formatDateWithSuffix(reportedDate)}
+                </p>
+              ) : (
+                <div className="banner-name-tag">
+                  <input
+                    type="text"
+                    placeholder="User Name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                  />
+                  <input
+                    type="date"
+                    placeholder="Date"
+                    value={reportedDate}
+                    onChange={(e) => setReportedDate(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-col  w-full justify-end">
-            <div className="flex flex-col bg-red-500">
-              <p className="para__sm">
-                This report is confidential and should not be distributed
-                without permission.
+          {/* Red Diagonal Band */}
+          {/* <div className="cover-diagonal-band">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 600 800"
+              preserveAspectRatio="none"
+              className="diagonal-svg"
+            >
+              <path d="M 0,0 L 600,0 L 450,800 L 0,800 Z" fill="#E85A54" />
+            </svg>
+          </div> */}
+
+          {/* Main Content Area */}
+          <div className="cover-main-content">
+            <div className="cover-left-section">
+              <h1 className="cover-title text-center">
+                360-Degree
+                <br />
+                Feedback
+                <br />
+                Report
+              </h1>
+              <p className="cover-subtitle text-center">Confidential Report</p>
+            </div>
+
+            <div className="cover-right-section">
+              {/* Circle Image Placeholder */}
+              <div className="cover-circle-image">
+                <div className="circle-placeholder">
+                  {/* Placeholder for user's custom image */}
+                  {reportLogo ? (
+                    <img
+                      src={reportLogo}
+                      alt="Cover"
+                      className="circle-img"
+                    />
+                  ) : (
+                    <svg
+                      width="300"
+                      height="300"
+                      viewBox="0 0 300 300"
+                      className="placeholder-svg"
+                    >
+                      <circle
+                        cx="150"
+                        cy="150"
+                        r="148"
+                        fill="#f5f5f5"
+                        stroke="#ddd"
+                        strokeWidth="4"
+                      />
+                      <circle cx="150" cy="150" r="120" fill="white" />
+
+                      {/* Professional illustration placeholder */}
+                      <g transform="translate(75, 75)">
+                        {/* Person silhouette */}
+                        <circle cx="75" cy="50" r="25" fill="#ccc" />
+                        <path
+                          d="M 30 120 Q 30 80 75 80 Q 120 80 120 120 L 120 140 L 30 140 Z"
+                          fill="#ccc"
+                        />
+
+                        {/* Multiple smaller circles representing team/feedback */}
+                        <circle
+                          cx="40"
+                          cy="40"
+                          r="8"
+                          fill="#e85a54"
+                          opacity="0.7"
+                        />
+                        <circle
+                          cx="110"
+                          cy="35"
+                          r="8"
+                          fill="#e85a54"
+                          opacity="0.7"
+                        />
+                        <circle
+                          cx="130"
+                          cy="70"
+                          r="8"
+                          fill="#e85a54"
+                          opacity="0.7"
+                        />
+                        <circle
+                          cx="125"
+                          cy="110"
+                          r="8"
+                          fill="#e85a54"
+                          opacity="0.7"
+                        />
+                        <circle
+                          cx="25"
+                          cy="90"
+                          r="8"
+                          fill="#e85a54"
+                          opacity="0.7"
+                        />
+                        <circle
+                          cx="35"
+                          cy="130"
+                          r="8"
+                          fill="#e85a54"
+                          opacity="0.7"
+                        />
+                      </g>
+
+                      {/* 360° text */}
+                      <text
+                        x="150"
+                        y="260"
+                        textAnchor="middle"
+                        fontFamily="Arial"
+                        fontSize="16"
+                        fill="#666"
+                        fontWeight="bold"
+                      >
+                        360° Feedback
+                      </text>
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="cover-bottom">
+            <div className="facilitated-by text-center">
+              <p className="facilitated-text">Facilitated by</p>
+              <p className="company-name">
+                DAASH Consultancy & Training Pvt (Ltd).
               </p>
-              <p className="para__dark">
-                DAASH Consultancy & Training Online Assessments © 2025
+              <p className="company-address">
+                No 129/1A, Nawala Road, Narahenpita, Colombo 05, Sri Lanka.
               </p>
             </div>
           </div>

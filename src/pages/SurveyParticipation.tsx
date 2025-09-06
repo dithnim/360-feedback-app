@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import PublicNavbar from "../components/PublicNavbar";
+import { apiGet } from "@/lib/apiService";
 // import { getSurveyByToken, submitSurveyResponse } from "../lib/apiService";
 // import type { Survey, SurveyResponse as APISurveyResponse } from "../lib/apiService";
 
@@ -148,26 +149,133 @@ const SurveyParticipation = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [surveyData, setSurveyData] = useState<typeof dummySurveyData | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Get survey token from URL parameters (in real implementation)
   const surveyToken = searchParams.get("token") || "demo-token";
 
   useEffect(() => {
-    // In real implementation, fetch survey data using the token
-    // Example:
-    // const fetchSurveyData = async () => {
-    //   try {
-    //     const surveyData = await getSurveyByToken(surveyToken);
-    //     setSurveyData(surveyData);
-    //   } catch (error) {
-    //     console.error('Error fetching survey:', error);
-    //   }
-    // };
-    // fetchSurveyData();
+    const fetchSurveyData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const surveyQuestions = await getSurveyByToken(surveyToken);
+        setSurveyData(surveyQuestions);
+      } catch (error) {
+        console.error("Error fetching survey:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to load survey"
+        );
+        // Fall back to dummy data if API fails
+        setSurveyData(dummySurveyData);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSurveyData();
   }, [surveyToken]);
 
-  const currentCompetency = dummySurveyData.competencies[currentStep];
-  const totalSteps = dummySurveyData.competencies.length;
+  const getSurveyByToken = async (token: string) => {
+    try {
+      // Use the token from URL as the surveyId
+      const surveyId = token;
+
+      // Step 1: Get all question IDs for the survey
+      const surveyQuestions = await apiGet<
+        Array<{
+          _id: string;
+          surveyId: string;
+          questionId: string;
+        }>
+      >(`/survey/${surveyId}/question`);
+
+      // Step 2: Fetch individual question details for each questionId
+      const questionDetailsPromises = surveyQuestions.map((sq) =>
+        apiGet<{
+          id: string;
+          competencyId: string;
+          question: string;
+          optionType: string;
+          options: string[] | null;
+        }>(`/question/${sq.questionId}`)
+      );
+
+      const questionDetails = await Promise.all(questionDetailsPromises);
+
+      // Transform the combined data to match the expected format
+      const transformedData = transformApiDataToSurveyFormat(questionDetails);
+      return transformedData;
+    } catch (error) {
+      console.error("Error fetching survey questions:", error);
+      throw new Error(
+        `Failed to fetch survey questions: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  };
+
+  // Helper function to transform API data to the expected survey format
+  const transformApiDataToSurveyFormat = (
+    questionDetails: Array<{
+      id: string;
+      competencyId: string;
+      question: string;
+      optionType: string;
+      options: string[] | null;
+    }>
+  ) => {
+    // Group questions by competency
+    const competencyMap = new Map();
+
+    questionDetails.forEach((questionDetail) => {
+      const competencyId = questionDetail.competencyId;
+
+      if (!competencyMap.has(competencyId)) {
+        competencyMap.set(competencyId, {
+          id: competencyId,
+          name: `Competency ${competencyId.slice(-6)}`, // Use last 6 chars as display name
+          description: `Assessment for competency ${competencyId.slice(-6)}`,
+          questions: [],
+        });
+      }
+
+      // Determine options based on optionType
+      let options: string[];
+      if (questionDetail.options && questionDetail.options.length > 0) {
+        options = questionDetail.options;
+      } else if (questionDetail.optionType === "single") {
+        options = [
+          "Strongly Agree",
+          "Agree",
+          "Neutral",
+          "Disagree",
+          "Strongly Disagree",
+        ];
+      } else {
+        // Default fallback options
+        options = ["Excellent", "Good", "Average", "Below Average", "Poor"];
+      }
+
+      competencyMap.get(competencyId).questions.push({
+        id: questionDetail.id,
+        text: questionDetail.question,
+        options: options,
+      });
+    });
+
+    return {
+      id: "survey-123", // You might want to use the actual surveyId here
+      title: "360 Degree Feedback Survey",
+      employee: "Survey Participant", // This should be fetched from user data
+      competencies: Array.from(competencyMap.values()),
+    };
+  };
+
+  const currentCompetency = surveyData?.competencies[currentStep];
+  const totalSteps = surveyData?.competencies.length || 0;
 
   const handleResponseChange = (questionId: number, answer: string) => {
     setResponses((prev) => {
@@ -188,6 +296,7 @@ const SurveyParticipation = () => {
   };
 
   const isCurrentStepComplete = () => {
+    if (!currentCompetency) return false;
     return currentCompetency.questions.every((q) =>
       responses.some((r) => r.questionId === q.id && r.answer)
     );
@@ -226,139 +335,185 @@ const SurveyParticipation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <PublicNavbar
-        title={dummySurveyData.title}
+        title={surveyData?.title || "360 Degree Feedback Survey"}
         showProgress={true}
         currentStep={currentStep + 1}
         totalSteps={totalSteps}
-        employee={dummySurveyData.employee}
+        employee={surveyData?.employee || "Survey Participant"}
       />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="">
+          <div className="max-w-4xl mx-auto px-4">
+            {isLoading ? (
+              <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading survey...</p>
+              </div>
+            ) : error ? (
+              <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+                <div className="text-red-500 mb-4">
+                  <svg
+                    className="h-12 w-12 mx-auto"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.966-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Error Loading Survey
+                </h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <Button
+                  onClick={() => window.location.reload()}
+                  className="bg-green-700 hover:bg-green-800 text-white px-6 py-2"
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : !surveyData || !currentCompetency ? (
+              <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+                <p className="text-gray-600">No survey data available.</p>
+              </div>
+            ) : (
+              /* Survey Form */
+              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                {/* Competency Header */}
+                <div className="bg-green-700 px-10 py-8">
+                  <h3 className="text-white font-bold text-2xl mb-2">
+                    {currentCompetency.name}
+                  </h3>
+                  <p className="text-white text-md opacity-90">
+                    {currentCompetency.description}
+                  </p>
+                </div>
 
-      <div className="py-8">
-        <div className="max-w-2xl mx-auto px-4 bg-[#f8ba57]">
-          {/* Survey Form */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            {/* Competency Header */}
-            <div className="bg-green-700 px-6 py-4">
-              <h3 className="text-white font-bold text-xl mb-2">
-                {currentCompetency.name}
-              </h3>
-              <p className="text-white text-sm opacity-90">
-                {currentCompetency.description}
-              </p>
-            </div>
+                {/* Questions */}
+                <div className="p-8 space-y-8">
+                  {currentCompetency.questions.map((question, index) => (
+                    <div key={question.id} className="space-y-4">
+                      <h4 className="font-semibold text-gray-800 text-xl leading-relaxed">
+                        {index + 1}. {question.text}
+                      </h4>
 
-            {/* Questions */}
-            <div className="p-6 space-y-8">
-              {currentCompetency.questions.map((question, index) => (
-                <div key={question.id} className="space-y-4">
-                  <h4 className="font-semibold text-gray-800 text-lg leading-relaxed">
-                    {index + 1}. {question.text}
-                  </h4>
+                      <div className="grid grid-cols-5 gap-4">
+                        {question.options.map((option) => (
+                          <label
+                            key={option}
+                            className="flex flex-col items-center space-y-2 cursor-pointer group"
+                          >
+                            <input
+                              type="radio"
+                              name={`question-${question.id}`}
+                              value={option}
+                              checked={getResponse(question.id) === option}
+                              onChange={(e) =>
+                                handleResponseChange(
+                                  question.id,
+                                  e.target.value
+                                )
+                              }
+                              className="w-5 h-5 text-green-700 border-2 border-gray-300 focus:ring-green-500 focus:ring-2"
+                            />
+                            <span className="text-mc font-medium text-gray-700 text-center group-hover:text-green-700 transition-colors">
+                              {option}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
 
-                  <div className="grid grid-cols-5 gap-4">
-                    {question.options.map((option) => (
-                      <label
-                        key={option}
-                        className="flex flex-col items-center space-y-2 cursor-pointer group"
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${question.id}`}
-                          value={option}
-                          checked={getResponse(question.id) === option}
-                          onChange={(e) =>
-                            handleResponseChange(question.id, e.target.value)
-                          }
-                          className="w-5 h-5 text-green-700 border-2 border-gray-300 focus:ring-green-500 focus:ring-2"
-                        />
-                        <span className="text-sm font-medium text-gray-700 text-center group-hover:text-green-700 transition-colors">
-                          {option}
-                        </span>
-                      </label>
+                      {/* Add comment field for the last question */}
+                      {index === currentCompetency.questions.length - 1 && (
+                        <div className="mt-4">
+                          <textarea
+                            placeholder="Add a comment... (optional)"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Navigation */}
+                <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
+                  <Button
+                    variant="previous"
+                    onClick={handlePrevious}
+                    disabled={currentStep === 0}
+                    className={`px-6 py-2 ${
+                      currentStep === 0
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-gray-500 hover:bg-gray-600 text-white"
+                    }`}
+                  >
+                    PREVIOUS
+                  </Button>
+
+                  <div className="flex space-x-2">
+                    {Array.from({ length: totalSteps }, (_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${
+                          i === currentStep
+                            ? "bg-green-700"
+                            : i < currentStep
+                              ? "bg-green-500"
+                              : "bg-gray-300"
+                        }`}
+                      />
                     ))}
                   </div>
 
-                  {/* Add comment field for the last question */}
-                  {index === currentCompetency.questions.length - 1 && (
-                    <div className="mt-4">
-                      <textarea
-                        placeholder="Add a comment... (optional)"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
-                        rows={3}
-                      />
-                    </div>
+                  {currentStep < totalSteps - 1 ? (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!isCurrentStepComplete()}
+                      className={`px-6 py-2 ${
+                        isCurrentStepComplete()
+                          ? "bg-green-700 hover:bg-green-800 text-white"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      NEXT
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!isCurrentStepComplete() || isSubmitting}
+                      className={`px-6 py-2 ${
+                        isCurrentStepComplete() && !isSubmitting
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
+                    </Button>
                   )}
                 </div>
-              ))}
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
-              <Button
-                variant="previous"
-                onClick={handlePrevious}
-                disabled={currentStep === 0}
-                className={`px-6 py-2 ${
-                  currentStep === 0
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gray-500 hover:bg-gray-600 text-white"
-                }`}
-              >
-                PREVIOUS
-              </Button>
-
-              <div className="flex space-x-2">
-                {Array.from({ length: totalSteps }, (_, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-full ${
-                      i === currentStep
-                        ? "bg-green-700"
-                        : i < currentStep
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                    }`}
-                  />
-                ))}
               </div>
+            )}
 
-              {currentStep < totalSteps - 1 ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={!isCurrentStepComplete()}
-                  className={`px-6 py-2 ${
-                    isCurrentStepComplete()
-                      ? "bg-green-700 hover:bg-green-800 text-white"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  NEXT
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!isCurrentStepComplete() || isSubmitting}
-                  className={`px-6 py-2 ${
-                    isCurrentStepComplete() && !isSubmitting
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Progress Info */}
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Step {currentStep + 1} of {totalSteps} • {currentCompetency.name}
+            {/* Progress Info */}
+            {surveyData && currentCompetency && (
+              <div className="mt-6 text-center text-sm text-gray-600">
+                Step {currentStep + 1} of {totalSteps} •{" "}
+                {currentCompetency.name}
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
