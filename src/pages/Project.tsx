@@ -41,8 +41,8 @@ interface UserData {
   name: string;
   email: string;
   designation: string;
-  type: "Appraisee" | "Appraiser";
-  role: string;
+  type?: "Appraisee" | "Appraiser";
+  role?: string;
 }
 
 interface CompanyFormData {

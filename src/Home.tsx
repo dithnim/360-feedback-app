@@ -59,27 +59,27 @@ function Home() {
 
   // Skeleton loading component
   const OrganizationCardSkeleton = () => (
-    <Card className="w-full md:w-[321px] h-[266px] rounded-[10px] overflow-hidden p-0 relative">
+    <Card className="w-full max-w-[321px] h-[200px] sm:h-[240px] md:h-[266px] rounded-[10px] overflow-hidden p-0 relative mx-auto">
       {/* Background skeleton */}
       <Skeleton className="w-full h-full rounded-[10px]" />
 
       {/* Organization name skeleton */}
-      <div className="absolute top-[172px] left-4">
-        <Skeleton className="h-6 w-32" />
+      <div className="absolute top-[140px] sm:top-[160px] md:top-[172px] left-3 md:left-4">
+        <Skeleton className="h-5 md:h-6 w-24 md:w-32" />
       </div>
 
       {/* Card footer */}
-      <CardFooter className="absolute bottom-0 left-0 w-full h-[40px] bg-white rounded-[0px_0px_10px_10px] flex justify-between items-center px-4 py-0">
+      <CardFooter className="absolute bottom-0 left-0 w-full h-[35px] sm:h-[40px] bg-white rounded-[0px_0px_10px_10px] flex justify-between items-center px-2 sm:px-4 py-0">
         <div className="flex">
           {/* Avatar skeletons */}
-          <Skeleton className="w-[30px] h-[30px] rounded-[15px]" />
-          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
-          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
-          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
-          <Skeleton className="w-[30px] h-[30px] rounded-[15px] -ml-1" />
+          <Skeleton className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] rounded-[12px] sm:rounded-[15px]" />
+          <Skeleton className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] rounded-[12px] sm:rounded-[15px] -ml-1" />
+          <Skeleton className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] rounded-[12px] sm:rounded-[15px] -ml-1" />
+          <Skeleton className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] rounded-[12px] sm:rounded-[15px] -ml-1" />
+          <Skeleton className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] rounded-[12px] sm:rounded-[15px] -ml-1" />
         </div>
 
-        <Skeleton className="h-4 w-12" />
+        <Skeleton className="h-3 sm:h-4 w-10 sm:w-12" />
       </CardFooter>
     </Card>
   );
@@ -155,21 +155,19 @@ function Home() {
       </div>
       <div className="body flex">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block">
+        <div className="">
           <Sidebar />
         </div>
         {/* Main Content */}
         <div
-          className={`py-4 overflow-y-auto w-full transition-all duration-300 ease-in-out ${
-            isSidebarExpanded ? "ps-60" : "ps-40"
-          }`}
+          className={`py-4 ps-40 pe-10 overflow-y-auto w-full transition-all duration-300 ease-in-out `}
         >
-          <h1 className="text-[#ed3f41] text-2xl font-semibold">
+          <h1 className="text-[#ed3f41] text-xl md:text-2xl lg:text-3xl font-semibold mb-4 md:mb-6">
             360° Feedback Current Organizations
           </h1>
 
           {loading ? (
-            <div className="w-full grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-370px)]">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8 overflow-y-auto mt-6 md:mt-10 h-[calc(100vh-300px)] md:h-[calc(100vh-370px)]">
               {/* Show 8 skeleton cards while loading */}
               {Array.from({ length: 8 }).map((_, index) => (
                 <OrganizationCardSkeleton key={index} />
@@ -188,11 +186,11 @@ function Home() {
               </div>
             </div>
           ) : (
-            <div className="w-full grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-x-[34px] gap-y-[60px] overflow-y-auto mt-10 h-[calc(100vh-370px)]">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8 overflow-y-auto mt-6 md:mt-10 h-[calc(100vh-300px)] md:h-[calc(100vh-370px)] ">
               {organizations.map((org) => (
                 <Card
                   key={org.id}
-                  className="w-full md:w-[321px] h-[266px] rounded-[10px] overflow-hidden p-0 relative"
+                  className="w-full max-w-[321px] h-[200px] sm:h-[240px] md:h-[266px] rounded-[10px] overflow-hidden p-0 relative cursor-pointer hover:scale-105 transition-transform duration-200 mx-auto"
                   style={{
                     backgroundImage: `url(${org.logoImg})`,
                     backgroundSize: "cover",
@@ -204,25 +202,25 @@ function Home() {
                   <div className="absolute inset-0 bg-black opacity-40 rounded-[10px]"></div>
 
                   {/* Organization name */}
-                  <div className="absolute top-[172px] left-4 font-['Poppins',Helvetica] font-semibold text-white text-xl">
+                  <div className="absolute top-[140px] sm:top-[160px] md:top-[172px] left-3 md:left-4 font-['Poppins',Helvetica] font-semibold text-white text-lg md:text-xl">
                     {org.name}
                   </div>
 
                   {/* Card footer */}
-                  <CardFooter className="absolute bottom-0 left-0 w-full h-[40px] bg-white rounded-[0px_0px_10px_10px] border-r border-b border-l border-[#acacac] flex justify-between items-center px-4 py-0">
+                  <CardFooter className="absolute bottom-0 left-0 w-full h-[35px] sm:h-[40px] bg-white rounded-[0px_0px_10px_10px] border-r border-b border-l border-[#acacac] flex justify-between items-center px-2 sm:px-4 py-0">
                     <div className="flex">
                       {/* User avatars */}
-                      <Avatar className="w-[30px] h-[30px] bg-[#d9d9d9] rounded-[15px]" />
-                      <Avatar className="w-[30px] h-[30px] bg-[#b8b8b8] rounded-[15px] -ml-1" />
-                      <Avatar className="w-[30px] h-[30px] bg-[#999999] rounded-[15px] -ml-1" />
-                      <Avatar className="w-[30px] h-[30px] bg-[#818181] rounded-[15px] -ml-1" />
-                      <Avatar className="w-[30px] h-[30px] bg-[#646464] rounded-[15px] -ml-1 relative">
-                        <PlusIcon className="w-6 h-6 absolute inset-0 m-auto text-white" />
+                      <Avatar className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] bg-[#d9d9d9] rounded-[12px] sm:rounded-[15px]" />
+                      <Avatar className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] bg-[#b8b8b8] rounded-[12px] sm:rounded-[15px] -ml-1" />
+                      <Avatar className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] bg-[#999999] rounded-[12px] sm:rounded-[15px] -ml-1" />
+                      <Avatar className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] bg-[#818181] rounded-[12px] sm:rounded-[15px] -ml-1" />
+                      <Avatar className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] bg-[#646464] rounded-[12px] sm:rounded-[15px] -ml-1 relative">
+                        <PlusIcon className="w-4 h-4 sm:w-6 sm:h-6 absolute inset-0 m-auto text-white" />
                       </Avatar>
                     </div>
 
                     <label
-                      className="font-['Poppins',Helvetica] font-semibold text-[#ed3f41] p-0 cursor-pointer flex items-center justify-center"
+                      className="font-['Poppins',Helvetica] font-semibold text-[#ed3f41] text-sm sm:text-base p-0 cursor-pointer flex items-center justify-center hover:text-[#d23539] transition-colors"
                       onClick={(event) => deleteOrganizationHandler(org, event)}
                     >
                       Delete
@@ -232,15 +230,15 @@ function Home() {
               ))}
 
               {/* Create New Organization Card */}
-              <Card className="w-full md:w-[321px] h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center">
+              <Card className="w-full max-w-[321px] h-[200px] sm:h-[240px] md:h-[266px] bg-[#ee3e41] rounded-[10px] flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 mx-auto">
                 <CardContent
-                  className="flex flex-col items-center justify-center h-full p-0 cursor-pointer"
+                  className="flex flex-col items-center justify-center h-full p-4 cursor-pointer"
                   onClick={handleCreateOrganization}
                 >
-                  <div className="w-10 h-6 flex items-center justify-center mb-0">
-                    <div className="relative w-[30px] h-10 bg-[url(/group.png)] bg-[100%]" />
+                  <div className="w-8 h-6 sm:w-10 sm:h-6 flex items-center justify-center mb-2 sm:mb-4">
+                    <div className="relative w-[24px] sm:w-[30px] h-8 sm:h-10 bg-[url(/group.png)] bg-[100%]" />
                   </div>
-                  <span className="font-['Poppins',Helvetica] font-semibold text-white text-xl">
+                  <span className="font-['Poppins',Helvetica] font-semibold text-white text-lg md:text-xl text-center">
                     Create New Organization
                   </span>
                 </CardContent>
@@ -250,7 +248,7 @@ function Home() {
         </div>
         {/* Mobile Sidebar Overlay */}
         {isSidebarExpanded && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-40 flex md:hidden">
+          <div className="fixed inset-0 z-40 flex ">
             <div className="relative w-[220px] max-w-[80vw] h-full bg-[#ed3f41] shadow-lg animate-slideInLeft">
               <button
                 className="absolute top-4 right-4 z-50 text-white"

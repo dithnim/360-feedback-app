@@ -21,13 +21,18 @@ const CreateTemplate = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
 
-  // For preview edit
-  const [templatePreview, setTemplatePreview] = useState({
-    templateName: "",
-    competency: "",
-    description: "",
-    questions: [] as Question[],
-  });
+  // For preview - array of competencies like in SurvayScratch
+  const [templatePreviews, setTemplatePreviews] = useState<
+    {
+      templateName: string;
+      competency: string;
+      description: string;
+      questions: Question[];
+    }[]
+  >([]);
+
+  // Track which competency is being edited (index), or null
+  const [editPreviewIndex, setEditPreviewIndex] = useState<number | null>(null);
 
   const handleQuestionAdd = () => {
     if (input.trim() === "") return;
@@ -41,22 +46,31 @@ const CreateTemplate = () => {
   const handleAdd = () => {
     if (!templateName.trim() || !competency.trim()) return;
 
+    if (questions.length === 0) {
+      alert("Please add at least one question");
+      return;
+    }
+
     const newTemplate = {
       templateName,
       competency,
       description,
-      questions,
+      questions: [...questions],
     };
 
-    setTemplatePreview((prev) => ({
-      ...prev,
-      questions: [...prev.questions, ...newTemplate.questions],
-      templateName: newTemplate.templateName,
-      competency: newTemplate.competency,
-      description: newTemplate.description,
-    }));
+    if (editPreviewIndex !== null) {
+      // Update existing
+      setTemplatePreviews((prev) =>
+        prev.map((item, idx) => (idx === editPreviewIndex ? newTemplate : item))
+      );
+      setEditPreviewIndex(null);
+    } else {
+      // Add new
+      setTemplatePreviews((prev) => [...prev, newTemplate]);
+    }
 
     // Clear the form fields
+    setTemplateName("");
     setCompetency("");
     setDescription("");
     setQuestions([]);
@@ -120,27 +134,36 @@ const CreateTemplate = () => {
     competency,
     description,
     questions,
+    onEdit,
+    onDelete,
   }: {
     competency: string;
     description: string;
     questions: Question[];
+    onEdit: () => void;
+    onDelete: () => void;
   }) => (
     <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center justify-between gap-2 mb-2">
         <span className="font-semibold">{competency || "Competency"}</span>
-        <button
-          className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center"
-          style={{ width: 32, height: 32 }}
-          onClick={() => {
-            setTemplateName(templatePreview.templateName);
-            setCompetency(competency);
-            setDescription(description);
-            setQuestions(questions);
-          }}
-          title="Edit"
-        >
-          <span style={{ fontSize: 16 }}>✎</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            className="bg-[#EE3E41] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center"
+            style={{ width: 32, height: 32 }}
+            onClick={onEdit}
+            title="Edit"
+          >
+            <span style={{ fontSize: 16 }}>✎</span>
+          </button>
+          <button
+            className="bg-red-600 hover:bg-red-700 text-white rounded p-1 flex items-center justify-center"
+            style={{ width: 32, height: 32 }}
+            onClick={onDelete}
+            title="Delete"
+          >
+            <span style={{ fontSize: 16 }}>🗑️</span>
+          </button>
+        </div>
       </div>
       <div className="mb-2 text-sm font-medium text-black">
         {description || <span className="text-gray-400">No description</span>}
@@ -378,14 +401,40 @@ const CreateTemplate = () => {
           {/* Preview Section */}
           <div className="mt-12 border-t pt-8">
             <h2 className="text-xl font-bold mb-4">Preview</h2>
-            {templatePreview.questions.length > 0 && (
+            {templatePreviews.length === 0 && (
+              <p className="text-gray-500 italic">
+                No competencies added yet. Add a competency and questions to see
+                the preview.
+              </p>
+            )}
+            {templatePreviews.length > 0 && (
               <div>
-                {templatePreview.questions.map((q) => (
+                {templatePreviews.map((item, idx) => (
                   <PreviewCompetency
-                    key={q.id}
-                    competency={templatePreview.competency}
-                    description={templatePreview.description}
-                    questions={[q]}
+                    key={idx}
+                    competency={item.competency}
+                    description={item.description}
+                    questions={item.questions}
+                    onEdit={() => {
+                      setTemplateName(item.templateName);
+                      setCompetency(item.competency);
+                      setDescription(item.description);
+                      setQuestions(item.questions);
+                      setEditPreviewIndex(idx);
+                    }}
+                    onDelete={() => {
+                      setTemplatePreviews((prev) =>
+                        prev.filter((_, i) => i !== idx)
+                      );
+                      // If deleting the one being edited, reset edit state
+                      if (editPreviewIndex === idx) {
+                        setEditPreviewIndex(null);
+                        setTemplateName("");
+                        setCompetency("");
+                        setDescription("");
+                        setQuestions([]);
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -393,15 +442,19 @@ const CreateTemplate = () => {
           </div>
         </div>
 
-        {/* Example CompetencySection below, not changed */}
-        <CompetencySection
-          title={templatePreview.competency || "Competency"}
-          questions={templatePreview.questions.map((q) => ({
-            id: q.id.toString(),
-            text: q.text,
-          }))}
-          commentLabel="Additional Comments"
-        />
+        {/* Example CompetencySection below, updated for multiple competencies */}
+        {templatePreviews.map((item, idx) => (
+          <div key={idx}>
+            <CompetencySection
+              title={item.competency}
+              questions={item.questions.map((q) => ({
+                id: q.id.toString(),
+                text: q.text,
+              }))}
+              commentLabel="Additional Comments"
+            />
+          </div>
+        ))}
       </main>
     </div>
   );
