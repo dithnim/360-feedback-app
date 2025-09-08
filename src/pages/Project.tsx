@@ -1,6 +1,10 @@
 import React from "react";
 import { Button } from "../components/ui/Button";
-import { apiPost, createCompanyUsers } from "../lib/apiService";
+import {
+  apiPost,
+  createCompanyUsers,
+  createSurveyUsers,
+} from "../lib/apiService";
 import type { CreateUserData } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
@@ -23,14 +27,15 @@ interface ProjectFormData {
   endDate: string;
 }
 
-interface ParticipantFormData {
-  participantName: string;
+interface CompanyUserFormData {
+  id: number;
+  name: string;
   email: string;
   designation: string;
-  appraisee: string;
-  role: string;
+  companyId: string;
 }
 
+//TODO
 interface UserData {
   id: number;
   name: string;
@@ -94,14 +99,14 @@ const Project = () => {
     setTeams(fetchTeams);
   };
 
-  const [participants, setParticipants] = useState<
+  //!Company User Handler
+  const [companyUsers, setCompanyUsers] = useState<
     {
       id: number;
-      participantName: string;
+      name: string;
       email: string;
       designation: string;
-      appraisee?: string;
-      role?: string;
+      companyId: string;
     }[]
   >([]);
   const {
@@ -110,7 +115,7 @@ const Project = () => {
     reset: resetInfo,
     formState: { errors: errorsInfo },
     setValue,
-  } = useForm<ParticipantFormData>();
+  } = useForm<CompanyUserFormData>();
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
   const {
@@ -183,17 +188,15 @@ const Project = () => {
       }
     }
     if (pageCase === 2) {
-      // Load saved participants when entering case 2
-      const savedParticipants = localStorage.getItem("Participants");
+      const savedParticipants = localStorage.getItem("companyUsers");
       if (savedParticipants) {
         try {
           const parsedParticipants = JSON.parse(savedParticipants);
-          setParticipants(parsedParticipants);
-          // Reset error state when loading participants
+          setCompanyUsers(parsedParticipants);
           setUserCreationError("");
         } catch (error) {
           console.error("Error parsing saved participants:", error);
-          setParticipants([]);
+          setCompanyUsers([]);
           setUserCreationError("");
         }
       } else {
@@ -201,14 +204,14 @@ const Project = () => {
       }
     }
     if (pageCase === 4) {
-      const participantsFromStorage = localStorage.getItem("Participants");
+      const participantsFromStorage = localStorage.getItem("CompanyUsers");
       if (participantsFromStorage) {
         try {
           const parsedParticipants = JSON.parse(participantsFromStorage);
           const transformedUsers: UserData[] = parsedParticipants.map(
             (participant: any, index: number) => ({
               id: participant.id || index + 1,
-              name: participant.participantName,
+              name: participant.name,
               email: participant.email,
               designation: participant.designation,
               type:
@@ -272,16 +275,16 @@ const Project = () => {
     }
   }, [watchedCompanyValues, pageCase]);
 
-  // Save participants array to localStorage whenever it changes
+  // Save companyUsers array to localStorage whenever it changes
   useEffect(() => {
-    if (participants.length > 0) {
-      localStorage.setItem("Participants", JSON.stringify(participants));
+    if (companyUsers.length > 0) {
+      localStorage.setItem("CompanyUsers", JSON.stringify(companyUsers));
     }
-  }, [participants]);
+  }, [companyUsers]);
 
   // Reset forms when switching pages to prevent cross-contamination
   useEffect(() => {
-    // Reset participant form when not on participant page
+    // Reset company user form when not on company user page
     if (pageCase !== 2 && editIndex === null) {
       resetInfo();
     }
@@ -376,7 +379,7 @@ const Project = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const matchesSearch = user.name
+      const matchesSearch = (user.name || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesDesignation =
@@ -400,17 +403,17 @@ const Project = () => {
 
   const handleEdit = useCallback(
     (index: number) => {
-      const participant = participants[index];
+      const companyUser = companyUsers[index];
       setEditIndex(index);
-      setValue("participantName", participant.participantName);
-      setValue("email", participant.email);
-      setValue("designation", participant.designation);
+      setValue("name", companyUser.name);
+      setValue("email", companyUser.email);
+      setValue("designation", companyUser.designation);
     },
-    [participants, setValue]
+    [companyUsers, setValue]
   );
 
   // Function to create users in the backend
-  const createUsers = useCallback(async (participantsData: any[]) => {
+  const createUsers = useCallback(async (companyUsersData: any[]) => {
     setIsCreatingUsers(true);
     setUserCreationError("");
     try {
@@ -433,12 +436,12 @@ const Project = () => {
         return false;
       }
 
-      // Transform participants data to match API structure
-      const usersPayload: CreateUserData[] = participantsData.map(
-        (participant) => ({
-          name: participant.participantName,
-          email: participant.email,
-          designation: participant.designation,
+      // Transform companyUsers data to match API structure
+      const usersPayload: CreateUserData[] = companyUsersData.map(
+        (companyUser) => ({
+          name: companyUser.name,
+          email: companyUser.email,
+          designation: companyUser.designation,
           companyId: companyId,
         })
       );
@@ -462,33 +465,31 @@ const Project = () => {
 
   const handleDelete = useCallback(
     (index: number) => {
-      const updatedParticipants = participants.filter((_, i) => i !== index);
-      setParticipants(updatedParticipants);
+      const updatedCompanyUsers = companyUsers.filter((_, i) => i !== index);
+      setCompanyUsers(updatedCompanyUsers);
 
       setUserCreationError("");
 
-      if (updatedParticipants.length > 0) {
+      if (updatedCompanyUsers.length > 0) {
         localStorage.setItem(
-          "Participants",
-          JSON.stringify(updatedParticipants)
+          "CompanyUsers",
+          JSON.stringify(updatedCompanyUsers)
         );
       } else {
-        // If no participants left, remove from localStorage
-        localStorage.removeItem("Participants");
+        localStorage.removeItem("CompanyUsers");
       }
 
       if (editIndex === index) {
         setEditIndex(null);
         resetInfo({
-          participantName: "",
+          name: "",
           email: "",
           designation: "",
-          appraisee: "",
-          role: "",
+          companyId: "",
         });
       }
     },
-    [participants, editIndex, resetInfo]
+    [companyUsers, editIndex, resetInfo]
   );
 
   //? Company creation handler
@@ -532,7 +533,8 @@ const Project = () => {
           // Update company data state
           setCompanyData(formDataWithLogo);
 
-          // Don't reset the form - keep the data visible
+          // Reset the form after successful submission
+          resetCompany();
           setCompanyLogoUrl(""); // Clear the logo URL
           setUploadError(""); // Clear any upload errors
         } else {
@@ -599,6 +601,8 @@ const Project = () => {
         );
         console.log("RAW API response:", response);
         localStorage.setItem("Project", JSON.stringify(response));
+
+        resetProject();
       } catch (error) {
         console.error("Error posting project data:", error);
       }
@@ -613,20 +617,20 @@ const Project = () => {
     handlerProjectCreation(data);
   }, []);
 
-  const handleParticipantSubmit = useCallback(
-    (data: ParticipantFormData) => {
+  const handleCompanyUserSubmit = useCallback(
+    (data: CompanyUserFormData) => {
       if (editIndex !== null) {
-        // Update existing participant
-        const updatedParticipants = participants.map((p, i) =>
+        // Update existing company user
+        const updatedCompanyUsers = companyUsers.map((p, i) =>
           i === editIndex ? { ...p, ...data } : p
         );
-        setParticipants(updatedParticipants);
+        setCompanyUsers(updatedCompanyUsers);
         setEditIndex(null);
       } else {
         // Add new participant
         const newParticipant = { ...data, id: Date.now() };
-        const updatedParticipants = [...participants, newParticipant];
-        setParticipants(updatedParticipants);
+        const updatedParticipants = [...companyUsers, newParticipant];
+        setCompanyUsers(updatedParticipants);
       }
 
       // Reset saved state since participants have changed
@@ -634,12 +638,12 @@ const Project = () => {
 
       // Just update UI, don't call backend yet
       resetInfo({
-        participantName: "",
+        name: "",
         email: "",
         designation: "",
       });
     },
-    [editIndex, resetInfo, participants]
+    [editIndex, resetInfo, companyUsers]
   );
   const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -894,18 +898,35 @@ const Project = () => {
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={() => {
-                    // Save to localStorage before navigating
-                    if (participants.length > 0) {
-                      localStorage.setItem(
-                        "Participants",
-                        JSON.stringify(participants)
-                      );
+                  onClick={async () => {
+                    setIsSubmitting(true);
+
+                    try {
+                      if (companyUsers.length > 0) {
+                        const success = await createUsers(companyUsers);
+                        if (!success) {
+                          setIsSubmitting(false);
+                          return; // Don't proceed if user creation failed
+                        }
+                      }
+
+                      // Save to localStorage before navigating
+                      if (companyUsers.length > 0) {
+                        localStorage.setItem(
+                          "companyUsers",
+                          JSON.stringify(companyUsers)
+                        );
+                      }
+
+                      setIsSubmitting(false);
+                      handleNext();
+                    } catch (error) {
+                      console.error("Error creating users:", error);
+                      setIsSubmitting(false);
                     }
-                    handleNext();
                   }}
                 >
-                  next
+                  {isSubmitting ? "Creating Users..." : "next"}
                 </Button>
               </div>
             </div>
@@ -917,7 +938,7 @@ const Project = () => {
               </div>
             )}
             <form
-              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
+              onSubmit={handleSubmitInfo(handleCompanyUserSubmit)}
               className="mt-5"
             >
               <div className="mb-5">
@@ -931,11 +952,9 @@ const Project = () => {
                   type="text"
                   id="participantName"
                   className={`bg-gray-50 border ${
-                    errorsInfo.participantName
-                      ? "border-red-500"
-                      : "border-gray-300"
+                    errorsInfo.name ? "border-red-500" : "border-gray-300"
                   } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerInfo("participantName", {
+                  {...registerInfo("name", {
                     required: "Participant name is required",
                     minLength: {
                       value: 2,
@@ -943,9 +962,9 @@ const Project = () => {
                     },
                   })}
                 />
-                {errorsInfo.participantName && (
+                {errorsInfo.name && (
                   <p className="mt-1 text-sm text-red-500">
-                    {errorsInfo.participantName.message}
+                    {errorsInfo.name.message}
                   </p>
                 )}
               </div>
@@ -1022,7 +1041,7 @@ const Project = () => {
                   onClick={() => {
                     setEditIndex(null);
                     resetInfo({
-                      participantName: "",
+                      name: "",
                       email: "",
                       designation: "",
                     });
@@ -1034,27 +1053,23 @@ const Project = () => {
             </form>
           </div>
           <div className="h-[1px] bg-gray-300 w-[80%] mx-auto mt-15"></div>
-          {participants.length > 0 && (
+          {companyUsers.length > 0 && (
             <div className="mt-10 px-50 pb-10">
               <table className="min-w-full bg-white">
                 <tbody>
-                  {participants.map((participant, index) => (
-                    <tr key={participant.id}>
+                  {companyUsers.map((user, index) => (
+                    <tr key={user.id}>
+                      <td className="py-2 px-4 text-gray-900">{user.name}</td>
+                      <td className="py-2 px-4 text-gray-900">{user.email}</td>
                       <td className="py-2 px-4 text-gray-900">
-                        {participant.participantName}
+                        {user.designation}
+                      </td>
+                      {/* <td className="py-2 px-4 text-gray-900">
+                        {user.appraisee}
                       </td>
                       <td className="py-2 px-4 text-gray-900">
-                        {participant.email}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.designation}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.appraisee}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.role}
-                      </td>
+                        {user.role}
+                      </td> */}
                       <td className="py-2 px-4">
                         <Button
                           variant="edit"
@@ -1357,6 +1372,15 @@ const Project = () => {
                     {...registerProject("endDate", {
                       required: "End date is required",
                       validate: (value) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const selectedDate = new Date(value);
+                        selectedDate.setHours(0, 0, 0, 0);
+
+                        if (selectedDate < today) {
+                          return "End date cannot be in the past";
+                        }
+
                         if (!startDate) return true;
                         const start = new Date(startDate);
                         const end = new Date(value);
@@ -1576,9 +1600,6 @@ const Project = () => {
                       <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                         <tr className="border-b border-gray-300">
                           <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
-                            Group #
-                          </th>
-                          <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                             Appraisee
                           </th>
                           <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
@@ -1597,13 +1618,6 @@ const Project = () => {
                               index % 2 === 0 ? "bg-white" : "bg-gray-25"
                             }`}
                           >
-                            <td className="py-6 px-6 align-top">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                  {group.id}
-                                </div>
-                              </div>
-                            </td>
                             <td className="py-6 px-6 align-top">
                               {group.appraisee ? (
                                 <div className="flex items-start space-x-3 max-w-sm">
@@ -1734,12 +1748,12 @@ const Project = () => {
 
                     // Create users before finishing if participants exist
                     const participantsData =
-                      localStorage.getItem("Participants");
+                      localStorage.getItem("CompanyUsers");
                     if (participantsData) {
                       try {
                         const participants = JSON.parse(participantsData);
                         if (participants.length > 0) {
-                          const success = await createUsers(participants);
+                          const success = await createSurveyUsers(participants);
                           if (!success) {
                             setIsSubmitting(false);
                             return; // Don't proceed if user creation failed
@@ -1749,8 +1763,43 @@ const Project = () => {
                         console.error("Error parsing participants:", error);
                       }
                     }
+
+                    // Clear all form data and localStorage after successful completion
+                    localStorage.removeItem("Company");
+                    localStorage.removeItem("CompanyFormData");
+                    localStorage.removeItem("CompanyUsers");
+                    localStorage.removeItem("SurveyUsers");
+                    localStorage.removeItem("Project");
+                    localStorage.removeItem("companyUsers");
+
+                    // Reset all form states
+                    resetCompany();
+                    resetProject();
+                    resetInfo();
+
+                    // Reset component state
+                    setCompanyData(null);
+                    setCompanyUsers([]);
+                    setUsers([]);
+                    setUserGroups([]);
+                    setSelectedUsers(new Set());
+                    setUserTypes({});
+                    setCompanyLogoUrl("");
+                    setUploadError("");
+                    setUserCreationError("");
+                    setEditIndex(null);
+                    setSearchTerm("");
+                    setFilterDesignation("");
+                    setGroupCounter(1);
+
                     setIsSubmitting(false);
-                    navigate("/create");
+
+                    // Show completion popup before navigating
+                    setShowCompletionPopup(true);
+                    setTimeout(() => {
+                      setShowCompletionPopup(false);
+                      navigate("/create");
+                    }, 2000);
                   }}
                   disabled={userGroups.length === 0 || isSubmitting}
                 >
@@ -2027,7 +2076,38 @@ const Project = () => {
       pageContent = null;
   }
 
-  return <>{pageContent}</>;
+  return (
+    <>
+      {showCompletionPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Project Created Successfully!
+            </h3>
+            <p className="text-gray-600">
+              All forms have been reset and you will be redirected shortly.
+            </p>
+          </div>
+        </div>
+      )}
+      {pageContent}
+    </>
+  );
 };
 
 export default Project;

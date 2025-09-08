@@ -216,6 +216,33 @@ export async function createCompanyUsers(
   return responseText;
 }
 
+export async function createSurveyUsers(
+  users: CreateUserData[]
+): Promise<any> {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const response = await fetchWithTimeout(`${BASE_URL}/survey/user/set`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(users),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log("Error response body:", errorText);
+    throw new Error(
+      errorText || `POST /survey/user/set failed: ${response.status}`
+    );
+  }
+
+  const responseText = await response.text();
+  return responseText;
+}
+
 // Authentication types
 export interface LoginData {
   email: string;
