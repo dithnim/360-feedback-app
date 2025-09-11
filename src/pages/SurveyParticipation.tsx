@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import PublicNavbar from "../components/PublicNavbar";
-import { apiGet } from "@/lib/apiService";
+import { apiGet, apiPost } from "@/lib/apiService";
 // import { getSurveyByToken, submitSurveyResponse } from "../lib/apiService";
 // import type { Survey, SurveyResponse as APISurveyResponse } from "../lib/apiService";
 
@@ -295,6 +295,7 @@ const SurveyParticipation = () => {
         id: questionDetail.id,
         text: questionDetail.question,
         options: options,
+        optionType: questionDetail.optionType,
       });
     });
 
@@ -346,21 +347,93 @@ const SurveyParticipation = () => {
     }
   };
 
+  const getProjectId = async (surveyId: string): Promise<string> => {
+    try {
+      const surveyProject = await apiGet<{
+        id: string;
+        surveyName: string;
+        projectId: string;
+        createdDate: string;
+      }>(`/project/survey/${surveyId}`);
+      return surveyProject.projectId;
+    } catch (error) {
+      console.error("Error fetching project ID:", error);
+      throw new Error(
+        `Failed to fetch project ID: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  };
+
+  const createAnswerSheet = async (projectId: string) =>
+    apiPost<{ id: string }>("/survey/answer/sheet", {
+      surveyId: surveyToken,
+      projectId,
+    });
+
+  const createAnswers = async (answerSheetId: string) => {
+    if (!surveyData) return;
+
+    // Build a lookup for questionId -> optionType
+    const optionTypeByQuestionId = new Map<string, string>();
+    surveyData.competencies.forEach((comp: any) => {
+      comp.questions.forEach((q: any) => {
+        optionTypeByQuestionId.set(String(q.id), q.optionType || "single");
+      });
+    });
+
+    const answerPromises = responses.map((response) => {
+      const questionIdStr = String(response.questionId);
+      const optionType = optionTypeByQuestionId.get(questionIdStr) || "single";
+
+      // Shape payload according to backend contract
+      const payload: any =
+        optionType === "multiple"
+          ? {
+              answerSheetId,
+              questionId: questionIdStr,
+              answerType: "multiple",
+              multiple: Array.isArray((response as any).multiple)
+                ? (response as any).multiple
+                : response.answer
+                  ? [response.answer]
+                  : [],
+              answer: null,
+            }
+          : {
+              answerSheetId,
+              questionId: questionIdStr,
+              answerType: "single",
+              multiple: null,
+              answer: response.answer,
+            };
+
+      return apiPost("/survey/answer", payload);
+    });
+
+    await Promise.all(answerPromises);
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // In real implementation, submit responses to API
-      // await submitSurveyResponse(surveyToken, responses);
-      console.log("Submitting survey responses:", responses);
+      // First get the project ID
+      const projectId = await getProjectId(surveyToken);
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Then create the answer sheet with project ID
+      const answerSheet = await createAnswerSheet(projectId);
 
-      // Navigate to thank you page
+      const createdId =
+        typeof answerSheet === "string"
+          ? answerSheet
+          : (answerSheet as { id: string }).id;
+
+      console.log("Created answer sheet:", answerSheet);
+
+      await createAnswers(createdId);
+
       navigate("/survey-thank-you");
     } catch (error) {
       console.error("Error submitting survey:", error);
-      // Handle error (show toast, etc.)
     } finally {
       setIsSubmitting(false);
     }
@@ -436,7 +509,7 @@ const SurveyParticipation = () => {
                         {index + 1}. {question.text}
                       </h4>
 
-                      <div className="grid grid-cols-5 gap-4">
+                      <div className="grid grid-cols-5 gap-4 mb-8">
                         {question.options.map((option) => (
                           <label
                             key={option}
@@ -461,17 +534,6 @@ const SurveyParticipation = () => {
                           </label>
                         ))}
                       </div>
-
-                      {/* Add comment field for the last question */}
-                      {index === currentCompetency.questions.length - 1 && (
-                        <div className="mt-4">
-                          <textarea
-                            placeholder="Add a comment... (optional)"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
-                            rows={3}
-                          />
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -490,21 +552,6 @@ const SurveyParticipation = () => {
                   >
                     PREVIOUS
                   </Button>
-
-                  <div className="flex space-x-2">
-                    {Array.from({ length: totalSteps }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 rounded-full ${
-                          i === currentStep
-                            ? "bg-green-700"
-                            : i < currentStep
-                              ? "bg-green-500"
-                              : "bg-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
 
                   {currentStep < totalSteps - 1 ? (
                     <Button
