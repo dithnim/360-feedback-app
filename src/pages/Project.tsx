@@ -12,7 +12,6 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
 import ImageUpload from "../components/ui/ImageUpload";
-import CompletionPopup from "../components/ui/CompletionPopup";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getAllTeams } from "@/lib/teamService";
 
@@ -61,14 +60,28 @@ function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
+// LocalStorage keys centralised
+const LS_KEYS = {
+  company: "Company",
+  companyForm: "CompanyFormData",
+  companyUsers: "CompanyUsers", // canonical key
+  surveyUsers: "SurveyUsers",
+  project: "Project",
+} as const;
+
+// Safe JSON parse helper
+function safeParse<T = any>(value: string | null, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 const Project = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  //?Navigations
-  const navigateToSurvey = () => {
-    navigate("/survey");
-  };
 
   // Get initial page case from location state, default to 1
   const initialCase = location.state?.initialCase || 1;
@@ -83,14 +96,13 @@ const Project = () => {
   const [pageCase, setPageCase] = useState(initialCase);
   const startDate = pageCase === 3 ? watch("startDate") : undefined;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreatingUsers, setIsCreatingUsers] = useState(false);
+  // Track submission state for forms / async ops
   const [userCreationError, setUserCreationError] = useState<string>("");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
 
   //!Page data states
-  const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
 
   //!Team data fetcher
@@ -129,128 +141,86 @@ const Project = () => {
 
   const [users, setUsers] = useState<UserData[]>([]);
 
-  // Load participants from localStorage when pageCase changes to 4
+  // Page 1: load company data + form data
   useEffect(() => {
-    if (pageCase === 1) {
-      const savedCompanyData = localStorage.getItem("Company");
-      if (savedCompanyData) {
-        try {
-          const parsedCompanyData = JSON.parse(savedCompanyData);
-          setCompanyData(parsedCompanyData);
+    if (pageCase !== 1) return;
+    const companyRaw = localStorage.getItem(LS_KEYS.company);
+    const company = safeParse<any>(companyRaw, null);
+    if (company) {
+      if (company.name) setCompanyValue("companyName", company.name);
+      if (company.contactPerson)
+        setCompanyValue("contactPerson", company.contactPerson);
+      if (company.email) setCompanyValue("email", company.email);
+      if (company.contactNumber)
+        setCompanyValue("phone", company.contactNumber);
+    }
 
-          // Pre-fill the form with the API response data (prioritize this over form data)
-          if (parsedCompanyData.name) {
-            setCompanyValue("companyName", parsedCompanyData.name);
-          }
-          if (parsedCompanyData.contactPerson) {
-            setCompanyValue("contactPerson", parsedCompanyData.contactPerson);
-          }
-          if (parsedCompanyData.email) {
-            setCompanyValue("email", parsedCompanyData.email);
-          }
-          if (parsedCompanyData.contactNumber) {
-            setCompanyValue("phone", parsedCompanyData.contactNumber);
-          }
-          // Note: API response doesn't include description, so we'll load that from form data if available
-        } catch (error) {
-          console.error("Error parsing saved company data:", error);
-          setCompanyData(null);
-        }
-      } else {
-        setCompanyData(null);
+    const companyFormRaw = localStorage.getItem(LS_KEYS.companyForm);
+    const companyForm = safeParse<any>(companyFormRaw, null);
+    if (companyForm) {
+      if (!company) {
+        if (companyForm.companyName)
+          setCompanyValue("companyName", companyForm.companyName);
+        if (companyForm.contactPerson)
+          setCompanyValue("contactPerson", companyForm.contactPerson);
+        if (companyForm.email) setCompanyValue("email", companyForm.email);
+        if (companyForm.phone) setCompanyValue("phone", companyForm.phone);
       }
+      if (companyForm.description)
+        setCompanyValue("description", companyForm.description);
+    }
+  }, [pageCase, setCompanyValue]);
 
-      // Load saved company form data (only if API data didn't provide some fields)
-      const savedCompanyFormData = localStorage.getItem("CompanyFormData");
-      if (savedCompanyFormData) {
-        try {
-          const parsedFormData = JSON.parse(savedCompanyFormData);
+  // Page 2: load existing company users (fallback to legacy lowercase key once)
+  useEffect(() => {
+    if (pageCase !== 2) return;
+    const raw =
+      localStorage.getItem(LS_KEYS.companyUsers) ||
+      localStorage.getItem("companyUsers"); // legacy fallback
+    const savedParticipants = safeParse<any[]>(raw, []);
+    // If legacy key was used, migrate to canonical key
+    if (raw && !localStorage.getItem(LS_KEYS.companyUsers)) {
+      localStorage.setItem(LS_KEYS.companyUsers, raw);
+      localStorage.removeItem("companyUsers");
+    }
+    if (savedParticipants.length) setCompanyUsers(savedParticipants);
+    setUserCreationError("");
+  }, [pageCase]);
 
-          // Only use form data for fields not provided by API response
-          if (!savedCompanyData) {
-            // If no API data, load all form data
-            if (parsedFormData.companyName)
-              setCompanyValue("companyName", parsedFormData.companyName);
-            if (parsedFormData.contactPerson)
-              setCompanyValue("contactPerson", parsedFormData.contactPerson);
-            if (parsedFormData.email)
-              setCompanyValue("email", parsedFormData.email);
-            if (parsedFormData.phone)
-              setCompanyValue("phone", parsedFormData.phone);
-          }
-
-          // Always load description from form data (not available in API response)
-          if (parsedFormData.description)
-            setCompanyValue("description", parsedFormData.description);
-        } catch (error) {
-          console.error("Error parsing saved company form data:", error);
-        }
+  // Page 3: load teams (and silently validate company data presence)
+  useEffect(() => {
+    if (pageCase !== 3) return;
+    fetchTeamsData();
+    const savedCompanyData = localStorage.getItem(LS_KEYS.company);
+    if (savedCompanyData) {
+      const companyRaw = localStorage.getItem(LS_KEYS.company);
+      try {
+        JSON.parse(companyRaw || "null");
+      } catch (error) {
+        console.error("Error parsing saved company data:", error);
       }
     }
-    if (pageCase === 2) {
-      const savedParticipants = localStorage.getItem("companyUsers");
-      if (savedParticipants) {
-        try {
-          const parsedParticipants = JSON.parse(savedParticipants);
-          setCompanyUsers(parsedParticipants);
-          setUserCreationError("");
-        } catch (error) {
-          console.error("Error parsing saved participants:", error);
-          setCompanyUsers([]);
-          setUserCreationError("");
-        }
-      } else {
-        setUserCreationError("");
-      }
-    }
-    if (pageCase === 4) {
-      const participantsFromStorage = localStorage.getItem("CompanyUsers");
-      if (participantsFromStorage) {
-        try {
-          const parsedParticipants = JSON.parse(participantsFromStorage);
-          const transformedUsers: UserData[] = parsedParticipants.map(
-            (participant: any, index: number) => ({
-              id: participant.id || index + 1,
-              name: participant.name,
-              email: participant.email,
-              designation: participant.designation,
-              type:
-                (participant.appraisee as "Appraisee" | "Appraiser") ||
-                "Appraisee",
-              role: participant.role || "Peer",
-            })
-          );
-          setUsers(transformedUsers);
-        } catch (error) {
-          console.error("Error parsing participants from localStorage:", error);
-          // Reset to empty array on parse error
-          setUsers([]);
-        }
-      } else {
-        // Clear users if no participants in localStorage
-        setUsers([]);
-      }
-    }
-    if (pageCase === 3) {
-      // Load company data when starting directly in project creation step
-      fetchTeamsData();
-      const savedCompanyData = localStorage.getItem("Company");
-      if (savedCompanyData) {
-        try {
-          const parsedCompanyData = JSON.parse(savedCompanyData);
-          setCompanyData(parsedCompanyData);
-          console.log(
-            "Company data loaded for project creation:",
-            parsedCompanyData
-          );
-        } catch (error) {
-          console.error("Error parsing saved company data:", error);
-          setCompanyData(null);
-        }
-      } else {
-        setCompanyData(null);
-      }
-    }
+  }, [pageCase]);
+
+  // Page 4: transform company users into role assignment list
+  useEffect(() => {
+    if (pageCase !== 4) return;
+    const storedUsers = safeParse<any[]>(
+      localStorage.getItem(LS_KEYS.companyUsers),
+      []
+    );
+    const transformedUsers: UserData[] = storedUsers.map(
+      (participant: any, index: number) => ({
+        id: participant.id || index + 1,
+        name: participant.name,
+        email: participant.email,
+        designation: participant.designation,
+        type:
+          (participant.appraisee as "Appraisee" | "Appraiser") || "Appraisee",
+        role: participant.role || "Peer",
+      })
+    );
+    setUsers(transformedUsers);
   }, [pageCase]);
 
   // Watch company form values to save to localStorage only when on company page
@@ -278,7 +248,7 @@ const Project = () => {
   // Save companyUsers array to localStorage whenever it changes
   useEffect(() => {
     if (companyUsers.length > 0) {
-      localStorage.setItem("CompanyUsers", JSON.stringify(companyUsers));
+      localStorage.setItem(LS_KEYS.companyUsers, JSON.stringify(companyUsers));
     }
   }, [companyUsers]);
 
@@ -413,55 +383,57 @@ const Project = () => {
   );
 
   // Function to create users in the backend
-  const createUsers = useCallback(async (companyUsersData: any[]) => {
-    setIsCreatingUsers(true);
-    setUserCreationError("");
-    try {
-      const companyStr = localStorage.getItem("Company");
-      let companyId = "";
-      if (companyStr) {
-        try {
-          const companyObj = JSON.parse(companyStr);
-          companyId = companyObj.id || "";
-        } catch (e) {
-          console.error("Error parsing company data:", e);
-          setUserCreationError("Failed to get company information");
+  const createUsers = useCallback(
+    async (companyUsersData: CompanyUserFormData[]) => {
+      setUserCreationError("");
+      try {
+        const companyStr = localStorage.getItem("Company");
+        let companyId = "";
+        if (companyStr) {
+          try {
+            const companyObj = JSON.parse(companyStr);
+            companyId = companyObj.id || "";
+          } catch (e) {
+            console.error("Error parsing company data:", e);
+            setUserCreationError("Failed to get company information");
+            return false;
+          }
+        }
+
+        if (!companyId) {
+          console.error("No company ID found");
+          setUserCreationError("Company must be created before adding users");
           return false;
         }
-      }
 
-      if (!companyId) {
-        console.error("No company ID found");
-        setUserCreationError("Company must be created before adding users");
+        // Transform companyUsers data to match API structure
+        const usersPayload: CreateUserData[] = companyUsersData.map(
+          (companyUser) => ({
+            name: companyUser.name,
+            email: companyUser.email,
+            designation: companyUser.designation,
+            companyId: companyId,
+          })
+        );
+
+        const response = await createCompanyUsers(usersPayload);
+        // Users created successfully
+        setUserCreationError("");
+        return true;
+      } catch (error: any) {
+        if (error.message && error.message.includes("dup key")) {
+          setUserCreationError("Duplicate emails found");
+        } else {
+          setUserCreationError("Failed to create users. Please try again.");
+        }
+
         return false;
+      } finally {
+        /* no separate isCreatingUsers state */
       }
-
-      // Transform companyUsers data to match API structure
-      const usersPayload: CreateUserData[] = companyUsersData.map(
-        (companyUser) => ({
-          name: companyUser.name,
-          email: companyUser.email,
-          designation: companyUser.designation,
-          companyId: companyId,
-        })
-      );
-
-      const response = await createCompanyUsers(usersPayload);
-      console.log("Users created successfully:", response);
-      setUserCreationError("");
-      return true;
-    } catch (error: any) {
-      if (error.message && error.message.includes("dup key")) {
-        setUserCreationError("Duplicate emails found");
-      } else {
-        setUserCreationError("Failed to create users. Please try again.");
-      }
-
-      return false;
-    } finally {
-      setIsCreatingUsers(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const handleDelete = useCallback(
     (index: number) => {
@@ -472,11 +444,11 @@ const Project = () => {
 
       if (updatedCompanyUsers.length > 0) {
         localStorage.setItem(
-          "CompanyUsers",
+          LS_KEYS.companyUsers,
           JSON.stringify(updatedCompanyUsers)
         );
       } else {
-        // localStorage.removeItem("CompanyUsers");
+        // keep empty state; not removing key intentionally
       }
 
       if (editIndex === index) {
@@ -503,7 +475,7 @@ const Project = () => {
         logoImg: companyLogoUrl || "",
         createdAt: new Date().toISOString(),
       };
-      console.log("Sending company creation payload:", payload);
+      // Company creation payload prepared
       setIsSubmitting(true);
       try {
         const token = localStorage.getItem("token") || "";
@@ -512,7 +484,7 @@ const Project = () => {
           payload,
           token ? { Authorization: `Bearer ${token}` } : {}
         );
-        console.log("RAW API response:", response);
+        // API responded with company data
         // Save the backend response data to localStorage if it contains an id
         if (response && response.id) {
           // Store the API response
@@ -531,7 +503,7 @@ const Project = () => {
           );
 
           // Update company data state
-          setCompanyData(formDataWithLogo);
+          // companyData state removed; form data already persisted
 
           // Reset the form after successful submission
           resetCompany();
@@ -542,13 +514,12 @@ const Project = () => {
         }
       } catch (error) {
         // Handle error (e.g., show error message)
-        console.log("Error caught:", error);
         console.error("Error creating company:", error);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [companyLogoUrl, setCompanyLogoUrl, setUploadError]
+    [companyLogoUrl]
   );
 
   const onSubmitCompany = useCallback(
@@ -599,7 +570,7 @@ const Project = () => {
           payload,
           token ? { Authorization: `Bearer ${token}` } : {}
         );
-        console.log("RAW API response:", response);
+        // Project created successfully
         localStorage.setItem("Project", JSON.stringify(response));
 
         resetProject();
@@ -913,7 +884,7 @@ const Project = () => {
                       // Save to localStorage before navigating
                       if (companyUsers.length > 0) {
                         localStorage.setItem(
-                          "companyUsers",
+                          LS_KEYS.companyUsers,
                           JSON.stringify(companyUsers)
                         );
                       }
@@ -1747,8 +1718,9 @@ const Project = () => {
                     setIsSubmitting(true);
 
                     // Create users before finishing if participants exist
-                    const participantsData =
-                      localStorage.getItem("CompanyUsers");
+                    const participantsData = localStorage.getItem(
+                      LS_KEYS.companyUsers
+                    );
                     if (participantsData) {
                       try {
                         const participants = JSON.parse(participantsData);
@@ -1778,7 +1750,7 @@ const Project = () => {
                     resetInfo();
 
                     // Reset component state
-                    setCompanyData(null);
+                    // companyData state removed
                     setCompanyUsers([]);
                     setUsers([]);
                     setUserGroups([]);

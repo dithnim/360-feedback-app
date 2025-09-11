@@ -193,6 +193,7 @@ const SurveyParticipation = () => {
         }>
       >(`/survey/${surveyId}/question`);
 
+
       // Step 2: Fetch individual question details for each questionId
       const questionDetailsPromises = surveyQuestions.map((sq) =>
         apiGet<{
@@ -236,7 +237,7 @@ const SurveyParticipation = () => {
       if (!competencyMap.has(competencyId)) {
         competencyMap.set(competencyId, {
           id: competencyId,
-          name: `Competency ${competencyId.slice(-6)}`, // Use last 6 chars as display name
+          name: `${competencyId.slice(-6)}` || "Competency", // Use last 6 chars as display name
           description: `Assessment for competency ${competencyId.slice(-6)}`,
           questions: [],
         });

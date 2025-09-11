@@ -57,7 +57,7 @@ function Home() {
 
   const navigate = useNavigate();
 
-  // Skeleton loading component
+  //? Skeleton loading component
   const OrganizationCardSkeleton = () => (
     <Card className="w-full max-w-[321px] h-[200px] sm:h-[240px] md:h-[266px] rounded-[10px] overflow-hidden p-0 relative mx-auto">
       {/* Background skeleton */}
@@ -84,12 +84,12 @@ function Home() {
     </Card>
   );
 
-  // Handler for viewing an organization
+  //? Handler for viewing an organization
   const handleViewOrganization = (org: any) => {
     navigate("/current-projects", { state: { org } });
   };
 
-  // Handler for creating a new organization
+  //? Handler for creating a new organization
   const handleCreateOrganization = () => {
     navigate("/project");
   };
