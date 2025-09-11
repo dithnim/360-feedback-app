@@ -193,7 +193,6 @@ const SurveyParticipation = () => {
         }>
       >(`/survey/${surveyId}/question`);
 
-
       // Step 2: Fetch individual question details for each questionId
       const questionDetailsPromises = surveyQuestions.map((sq) =>
         apiGet<{
@@ -207,8 +206,36 @@ const SurveyParticipation = () => {
 
       const questionDetails = await Promise.all(questionDetailsPromises);
 
+      // Step 3: Fetch competency names for unique competencyIds
+      const uniqueCompetencyIds = Array.from(
+        new Set(questionDetails.map((q) => q.competencyId))
+      );
+
+      // Fetch all competency objects in parallel. If any fails, continue with fallback naming.
+      const competencyEntries = await Promise.all(
+        uniqueCompetencyIds.map(async (id) => {
+          try {
+            const comp = await apiGet<{ id: string; competency: string }>(
+              `/competency/${id}`
+            );
+            return [id, comp.competency] as const;
+          } catch (e) {
+            console.warn(`Failed to fetch competency ${id}:`, e);
+            return [id, `${id.slice(-6)}`] as const; // fallback
+          }
+        })
+      );
+
+      const competencyNameMap = Object.fromEntries(competencyEntries) as Record<
+        string,
+        string
+      >;
+
       // Transform the combined data to match the expected format
-      const transformedData = transformApiDataToSurveyFormat(questionDetails);
+      const transformedData = transformApiDataToSurveyFormat(
+        questionDetails,
+        competencyNameMap
+      );
       return transformedData;
     } catch (error) {
       console.error("Error fetching survey questions:", error);
@@ -226,7 +253,8 @@ const SurveyParticipation = () => {
       question: string;
       optionType: string;
       options: string[] | null;
-    }>
+    }>,
+    competencyNameMap: Record<string, string>
   ) => {
     // Group questions by competency
     const competencyMap = new Map();
@@ -237,8 +265,11 @@ const SurveyParticipation = () => {
       if (!competencyMap.has(competencyId)) {
         competencyMap.set(competencyId, {
           id: competencyId,
-          name: `${competencyId.slice(-6)}` || "Competency", // Use last 6 chars as display name
-          description: `Assessment for competency ${competencyId.slice(-6)}`,
+          name:
+            competencyNameMap[competencyId] ||
+            `${competencyId.slice(-6)}` ||
+            "Competency",
+          description: `Assessment for competency ${competencyNameMap[competencyId] || competencyId.slice(-6)}`,
           questions: [],
         });
       }
