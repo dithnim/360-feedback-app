@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./index.css";
-// Route-level code splitting for faster initial load
+
 const Home = lazy(() => import("./Home.tsx"));
 const Project = lazy(() => import("./pages/Project.tsx"));
 const CreateSurvay = lazy(() => import("./pages/CreateSurvay.tsx"));
@@ -16,6 +16,9 @@ const FeedbackReport = lazy(
 );
 const FeedbackReport2 = lazy(
   () => import("../report/FeedbackReport/FeedbackReport2.tsx")
+);
+const FeedbackReport3 = lazy(
+  () => import("../report/FeedbackReport/FeedbackReport3.tsx")
 );
 const Login = lazy(() => import("./pages/login.tsx"));
 const CurrentProjects = lazy(() => import("./pages/currentProjects.tsx"));
@@ -57,10 +60,12 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      {/* Public survey routes - no authentication required */}
       <Route path="/survey/participate" element={<SurveyParticipation />} />
       <Route path="/survey-thank-you" element={<SurveyThankYou />} />
       <Route path="/survey-demo" element={<SurveyDemo />} />
+      <Route path="/feedback-report" element={<FeedbackReport />} />
+      <Route path="/feedback-report2" element={<FeedbackReport2 />} />
+      <Route path="/feedback-report3" element={<FeedbackReport3 />} />
       <Route
         path="/"
         element={
@@ -126,23 +131,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/feedback-report"
-        element={
-          <ProtectedRoute>
-            <FeedbackReport />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/feedback-report2"
-        element={
-          <ProtectedRoute>
-            <FeedbackReport2 />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="current-projects"
+        path="/current-projects"
         element={
           <ProtectedRoute>
             <CurrentProjects />
@@ -173,7 +162,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* 404 route - must be last */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

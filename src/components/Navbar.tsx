@@ -29,20 +29,38 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         {user && (
           <>
-            <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-3   transition-all duration-300 ">
+            <div className="hidden md:flex items-center gap-4 bg-white rounded-2xl px-6 py-3   transition-all duration-300 ">
               <div className="relative group">
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md ring-4 ring-blue-100 group-hover:ring-blue-200 transition-all duration-300">
                   {user.name?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col ">
                 <div className="font-semibold text-xl text-gray-800 hover:text-blue-600 transition-colors duration-200">
                   {user.name}
                 </div>
                 <div className="text-sm text-gray-500 flex items-center gap-1">
                   <i className="bx bx-calendar text-xs"></i>
-                  Joined in August 2014
+                  {(() => {
+                    const storedData = localStorage.getItem("userData");
+                    if (storedData) {
+                      try {
+                        const userData = JSON.parse(storedData);
+                        if (userData.loginTime) {
+                          const date = new Date(userData.loginTime);
+                          const month = date.toLocaleDateString("en-US", {
+                            month: "long",
+                          });
+                          const year = date.getFullYear();
+                          return `Joined on ${month.slice(0, 3)} ${year}`;
+                        }
+                      } catch (e) {
+                        // Silent fail
+                      }
+                    }
+                    return "Active member";
+                  })()}
                 </div>
               </div>
             </div>
@@ -54,9 +72,6 @@ const Navbar = () => {
               >
                 <i className="bxr  bx-arrow-from-left-stroke text-2xl"></i>
               </button>
-              <div className="absolute -bottom-12 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                Sign Out
-              </div>
             </div>
           </>
         )}

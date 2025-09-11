@@ -1,6 +1,10 @@
 import React from "react";
 import { Button } from "../components/ui/Button";
-import { apiPost, createCompanyUsers } from "../lib/apiService";
+import {
+  apiPost,
+  createCompanyUsers,
+  createSurveyUsers,
+} from "../lib/apiService";
 import type { CreateUserData } from "../lib/apiService";
 import { useForm } from "react-hook-form";
 import PageNav from "../components/ui/pageNav";
@@ -8,7 +12,6 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import Loader from "../components/ui/loader";
 import { getUserFromToken } from "../lib/util";
 import ImageUpload from "../components/ui/ImageUpload";
-import CompletionPopup from "../components/ui/CompletionPopup";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getAllTeams } from "@/lib/teamService";
 
@@ -23,21 +26,22 @@ interface ProjectFormData {
   endDate: string;
 }
 
-interface ParticipantFormData {
-  participantName: string;
+interface CompanyUserFormData {
+  id: number;
+  name: string;
   email: string;
   designation: string;
-  appraisee: string;
-  role: string;
+  companyId: string;
 }
 
+//TODO
 interface UserData {
   id: number;
   name: string;
   email: string;
   designation: string;
-  type: "Appraisee" | "Appraiser";
-  role: string;
+  type?: "Appraisee" | "Appraiser";
+  role?: string;
 }
 
 interface CompanyFormData {
@@ -49,8 +53,6 @@ interface CompanyFormData {
   file?: FileList;
 }
 
-
-
 // Helper function to format date as 2025-12-20T17:00:00Z
 function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
   const date = new Date(dateStr);
@@ -58,14 +60,28 @@ function toISODateWithTime(dateStr: string, hour = 17, minute = 0, second = 0) {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
+// LocalStorage keys centralised
+const LS_KEYS = {
+  company: "Company",
+  companyForm: "CompanyFormData",
+  companyUsers: "CompanyUsers", // canonical key
+  surveyUsers: "SurveyUsers",
+  project: "Project",
+} as const;
+
+// Safe JSON parse helper
+function safeParse<T = any>(value: string | null, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 const Project = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  //?Navigations
-  const navigateToSurvey = () => {
-    navigate("/survey");
-  };
 
   // Get initial page case from location state, default to 1
   const initialCase = location.state?.initialCase || 1;
@@ -75,34 +91,34 @@ const Project = () => {
     handleSubmit: handleSubmitProject,
     formState: { errors },
     watch,
+    reset: resetProject,
   } = useForm<ProjectFormData>();
-  const startDate = watch("startDate");
   const [pageCase, setPageCase] = useState(initialCase);
+  const startDate = pageCase === 3 ? watch("startDate") : undefined;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreatingUsers, setIsCreatingUsers] = useState(false);
+  // Track submission state for forms / async ops
   const [userCreationError, setUserCreationError] = useState<string>("");
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
 
   //!Page data states
-  const [companyData, setCompanyData] = useState<CompanyFormData | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
 
-  //Team data fetcher
+  //!Team data fetcher
   const fetchTeamsData = async () => {
     const fetchTeams = await getAllTeams();
     setTeams(fetchTeams);
   };
 
-  const [participants, setParticipants] = useState<
+  //!Company User Handler
+  const [companyUsers, setCompanyUsers] = useState<
     {
       id: number;
-      participantName: string;
+      name: string;
       email: string;
       designation: string;
-      appraisee?: string;
-      role?: string;
+      companyId: string;
     }[]
   >([]);
   const {
@@ -111,7 +127,7 @@ const Project = () => {
     reset: resetInfo,
     formState: { errors: errorsInfo },
     setValue,
-  } = useForm<ParticipantFormData>();
+  } = useForm<CompanyUserFormData>();
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
   const {
@@ -120,138 +136,95 @@ const Project = () => {
     formState: { errors: errorsCompany },
     setValue: setCompanyValue,
     watch: watchCompany,
+    reset: resetCompany,
   } = useForm<CompanyFormData>();
 
   const [users, setUsers] = useState<UserData[]>([]);
 
-  // Load participants from localStorage when pageCase changes to 4
+  // Page 1: load company data + form data
   useEffect(() => {
-    if (pageCase === 1) {
-      const savedCompanyData = localStorage.getItem("Company");
-      if (savedCompanyData) {
-        try {
-          const parsedCompanyData = JSON.parse(savedCompanyData);
-          setCompanyData(parsedCompanyData);
-
-          // Pre-fill the form with the API response data (prioritize this over form data)
-          if (parsedCompanyData.name) {
-            setCompanyValue("companyName", parsedCompanyData.name);
-          }
-          if (parsedCompanyData.contactPerson) {
-            setCompanyValue("contactPerson", parsedCompanyData.contactPerson);
-          }
-          if (parsedCompanyData.email) {
-            setCompanyValue("email", parsedCompanyData.email);
-          }
-          if (parsedCompanyData.contactNumber) {
-            setCompanyValue("phone", parsedCompanyData.contactNumber);
-          }
-          // Note: API response doesn't include description, so we'll load that from form data if available
-        } catch (error) {
-          console.error("Error parsing saved company data:", error);
-          setCompanyData(null);
-        }
-      } else {
-        setCompanyData(null);
-      }
-
-      // Load saved company form data (only if API data didn't provide some fields)
-      const savedCompanyFormData = localStorage.getItem("CompanyFormData");
-      if (savedCompanyFormData) {
-        try {
-          const parsedFormData = JSON.parse(savedCompanyFormData);
-
-          // Only use form data for fields not provided by API response
-          if (!savedCompanyData) {
-            // If no API data, load all form data
-            if (parsedFormData.companyName)
-              setCompanyValue("companyName", parsedFormData.companyName);
-            if (parsedFormData.contactPerson)
-              setCompanyValue("contactPerson", parsedFormData.contactPerson);
-            if (parsedFormData.email)
-              setCompanyValue("email", parsedFormData.email);
-            if (parsedFormData.phone)
-              setCompanyValue("phone", parsedFormData.phone);
-          }
-
-          // Always load description from form data (not available in API response)
-          if (parsedFormData.description)
-            setCompanyValue("description", parsedFormData.description);
-        } catch (error) {
-          console.error("Error parsing saved company form data:", error);
-        }
-      }
+    if (pageCase !== 1) return;
+    const companyRaw = localStorage.getItem(LS_KEYS.company);
+    const company = safeParse<any>(companyRaw, null);
+    if (company) {
+      if (company.name) setCompanyValue("companyName", company.name);
+      if (company.contactPerson)
+        setCompanyValue("contactPerson", company.contactPerson);
+      if (company.email) setCompanyValue("email", company.email);
+      if (company.contactNumber)
+        setCompanyValue("phone", company.contactNumber);
     }
-    if (pageCase === 2) {
-      // Load saved participants when entering case 2
-      const savedParticipants = localStorage.getItem("Participants");
-      if (savedParticipants) {
-        try {
-          const parsedParticipants = JSON.parse(savedParticipants);
-          setParticipants(parsedParticipants);
-          // Reset error state when loading participants
-          setUserCreationError("");
-        } catch (error) {
-          console.error("Error parsing saved participants:", error);
-          setParticipants([]);
-          setUserCreationError("");
-        }
-      } else {
-        setUserCreationError("");
+
+    const companyFormRaw = localStorage.getItem(LS_KEYS.companyForm);
+    const companyForm = safeParse<any>(companyFormRaw, null);
+    if (companyForm) {
+      if (!company) {
+        if (companyForm.companyName)
+          setCompanyValue("companyName", companyForm.companyName);
+        if (companyForm.contactPerson)
+          setCompanyValue("contactPerson", companyForm.contactPerson);
+        if (companyForm.email) setCompanyValue("email", companyForm.email);
+        if (companyForm.phone) setCompanyValue("phone", companyForm.phone);
       }
+      if (companyForm.description)
+        setCompanyValue("description", companyForm.description);
     }
-    if (pageCase === 4) {
-      const participantsFromStorage = localStorage.getItem("Participants");
-      if (participantsFromStorage) {
-        try {
-          const parsedParticipants = JSON.parse(participantsFromStorage);
-          const transformedUsers: UserData[] = parsedParticipants.map(
-            (participant: any, index: number) => ({
-              id: participant.id || index + 1,
-              name: participant.participantName,
-              email: participant.email,
-              designation: participant.designation,
-              type:
-                (participant.appraisee as "Appraisee" | "Appraiser") ||
-                "Appraisee",
-              role: participant.role || "Peer",
-            })
-          );
-          setUsers(transformedUsers);
-        } catch (error) {
-          console.error("Error parsing participants from localStorage:", error);
-          // Reset to empty array on parse error
-          setUsers([]);
-        }
-      } else {
-        // Clear users if no participants in localStorage
-        setUsers([]);
-      }
+  }, [pageCase, setCompanyValue]);
+
+  // Page 2: load existing company users (fallback to legacy lowercase key once)
+  useEffect(() => {
+    if (pageCase !== 2) return;
+    const raw =
+      localStorage.getItem(LS_KEYS.companyUsers) ||
+      localStorage.getItem("companyUsers"); // legacy fallback
+    const savedParticipants = safeParse<any[]>(raw, []);
+    // If legacy key was used, migrate to canonical key
+    if (raw && !localStorage.getItem(LS_KEYS.companyUsers)) {
+      localStorage.setItem(LS_KEYS.companyUsers, raw);
+      localStorage.removeItem("companyUsers");
     }
-    if (pageCase === 3) {
-      // Load company data when starting directly in project creation step
-      fetchTeamsData();
-      const savedCompanyData = localStorage.getItem("Company");
-      if (savedCompanyData) {
-        try {
-          const parsedCompanyData = JSON.parse(savedCompanyData);
-          setCompanyData(parsedCompanyData);
-          console.log(
-            "Company data loaded for project creation:",
-            parsedCompanyData
-          );
-        } catch (error) {
-          console.error("Error parsing saved company data:", error);
-          setCompanyData(null);
-        }
-      } else {
-        setCompanyData(null);
+    if (savedParticipants.length) setCompanyUsers(savedParticipants);
+    setUserCreationError("");
+  }, [pageCase]);
+
+  // Page 3: load teams (and silently validate company data presence)
+  useEffect(() => {
+    if (pageCase !== 3) return;
+    fetchTeamsData();
+    const savedCompanyData = localStorage.getItem(LS_KEYS.company);
+    if (savedCompanyData) {
+      const companyRaw = localStorage.getItem(LS_KEYS.company);
+      try {
+        JSON.parse(companyRaw || "null");
+      } catch (error) {
+        console.error("Error parsing saved company data:", error);
       }
     }
   }, [pageCase]);
 
-  // Watch company form values to save to localStorage
-  const watchedCompanyValues = watchCompany();
+  // Page 4: transform company users into role assignment list
+  useEffect(() => {
+    if (pageCase !== 4) return;
+    const storedUsers = safeParse<any[]>(
+      localStorage.getItem(LS_KEYS.companyUsers),
+      []
+    );
+    const transformedUsers: UserData[] = storedUsers.map(
+      (participant: any, index: number) => ({
+        id: participant.id || index + 1,
+        name: participant.name,
+        email: participant.email,
+        designation: participant.designation,
+        type:
+          (participant.appraisee as "Appraisee" | "Appraiser") || "Appraisee",
+        role: participant.role || "Peer",
+      })
+    );
+    setUsers(transformedUsers);
+  }, [pageCase]);
+
+  // Watch company form values to save to localStorage only when on company page
+  const watchedCompanyValues = pageCase === 1 ? watchCompany() : {};
 
   // Save company form data to localStorage whenever form values change
   useEffect(() => {
@@ -272,12 +245,24 @@ const Project = () => {
     }
   }, [watchedCompanyValues, pageCase]);
 
-  // Save participants array to localStorage whenever it changes
+  // Save companyUsers array to localStorage whenever it changes
   useEffect(() => {
-    if (participants.length > 0) {
-      localStorage.setItem("Participants", JSON.stringify(participants));
+    if (companyUsers.length > 0) {
+      localStorage.setItem(LS_KEYS.companyUsers, JSON.stringify(companyUsers));
     }
-  }, [participants]);
+  }, [companyUsers]);
+
+  // Reset forms when switching pages to prevent cross-contamination
+  useEffect(() => {
+    // Reset company user form when not on company user page
+    if (pageCase !== 2 && editIndex === null) {
+      resetInfo();
+    }
+    // Reset project form when not on project page
+    if (pageCase !== 3) {
+      resetProject();
+    }
+  }, [pageCase, editIndex, resetInfo, resetProject]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("");
@@ -364,7 +349,7 @@ const Project = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const matchesSearch = user.name
+      const matchesSearch = (user.name || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesDesignation =
@@ -388,95 +373,98 @@ const Project = () => {
 
   const handleEdit = useCallback(
     (index: number) => {
-      const participant = participants[index];
+      const companyUser = companyUsers[index];
       setEditIndex(index);
-      setValue("participantName", participant.participantName);
-      setValue("email", participant.email);
-      setValue("designation", participant.designation);
+      setValue("name", companyUser.name);
+      setValue("email", companyUser.email);
+      setValue("designation", companyUser.designation);
     },
-    [participants, setValue]
+    [companyUsers, setValue]
   );
 
   // Function to create users in the backend
-  const createUsers = useCallback(async (participantsData: any[]) => {
-    setIsCreatingUsers(true);
-    setUserCreationError("");
-    try {
-      const companyStr = localStorage.getItem("Company");
-      let companyId = "";
-      if (companyStr) {
-        try {
-          const companyObj = JSON.parse(companyStr);
-          companyId = companyObj.id || "";
-        } catch (e) {
-          console.error("Error parsing company data:", e);
-          setUserCreationError("Failed to get company information");
+  const createUsers = useCallback(
+    async (companyUsersData: CompanyUserFormData[]) => {
+      setUserCreationError("");
+      try {
+        const companyStr = localStorage.getItem("Company");
+        let companyId = "";
+        if (companyStr) {
+          try {
+            const companyObj = JSON.parse(companyStr);
+            companyId = companyObj.id || "";
+          } catch (e) {
+            console.error("Error parsing company data:", e);
+            setUserCreationError("Failed to get company information");
+            return false;
+          }
+        }
+
+        if (!companyId) {
+          console.error("No company ID found");
+          setUserCreationError("Company must be created before adding users");
           return false;
         }
-      }
 
-      if (!companyId) {
-        console.error("No company ID found");
-        setUserCreationError("Company must be created before adding users");
+        // Transform companyUsers data to match API structure
+        const usersPayload: CreateUserData[] = companyUsersData.map(
+          (companyUser) => ({
+            name: companyUser.name,
+            email: companyUser.email,
+            designation: companyUser.designation,
+            companyId: companyId,
+          })
+        );
+
+        const response = await createCompanyUsers(usersPayload);
+        // Users created successfully
+        setUserCreationError("");
+        return true;
+      } catch (error: any) {
+        if (error.message && error.message.includes("dup key")) {
+          setUserCreationError("Duplicate emails found");
+        } else {
+          setUserCreationError("Failed to create users. Please try again.");
+        }
+
         return false;
+      } finally {
+        /* no separate isCreatingUsers state */
       }
-
-      // Transform participants data to match API structure
-      const usersPayload: CreateUserData[] = participantsData.map(
-        (participant) => ({
-          name: participant.participantName,
-          email: participant.email,
-          designation: participant.designation,
-          companyId: companyId,
-        })
-      );
-
-      const response = await createCompanyUsers(usersPayload);
-      console.log("Users created successfully:", response);
-      setUserCreationError("");
-      return true;
-    } catch (error) {
-      console.error("Error creating users:", error);
-      setUserCreationError("Failed to create users. Please try again.");
-      return false;
-    } finally {
-      setIsCreatingUsers(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const handleDelete = useCallback(
     (index: number) => {
-      const updatedParticipants = participants.filter((_, i) => i !== index);
-      setParticipants(updatedParticipants);
+      const updatedCompanyUsers = companyUsers.filter((_, i) => i !== index);
+      setCompanyUsers(updatedCompanyUsers);
 
-      // Reset error state since participants have changed
       setUserCreationError("");
 
-      // Update localStorage with the updated participants list
-      if (updatedParticipants.length > 0) {
+      if (updatedCompanyUsers.length > 0) {
         localStorage.setItem(
-          "Participants",
-          JSON.stringify(updatedParticipants)
+          LS_KEYS.companyUsers,
+          JSON.stringify(updatedCompanyUsers)
         );
       } else {
-        // If no participants left, remove from localStorage
-        localStorage.removeItem("Participants");
+        // keep empty state; not removing key intentionally
       }
 
       if (editIndex === index) {
         setEditIndex(null);
         resetInfo({
-          participantName: "",
+          name: "",
           email: "",
           designation: "",
-          appraisee: "",
-          role: "",
+          companyId: "",
         });
       }
     },
-    [participants, editIndex, resetInfo]
+    [companyUsers, editIndex, resetInfo]
   );
 
+  //? Company creation handler
   const handlerCompanyCreation = useCallback(
     async (data: CompanyFormData) => {
       const payload = {
@@ -487,7 +475,7 @@ const Project = () => {
         logoImg: companyLogoUrl || "",
         createdAt: new Date().toISOString(),
       };
-      console.log("Sending company creation payload:", payload);
+      // Company creation payload prepared
       setIsSubmitting(true);
       try {
         const token = localStorage.getItem("token") || "";
@@ -496,7 +484,7 @@ const Project = () => {
           payload,
           token ? { Authorization: `Bearer ${token}` } : {}
         );
-        console.log("RAW API response:", response);
+        // API responded with company data
         // Save the backend response data to localStorage if it contains an id
         if (response && response.id) {
           // Store the API response
@@ -515,9 +503,10 @@ const Project = () => {
           );
 
           // Update company data state
-          setCompanyData(formDataWithLogo);
+          // companyData state removed; form data already persisted
 
-          // Don't reset the form - keep the data visible
+          // Reset the form after successful submission
+          resetCompany();
           setCompanyLogoUrl(""); // Clear the logo URL
           setUploadError(""); // Clear any upload errors
         } else {
@@ -525,13 +514,12 @@ const Project = () => {
         }
       } catch (error) {
         // Handle error (e.g., show error message)
-        console.log("Error caught:", error);
         console.error("Error creating company:", error);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [companyLogoUrl, setCompanyLogoUrl, setUploadError]
+    [companyLogoUrl]
   );
 
   const onSubmitCompany = useCallback(
@@ -541,7 +529,7 @@ const Project = () => {
     [handlerCompanyCreation]
   );
 
-  // TODO Handler function for project creation
+  //? Handler function for project creation
   const handlerProjectCreation = async (data: ProjectFormData) => {
     setIsSubmitting(true); // Set loading state immediately
     try {
@@ -582,8 +570,10 @@ const Project = () => {
           payload,
           token ? { Authorization: `Bearer ${token}` } : {}
         );
-        console.log("RAW API response:", response);
+        // Project created successfully
         localStorage.setItem("Project", JSON.stringify(response));
+
+        resetProject();
       } catch (error) {
         console.error("Error posting project data:", error);
       }
@@ -598,20 +588,20 @@ const Project = () => {
     handlerProjectCreation(data);
   }, []);
 
-  const handleParticipantSubmit = useCallback(
-    (data: ParticipantFormData) => {
+  const handleCompanyUserSubmit = useCallback(
+    (data: CompanyUserFormData) => {
       if (editIndex !== null) {
-        // Update existing participant
-        const updatedParticipants = participants.map((p, i) =>
+        // Update existing company user
+        const updatedCompanyUsers = companyUsers.map((p, i) =>
           i === editIndex ? { ...p, ...data } : p
         );
-        setParticipants(updatedParticipants);
+        setCompanyUsers(updatedCompanyUsers);
         setEditIndex(null);
       } else {
         // Add new participant
         const newParticipant = { ...data, id: Date.now() };
-        const updatedParticipants = [...participants, newParticipant];
-        setParticipants(updatedParticipants);
+        const updatedParticipants = [...companyUsers, newParticipant];
+        setCompanyUsers(updatedParticipants);
       }
 
       // Reset saved state since participants have changed
@@ -619,12 +609,12 @@ const Project = () => {
 
       // Just update UI, don't call backend yet
       resetInfo({
-        participantName: "",
+        name: "",
         email: "",
         designation: "",
       });
     },
-    [editIndex, resetInfo, participants]
+    [editIndex, resetInfo, companyUsers]
   );
   const debounce = useCallback((func: Function, delay: number) => {
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -879,18 +869,35 @@ const Project = () => {
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={() => {
-                    // Save to localStorage before navigating
-                    if (participants.length > 0) {
-                      localStorage.setItem(
-                        "Participants",
-                        JSON.stringify(participants)
-                      );
+                  onClick={async () => {
+                    setIsSubmitting(true);
+
+                    try {
+                      if (companyUsers.length > 0) {
+                        const success = await createUsers(companyUsers);
+                        if (!success) {
+                          setIsSubmitting(false);
+                          return; // Don't proceed if user creation failed
+                        }
+                      }
+
+                      // Save to localStorage before navigating
+                      if (companyUsers.length > 0) {
+                        localStorage.setItem(
+                          LS_KEYS.companyUsers,
+                          JSON.stringify(companyUsers)
+                        );
+                      }
+
+                      setIsSubmitting(false);
+                      handleNext();
+                    } catch (error) {
+                      console.error("Error creating users:", error);
+                      setIsSubmitting(false);
                     }
-                    handleNext();
                   }}
                 >
-                  next
+                  {isSubmitting ? "Creating Users..." : "next"}
                 </Button>
               </div>
             </div>
@@ -902,7 +909,7 @@ const Project = () => {
               </div>
             )}
             <form
-              onSubmit={handleSubmitInfo(handleParticipantSubmit)}
+              onSubmit={handleSubmitInfo(handleCompanyUserSubmit)}
               className="mt-5"
             >
               <div className="mb-5">
@@ -916,11 +923,9 @@ const Project = () => {
                   type="text"
                   id="participantName"
                   className={`bg-gray-50 border ${
-                    errorsInfo.participantName
-                      ? "border-red-500"
-                      : "border-gray-300"
+                    errorsInfo.name ? "border-red-500" : "border-gray-300"
                   } text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2.5 py-3.5`}
-                  {...registerInfo("participantName", {
+                  {...registerInfo("name", {
                     required: "Participant name is required",
                     minLength: {
                       value: 2,
@@ -928,9 +933,9 @@ const Project = () => {
                     },
                   })}
                 />
-                {errorsInfo.participantName && (
+                {errorsInfo.name && (
                   <p className="mt-1 text-sm text-red-500">
-                    {errorsInfo.participantName.message}
+                    {errorsInfo.name.message}
                   </p>
                 )}
               </div>
@@ -1007,7 +1012,7 @@ const Project = () => {
                   onClick={() => {
                     setEditIndex(null);
                     resetInfo({
-                      participantName: "",
+                      name: "",
                       email: "",
                       designation: "",
                     });
@@ -1019,27 +1024,23 @@ const Project = () => {
             </form>
           </div>
           <div className="h-[1px] bg-gray-300 w-[80%] mx-auto mt-15"></div>
-          {participants.length > 0 && (
+          {companyUsers.length > 0 && (
             <div className="mt-10 px-50 pb-10">
               <table className="min-w-full bg-white">
                 <tbody>
-                  {participants.map((participant, index) => (
-                    <tr key={participant.id}>
+                  {companyUsers.map((user, index) => (
+                    <tr key={user.id}>
+                      <td className="py-2 px-4 text-gray-900">{user.name}</td>
+                      <td className="py-2 px-4 text-gray-900">{user.email}</td>
                       <td className="py-2 px-4 text-gray-900">
-                        {participant.participantName}
+                        {user.designation}
+                      </td>
+                      {/* <td className="py-2 px-4 text-gray-900">
+                        {user.appraisee}
                       </td>
                       <td className="py-2 px-4 text-gray-900">
-                        {participant.email}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.designation}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.appraisee}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900">
-                        {participant.role}
-                      </td>
+                        {user.role}
+                      </td> */}
                       <td className="py-2 px-4">
                         <Button
                           variant="edit"
@@ -1342,6 +1343,15 @@ const Project = () => {
                     {...registerProject("endDate", {
                       required: "End date is required",
                       validate: (value) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const selectedDate = new Date(value);
+                        selectedDate.setHours(0, 0, 0, 0);
+
+                        if (selectedDate < today) {
+                          return "End date cannot be in the past";
+                        }
+
                         if (!startDate) return true;
                         const start = new Date(startDate);
                         const end = new Date(value);
@@ -1561,9 +1571,6 @@ const Project = () => {
                       <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                         <tr className="border-b border-gray-300">
                           <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
-                            Group #
-                          </th>
-                          <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                             Appraisee
                           </th>
                           <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
@@ -1582,13 +1589,6 @@ const Project = () => {
                               index % 2 === 0 ? "bg-white" : "bg-gray-25"
                             }`}
                           >
-                            <td className="py-6 px-6 align-top">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                  {group.id}
-                                </div>
-                              </div>
-                            </td>
                             <td className="py-6 px-6 align-top">
                               {group.appraisee ? (
                                 <div className="flex items-start space-x-3 max-w-sm">
@@ -1718,13 +1718,14 @@ const Project = () => {
                     setIsSubmitting(true);
 
                     // Create users before finishing if participants exist
-                    const participantsData =
-                      localStorage.getItem("Participants");
+                    const participantsData = localStorage.getItem(
+                      LS_KEYS.companyUsers
+                    );
                     if (participantsData) {
                       try {
                         const participants = JSON.parse(participantsData);
                         if (participants.length > 0) {
-                          const success = await createUsers(participants);
+                          const success = await createSurveyUsers(participants);
                           if (!success) {
                             setIsSubmitting(false);
                             return; // Don't proceed if user creation failed
@@ -1734,8 +1735,43 @@ const Project = () => {
                         console.error("Error parsing participants:", error);
                       }
                     }
+
+                    // Clear all form data and localStorage after successful completion
+                    // localStorage.removeItem("Company");
+                    // localStorage.removeItem("CompanyFormData");
+                    // localStorage.removeItem("CompanyUsers");
+                    // localStorage.removeItem("SurveyUsers");
+                    // localStorage.removeItem("Project");
+                    // localStorage.removeItem("companyUsers");
+
+                    // Reset all form states
+                    resetCompany();
+                    resetProject();
+                    resetInfo();
+
+                    // Reset component state
+                    // companyData state removed
+                    setCompanyUsers([]);
+                    setUsers([]);
+                    setUserGroups([]);
+                    setSelectedUsers(new Set());
+                    setUserTypes({});
+                    setCompanyLogoUrl("");
+                    setUploadError("");
+                    setUserCreationError("");
+                    setEditIndex(null);
+                    setSearchTerm("");
+                    setFilterDesignation("");
+                    setGroupCounter(1);
+
                     setIsSubmitting(false);
-                    navigate("/create");
+
+                    // Show completion popup before navigating
+                    setShowCompletionPopup(true);
+                    setTimeout(() => {
+                      setShowCompletionPopup(false);
+                      navigate("/create");
+                    }, 2000);
                   }}
                   disabled={userGroups.length === 0 || isSubmitting}
                 >
@@ -2012,7 +2048,38 @@ const Project = () => {
       pageContent = null;
   }
 
-  return <>{pageContent}</>;
+  return (
+    <>
+      {showCompletionPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Project Created Successfully!
+            </h3>
+            <p className="text-gray-600">
+              All forms have been reset and you will be redirected shortly.
+            </p>
+          </div>
+        </div>
+      )}
+      {pageContent}
+    </>
+  );
 };
 
 export default Project;

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./FeedbackReport2.scss";
 import DraggableComp from "../Draggable/DraggableComp";
 
-import Footer from "../footer/Footer2";
+import Footer from "../footer/Footer";
 import ReportHeader from "../shared/ReportHeader2";
 
 import PieChart from "../shared/charts/PieChart/PieChart";

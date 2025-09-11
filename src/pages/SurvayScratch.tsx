@@ -1,172 +1,193 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
 import { createQuestion, createSurveyAll } from "../lib/apiService";
 import { createCompetency } from "@/lib/surveyService";
 import { useNavigate } from "react-router-dom";
-import { useLocalStorage } from "../hooks/useLocalStorage";
 
-const defaultOptions = [
-  "Strongly Agree",
-  "Agree",
-  "Neutral",
-  "Strongly Disagree",
-  "Disagree",
-];
+// Types
+type QuestionType =
+  | "multiple-choice"
+  | "rating-scale"
+  | "open-ended"
+  | "yes-no";
+
+type Question = {
+  id: number;
+  text: string;
+  type: QuestionType;
+  options: string[];
+  isRequired?: boolean;
+};
+
+type TemplatePreview = {
+  SurveyName: string;
+  competency: string;
+  description: string;
+  questions: Question[];
+};
+
+interface SurveyData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+  users: {
+    userId: string;
+    appraiser: boolean;
+    role: string;
+  }[];
+}
+
+// Constants
+const DEFAULT_OPTIONS_MAP: Record<QuestionType, string[]> = {
+  "multiple-choice": [
+    "Strongly Agree",
+    "Agree",
+    "Neutral",
+    "Disagree",
+    "Strongly Disagree",
+  ],
+  "rating-scale": ["1", "2", "3", "4", "5"],
+  "yes-no": ["Yes", "No"],
+  "open-ended": [],
+};
 
 const SurvayScratch = () => {
-  type QuestionType =
-    | "multiple-choice"
-    | "rating-scale"
-    | "open-ended"
-    | "yes-no";
-  type Question = {
-    id: number;
-    text: string;
-    type: QuestionType;
-    options: string[];
-    isRequired?: boolean;
-  };
+  const navigate = useNavigate();
 
-  interface SurveyData {
-    survey: {
-      surveyName: string;
-      projectId: string;
-    };
-    questions: {
-      questionId: string;
-    }[];
-    users: {
-      userId: string;
-      appraiser: boolean;
-      role: string;
-    }[];
-  }
-
-  // Function to create survey data from localStorage
-  const createSurveyFromLocalStorage = (): SurveyData | null => {
-    try {
-      // Get project data from localStorage
-      const projectData = JSON.parse(localStorage.getItem("Project") || "{}");
-      
-      // Get questions data from localStorage
-      const questionsData = JSON.parse(localStorage.getItem("savedQuestions") || "[]");
-      
-      // Get user groups data from localStorage
-      const userGroupsData = JSON.parse(localStorage.getItem("SurveyUsers") || "[]");
-      
-      if (!projectData.id || questionsData.length === 0 || userGroupsData.length === 0) {
-        console.error("Missing required data in localStorage");
-        return null;
-      }
-
-      // Transform questions data
-      const questions = questionsData.map((q: any) => ({
-        questionId: q.questionId
-      }));
-
-      // Transform users data - flatten all users from groups
-      const users: { userId: string; appraiser: boolean; role: string; }[] = [];
-      
-      userGroupsData.forEach((group: any) => {
-        // Add appraisee
-        if (group.appraisee) {
-          users.push({
-            userId: group.appraisee.id.toString(),
-            appraiser: false, // appraisee is not an appraiser
-            role: group.appraisee.role
-          });
-        }
-        
-        // Add appraisers
-        if (group.appraisers && Array.isArray(group.appraisers)) {
-          group.appraisers.forEach((appraiser: any) => {
-            users.push({
-              userId: appraiser.id.toString(),
-              appraiser: true, // these are appraisers
-              role: appraiser.role
-            });
-          });
-        }
-      });
-
-      // Remove duplicate users (same userId)
-      const uniqueUsers = users.filter((user, index, self) => 
-        index === self.findIndex(u => u.userId === user.userId)
-      );
-
-      const surveyData: SurveyData = {
-        survey: {
-          surveyName: projectData.project_name || "360 Feedback Survey",
-          projectId: projectData.id
-        },
-        questions,
-        users: uniqueUsers
-      };
-
-      return surveyData;
-    } catch (error) {
-      console.error("Error creating survey from localStorage:", error);
-      return null;
-    }
-  };
-
+  // Form state
+  const [surveyName, setSurveyName] = useState("");
   const [competency, setCompetency] = useState("");
-  const [templateName, setTemplateName] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [input, setInput] = useState("");
   const [questionType, setQuestionType] =
     useState<QuestionType>("multiple-choice");
+
+  // Edit states
   const [editId, setEditId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
-
-  // New state to track if editing preview
-  const [isEditingPreview, setIsEditingPreview] = useState(false);
-
-  // New: array of competencies
-  const [templatePreviews, setTemplatePreviews] = useState<
-    {
-      templateName: string;
-      competency: string;
-      description: string;
-      questions: Question[];
-    }[]
-  >([]);
-  // Track which competency is being edited (index), or null
+  const [editOptsId, setEditOptsId] = useState<number | null>(null);
+  const [editOptsValues, setEditOptsValues] = useState<string[]>([]);
   const [editPreviewIndex, setEditPreviewIndex] = useState<number | null>(null);
 
+  // Template preview state
+  const [templatePreviews, setTemplatePreviews] = useState<TemplatePreview[]>(
+    []
+  );
+
+  // Loading and error states
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const { setItem } = useLocalStorage();
+  // Memoized function to get default options
+  const getDefaultOptionsForType = useCallback(
+    (type: QuestionType): string[] => {
+      return DEFAULT_OPTIONS_MAP[type] || [];
+    },
+    []
+  );
 
-  const getDefaultOptionsForType = (type: QuestionType): string[] => {
-    switch (type) {
-      case "multiple-choice":
-        return [
-          "Strongly Agree",
-          "Agree",
-          "Neutral",
-          "Disagree",
-          "Strongly Disagree",
-        ];
-      case "rating-scale":
-        return ["1", "2", "3", "4", "5"];
-      case "yes-no":
-        return ["Yes", "No"];
-      case "open-ended":
-        return [];
-      default:
-        return defaultOptions;
+  // Create survey from localStorage
+  const createSurveyFromLocalStorage = useCallback((): SurveyData | null => {
+    try {
+      const projectData = JSON.parse(localStorage.getItem("Project") || "{}");
+      const questionsData = JSON.parse(
+        localStorage.getItem("savedQuestions") || "[]"
+      );
+      const userGroupsData = JSON.parse(
+        localStorage.getItem("CompanyUsers") || "[]"
+      );
+
+      if (
+        !projectData.id ||
+        questionsData.length === 0 ||
+        userGroupsData.length === 0
+      ) {
+        console.error("Missing required data in localStorage");
+        return null;
+      }
+
+      const questions = questionsData.map((q: any) => ({
+        questionId: q.questionId,
+      }));
+
+      const users: SurveyData["users"] = [];
+
+      userGroupsData.forEach((group: any) => {
+        if (group.appraisee) {
+          users.push({
+            userId: group.appraisee.id.toString(),
+            appraiser: false,
+            role: group.appraisee.role,
+          });
+        }
+
+        if (group.appraisers && Array.isArray(group.appraisers)) {
+          group.appraisers.forEach((appraiser: any) => {
+            users.push({
+              userId: appraiser.id.toString(),
+              appraiser: true,
+              role: appraiser.role,
+            });
+          });
+        }
+      });
+
+      // Remove duplicates
+      const uniqueUsers = users.filter(
+        (user, index, self) =>
+          index === self.findIndex((u) => u.userId === user.userId)
+      );
+
+      return {
+        survey: {
+          surveyName: surveyName || "360 Feedback Survey",
+          projectId: projectData.id,
+        },
+        questions,
+        users: uniqueUsers,
+      };
+    } catch (error) {
+      console.error("Error creating survey from localStorage:", error);
+      return null;
     }
-  };
+  }, [surveyName]);
 
-  const handleQuestionAdd = () => {
+  // Handle creating survey metadata
+  const handleCreateSurvey = useCallback(async () => {
+    const projectData = JSON.parse(localStorage.getItem("Project") || "{}");
+
+    if (!projectData.id) {
+      throw new Error(
+        "Project ID not found. Please ensure a project is selected."
+      );
+    }
+
+    if (!surveyName.trim()) {
+      throw new Error("Survey name is required.");
+    }
+
+    const surveyMetadata = {
+      surveyName: surveyName.trim(),
+      projectId: projectData.id,
+    };
+
+    console.log("Survey metadata prepared:", surveyMetadata);
+    return surveyMetadata;
+  }, [surveyName]);
+
+  // Handle adding questions
+  const handleQuestionAdd = useCallback(() => {
     if (input.trim() === "") return;
-    setQuestions([
-      ...questions,
+
+    setQuestions((prev) => [
+      ...prev,
       {
         id: Date.now(),
         text: input,
@@ -176,27 +197,31 @@ const SurvayScratch = () => {
       },
     ]);
     setInput("");
-  };
+  }, [input, questionType, getDefaultOptionsForType]);
 
-  const handleCompetencyCreation = async () => {
-    try {
-      // Loop through all competencies in templatePreviews and create them
-      for (const template of templatePreviews) {
-        if (template.competency.trim()) {
-          await createCompetency(template.competency.trim());
-          console.log(
-            `Successfully created competency: ${template.competency}`
-          );
-        }
+  // Handle competency creation
+  const handleCompetencyCreation = useCallback(async (): Promise<
+    Map<string, string>
+  > => {
+    const competencyMap = new Map<string, string>();
+
+    for (const template of templatePreviews) {
+      if (template.competency.trim()) {
+        const compRes = await createCompetency(template.competency.trim());
+        const competencyId = typeof compRes === "string" ? compRes : compRes.id;
+        competencyMap.set(template.competency, competencyId);
+        console.log(
+          `Successfully created competency: ${template.competency} with ID: ${competencyId}`
+        );
       }
-      console.log("All competencies created successfully");
-    } catch (error) {
-      console.error("Error creating competencies:", error);
-      throw error; // Re-throw to handle in the calling function
     }
-  };
 
-  const handleAdd = () => {
+    console.log("All competencies created successfully");
+    return competencyMap;
+  }, [templatePreviews]);
+
+  // Handle adding/updating competency
+  const handleAdd = useCallback(() => {
     if (!competency.trim()) {
       alert("Please enter a competency name");
       return;
@@ -207,15 +232,14 @@ const SurvayScratch = () => {
       return;
     }
 
-    const newCompetency = {
-      templateName,
+    const newCompetency: TemplatePreview = {
+      SurveyName: surveyName,
       competency,
       description,
       questions: [...questions],
     };
 
     if (editPreviewIndex !== null) {
-      // Update existing
       setTemplatePreviews((prev) =>
         prev.map((item, idx) =>
           idx === editPreviewIndex ? newCompetency : item
@@ -223,240 +247,276 @@ const SurvayScratch = () => {
       );
       setEditPreviewIndex(null);
     } else {
-      // Add new
       console.log("Adding new competency:", newCompetency);
       setTemplatePreviews((prev) => [...prev, newCompetency]);
     }
-    setIsEditingPreview(false);
-    setTemplateName("");
+
+    // Reset form
     setCompetency("");
     setDescription("");
     setQuestions([]);
     setInput("");
-    setQuestionType("multiple-choice"); // Reset question type to default
-  };
+    setQuestionType("multiple-choice");
+  }, [competency, description, questions, surveyName, editPreviewIndex]);
 
-  const handleDelete = (id: number) => {
-    setQuestions(questions.filter((q) => q.id !== id));
-  };
+  // Handle question deletion
+  const handleDelete = useCallback((id: number) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  }, []);
 
-  const handleEdit = (id: number, text: string) => {
+  // Handle question edit
+  const handleEdit = useCallback((id: number, text: string) => {
     setEditId(id);
     setEditText(text);
-  };
+  }, []);
 
-  // Option editing state
-  const [editOptsId, setEditOptsId] = useState<number | null>(null);
-  const [editOptsValues, setEditOptsValues] = useState<string[]>([]);
+  // Handle saving edited question
+  const handleEditSave = useCallback(
+    (id: number) => {
+      setQuestions((prev) =>
+        prev.map((q) => (q.id === id ? { ...q, text: editText } : q))
+      );
+      setEditId(null);
+      setEditText("");
+    },
+    [editText]
+  );
 
-  const handleEditSave = (id: number) => {
-    setQuestions(
-      questions.map((q) => (q.id === id ? { ...q, text: editText } : q))
-    );
-    setEditId(null);
-    setEditText("");
-  };
-
-  const handleEditOpts = (id: number, opts: string[]) => {
+  // Handle editing options
+  const handleEditOpts = useCallback((id: number, opts: string[]) => {
     setEditOptsId(id);
     setEditOptsValues([...opts]);
-  };
+  }, []);
 
-  const handleEditOptsSave = (id: number) => {
-    setQuestions(
-      questions.map((q) =>
-        q.id === id
-          ? {
-              ...q,
-              options: editOptsValues.map((s) => s.trim()).filter(Boolean),
-            }
-          : q
-      )
-    );
+  // Handle saving edited options
+  const handleEditOptsSave = useCallback(
+    (id: number) => {
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === id
+            ? {
+                ...q,
+                options: editOptsValues.map((s) => s.trim()).filter(Boolean),
+              }
+            : q
+        )
+      );
+      setEditOptsId(null);
+      setEditOptsValues([]);
+    },
+    [editOptsValues]
+  );
+
+  // Handle canceling option edit
+  const handleEditOptsCancel = useCallback(() => {
     setEditOptsId(null);
     setEditOptsValues([]);
-  };
+  }, []);
 
-  const handleEditOptsCancel = () => {
-    setEditOptsId(null);
-    setEditOptsValues([]);
-  };
-
-  const handleClear = () => {
+  // Clear form
+  const handleClear = useCallback(() => {
+    setSurveyName("");
     setCompetency("");
     setDescription("");
     setQuestions([]);
     setInput("");
-    setQuestionType("multiple-choice"); // Reset question type to default
-  };
+    setQuestionType("multiple-choice");
+  }, []);
 
-  const PreviewCompetency = ({
-    competency,
-    description,
-    questions,
-    onEdit,
-    onDelete,
-  }: {
-    competency: string;
-    description: string;
-    questions: Question[];
-    onEdit: () => void;
-    onDelete: () => void;
-  }) => (
-    <div className="mb-4">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="font-semibold">{competency || "Competency"}</span>
-        <div className="flex items-center gap-1">
-          <button
-            className="bg-[#EE3E41] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center cursor-pointer"
-            style={{ width: 32, height: 32 }}
-            onClick={onEdit}
-            title="Edit"
-          >
-            <span style={{ fontSize: 16 }}>✎</span>
-          </button>
-          <button
-            className="bg-[#ef3e40] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center ml-1  cursor-pointer"
-            style={{ width: 32, height: 32 }}
-            onClick={onDelete}
-            title="Delete"
-          >
-            <span
-              style={{ fontSize: 16 }}
-              className="flex justify-center items-center"
-            >
-              <i className="bxr  bx-trash text-xl flex items-center justify-center"></i>{" "}
-            </span>
-          </button>
-        </div>
-      </div>
-      <div className="mb-2 text-sm font-medium text-black">
-        {description || <span className="text-gray-400">No description</span>}
-      </div>
-      <ul className="list-disc ml-6">
-        {questions.map((q) => (
-          <li key={q.id} className="mb-2">
-            <div className="font-medium">{q.text}</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Type:{" "}
-              {q.type.charAt(0).toUpperCase() +
-                q.type.slice(1).replace("-", " ")}
-              {q.isRequired && " • Required"}
-            </div>
-            {q.type !== "open-ended" && q.options.length > 0 && (
-              <div className="text-sm text-gray-600 ml-4 mt-1">
-                Options: {q.options.join(", ")}
-              </div>
-            )}
-            {q.type === "open-ended" && (
-              <div className="text-sm text-gray-500 ml-4 mt-1 italic">
-                Open-ended text response
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+  // Save template
+  const handleSaveTemplate = useCallback(
+    async (competencyMap: Map<string, string>) => {
+      setIsSaving(true);
+      setSaveError(null);
+
+      try {
+        const savedQuestions: Array<{
+          questionId: string;
+          competencyId: string;
+          questionText: string;
+          competencyName: string;
+        }> = [];
+
+        for (const comp of templatePreviews) {
+          const competencyId = competencyMap.get(comp.competency);
+          if (!competencyId) {
+            throw new Error(`Competency ID not found for: ${comp.competency}`);
+          }
+
+          for (const q of comp.questions) {
+            const questionResponse = await createQuestion({
+              competencyId,
+              question: q.text,
+              optionType: q.type === "open-ended" ? "text" : "string",
+              options: q.options,
+            });
+
+            const questionId =
+              typeof questionResponse === "string"
+                ? questionResponse
+                : questionResponse.id;
+
+            savedQuestions.push({
+              questionId,
+              competencyId,
+              questionText: q.text,
+              competencyName: comp.competency,
+            });
+          }
+        }
+
+        localStorage.setItem("savedQuestions", JSON.stringify(savedQuestions));
+        alert("Template saved successfully!");
+      } catch (err: any) {
+        setSaveError(err.message || "Failed to save template");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [templatePreviews]
   );
 
-  const handleSaveTemplate = async () => {
-    setIsSaving(true);
-    setSaveError(null);
-    try {
-      const savedQuestions: Array<{
-        questionId: string;
-        competencyId: string;
-        questionText: string;
-        competencyName: string;
-      }> = [];
-
-      for (const comp of templatePreviews) {
-        // 1. Create competency
-        const compRes = await createCompetency(comp.competency);
-        const competencyId = typeof compRes === "string" ? compRes : compRes.id;
-
-        // 2. Create questions
-        for (const q of comp.questions) {
-          const questionResponse = await createQuestion({
-            competencyId,
-            question: q.text,
-            optionType: q.type === "open-ended" ? "text" : "string", // Adjust based on your API
-            options: q.options,
-          });
-
-          // Store question details
-          const questionId =
-            typeof questionResponse === "string"
-              ? questionResponse
-              : questionResponse.id;
-          savedQuestions.push({
-            questionId,
-            competencyId,
-            questionText: q.text,
-            competencyName: comp.competency,
-          });
-        }
-      }
-
-      // Store all question IDs in local storage
-      localStorage.setItem("savedQuestions", JSON.stringify(savedQuestions));
-
-      alert("Template saved successfully!");
-    } catch (err: any) {
-      setSaveError(err.message || "Failed to save template");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Function to create and send survey data to API
-  const handleCreateSurveyData = async () => {
+  // Handle creating survey data
+  const handleCreateSurveyData = useCallback(async () => {
     try {
       setIsSaving(true);
       setSaveError(null);
 
       const surveyData = createSurveyFromLocalStorage();
       if (!surveyData) {
-        throw new Error("Failed to create survey data from localStorage. Please ensure all required data is available.");
+        throw new Error("Failed to create survey data from localStorage.");
       }
 
       console.log("Sending Survey Data to API:", surveyData);
-      
-      // Send data to /survey/all endpoint
       const response = await createSurveyAll(surveyData);
-      
       console.log("Survey creation response:", response);
-      
-      // Store the survey data and response in localStorage for later use
-      localStorage.setItem("SurveyData", JSON.stringify(surveyData));
+
       localStorage.setItem("SurveyResponse", JSON.stringify(response));
-      
-      alert(`Survey created successfully!\n\nSurvey Name: ${surveyData.survey.surveyName}\nProject ID: ${surveyData.survey.projectId}\nQuestions: ${surveyData.questions.length}\nUsers: ${surveyData.users.length}`);
-      
-      // You can also navigate to another page or perform other actions here
-      // navigate("/survey-created", { state: { surveyData, response } });
-      
+
+      alert(
+        `Survey created successfully!\n\nSurvey Name: ${surveyData.survey.surveyName}\nProject ID: ${surveyData.survey.projectId}\nQuestions: ${surveyData.questions.length}\nUsers: ${surveyData.users.length}`
+      );
     } catch (error: any) {
       console.error("Error creating survey:", error);
-      setSaveError(error.message || "Failed to create survey. Please try again.");
+      setSaveError(
+        error.message || "Failed to create survey. Please try again."
+      );
       alert(`Failed to create survey: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [createSurveyFromLocalStorage]);
 
-  const navigate = useNavigate();
+  // Preview Component
+  const PreviewCompetency = useMemo(() => {
+    return ({
+      competency,
+      description,
+      questions,
+      onEdit,
+      onDelete,
+    }: {
+      competency: string;
+      description: string;
+      questions: Question[];
+      onEdit: () => void;
+      onDelete: () => void;
+    }) => (
+      <div className="mb-4">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="font-semibold">{competency || "Competency"}</span>
+          <div className="flex items-center gap-1">
+            <button
+              className="bg-[#EE3E41] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center cursor-pointer"
+              style={{ width: 32, height: 32 }}
+              onClick={onEdit}
+              title="Edit"
+            >
+              <span style={{ fontSize: 16 }}>✎</span>
+            </button>
+            <button
+              className="bg-[#ef3e40] hover:bg-[#A10000] text-white rounded p-1 flex items-center justify-center ml-1 cursor-pointer"
+              style={{ width: 32, height: 32 }}
+              onClick={onDelete}
+              title="Delete"
+            >
+              <span
+                style={{ fontSize: 16 }}
+                className="flex justify-center items-center"
+              >
+                <i className="bxr bx-trash text-xl flex items-center justify-center"></i>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div className="mb-2 text-sm font-medium text-black">
+          {description || <span className="text-gray-400">No description</span>}
+        </div>
+        <ul className="list-disc ml-6">
+          {questions.map((q) => (
+            <li key={q.id} className="mb-2">
+              <div className="font-medium">{q.text}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                Type:{" "}
+                {q.type.charAt(0).toUpperCase() +
+                  q.type.slice(1).replace("-", " ")}
+                {q.isRequired && " • Required"}
+              </div>
+              {q.type !== "open-ended" && q.options.length > 0 && (
+                <div className="text-sm text-gray-600 ml-4 mt-1">
+                  Options: {q.options.join(", ")}
+                </div>
+              )}
+              {q.type === "open-ended" && (
+                <div className="text-sm text-gray-500 ml-4 mt-1 italic">
+                  Open-ended text response
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }, []);
+
+  // Handle save button click
+  const handleSaveClick = useCallback(async () => {
+    try {
+      const surveyMetadata = await handleCreateSurvey();
+      console.log("Survey metadata validated:", surveyMetadata);
+
+      const competencyMap = await handleCompetencyCreation();
+      await handleSaveTemplate(competencyMap);
+    } catch (error) {
+      console.error("Error in save process:", error);
+      setSaveError("Failed to save survey. Please try again.");
+    }
+  }, [handleCreateSurvey, handleCompetencyCreation, handleSaveTemplate]);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Navbar */}
       <PageNav position="HR Manager" title="Create From Scratch" />
 
-      {/* Main Content Area */}
       <main className="flex flex-col py-6 pt-12 px-2 sm:px-6 md:px-12 lg:px-24 xl:px-36 2xl:px-64 overflow-y-auto bg-white w-full">
-        <div className=" flex flex-col rounded-lg w-full">
+        <div className="flex flex-col rounded-lg w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 mb-6 w-full">
-            <div className="w-full">
+            <div>
+              <label
+                htmlFor="surveyName"
+                className="mb-2 block text-md font-medium text-gray-700"
+              >
+                Survey Name*
+              </label>
+              <input
+                type="text"
+                id="surveyName"
+                className="border border-gray-300 rounded-lg p-2 w-full"
+                value={surveyName}
+                onChange={(e) => setSurveyName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
               <label
                 htmlFor="competency"
                 className="mb-2 block text-md font-medium text-gray-700"
@@ -473,6 +533,7 @@ const SurvayScratch = () => {
               />
             </div>
           </div>
+
           <div>
             <label
               htmlFor="description"
@@ -487,7 +548,7 @@ const SurvayScratch = () => {
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-            ></textarea>
+            />
           </div>
 
           <div className="mb-4">
@@ -537,7 +598,7 @@ const SurvayScratch = () => {
                   onClick={handleQuestionAdd}
                   aria-label="Add question"
                 >
-                  <i className="bxr  bx-plus"></i>
+                  <i className="bxr bx-plus"></i>
                 </button>
               </div>
               {questionType !== "open-ended" && (
@@ -549,7 +610,6 @@ const SurvayScratch = () => {
             </div>
           </div>
 
-          {/* Render questions list */}
           <div className="space-y-6">
             {questions.map((q) => (
               <div key={q.id} className="mb-2">
@@ -605,7 +665,6 @@ const SurvayScratch = () => {
                   </div>
                 )}
 
-                {/* Show options only for non-open-ended questions */}
                 {q.type !== "open-ended" && (
                   <div className="flex flex-wrap gap-4 ml-2 text-gray-700 text-md items-center">
                     {q.options.map((opt: string) => (
@@ -622,14 +681,13 @@ const SurvayScratch = () => {
                   </div>
                 )}
 
-                {/* Show placeholder for open-ended questions */}
                 {q.type === "open-ended" && (
                   <div className="ml-2 text-gray-500 text-sm italic">
                     Open-ended text response
                   </div>
                 )}
-                {/* Modal for editing options */}
-                {editOptsId !== null && (
+
+                {editOptsId === q.id && (
                   <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
                     onClick={handleEditOptsCancel}
@@ -680,7 +738,6 @@ const SurvayScratch = () => {
             ))}
           </div>
 
-          {/* Add button after questions list */}
           <div className="flex flex-col sm:flex-row mt-6 gap-2">
             <button
               type="button"
@@ -701,9 +758,10 @@ const SurvayScratch = () => {
             </button>
           </div>
 
-          {/* Preview Section */}
           <div className="mt-12 border-t border-gray-300/50 pt-8">
-            <h3 className="text-lg font-semibold mb-4">Competency Preview</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {surveyName ? `${surveyName} Preview` : "Survey Preview"}
+            </h3>
             {templatePreviews.length === 0 && (
               <p className="text-gray-500 italic">
                 No competencies added yet. Add a competency and questions to see
@@ -719,22 +777,19 @@ const SurvayScratch = () => {
                     description={item.description}
                     questions={item.questions}
                     onEdit={() => {
-                      setTemplateName(item.templateName);
+                      setSurveyName(item.SurveyName);
                       setCompetency(item.competency);
                       setDescription(item.description);
                       setQuestions(item.questions);
-                      setIsEditingPreview(true);
                       setEditPreviewIndex(idx);
                     }}
                     onDelete={() => {
                       setTemplatePreviews((prev) =>
                         prev.filter((_, i) => i !== idx)
                       );
-                      // If deleting the one being edited, reset edit state
                       if (editPreviewIndex === idx) {
                         setEditPreviewIndex(null);
-                        setIsEditingPreview(false);
-                        setTemplateName("");
+                        setSurveyName("");
                         setCompetency("");
                         setDescription("");
                         setQuestions([]);
@@ -747,7 +802,6 @@ const SurvayScratch = () => {
           </div>
         </div>
 
-        {/* Example CompetencySection below, updated for new question types */}
         {templatePreviews.map((item, idx) => (
           <div key={idx}>
             <CompetencySection
@@ -767,15 +821,7 @@ const SurvayScratch = () => {
           <Button
             variant="edit"
             className="bg-[#8B1C13] font-medium text-md w-full sm:w-auto"
-            onClick={async () => {
-              try {
-                await handleCompetencyCreation();
-                await handleSaveTemplate();
-              } catch (error) {
-                console.error("Error in save process:", error);
-                setSaveError("Failed to save survey. Please try again.");
-              }
-            }}
+            onClick={handleSaveClick}
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save Survey"}
@@ -788,14 +834,6 @@ const SurvayScratch = () => {
             }
           >
             Preview
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg text-md w-full sm:w-auto"
-            variant="next"
-            onClick={handleCreateSurveyData}
-            disabled={isSaving}
-          >
-            {isSaving ? "Creating Survey..." : "Create & Send Survey"}
           </Button>
         </div>
         {saveError && <div className="text-red-600 mt-2">{saveError}</div>}
