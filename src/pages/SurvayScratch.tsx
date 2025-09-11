@@ -54,7 +54,7 @@ const SurvayScratch = () => {
       const questionsData = JSON.parse(localStorage.getItem("savedQuestions") || "[]");
       
       // Get user groups data from localStorage
-      const userGroupsData = JSON.parse(localStorage.getItem("SurveyUsers") || "[]");
+      const userGroupsData = JSON.parse(localStorage.getItem("CompanyUsers") || "[]");
       
       if (!projectData.id || questionsData.length === 0 || userGroupsData.length === 0) {
         console.error("Missing required data in localStorage");

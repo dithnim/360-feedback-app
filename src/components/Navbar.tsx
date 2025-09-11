@@ -42,7 +42,25 @@ const Navbar = () => {
                 </div>
                 <div className="text-sm text-gray-500 flex items-center gap-1">
                   <i className="bx bx-calendar text-xs"></i>
-                  Joined in August 2014
+                  {(() => {
+                    const storedData = localStorage.getItem("userData");
+                    if (storedData) {
+                      try {
+                        const userData = JSON.parse(storedData);
+                        if (userData.loginTime) {
+                          const date = new Date(userData.loginTime);
+                          const month = date.toLocaleDateString("en-US", {
+                            month: "long",
+                          });
+                          const year = date.getFullYear();
+                          return `Joined on ${month.slice(0, 3)} ${year}`;
+                        }
+                      } catch (e) {
+                        // Silent fail
+                      }
+                    }
+                    return "Active member";
+                  })()}
                 </div>
               </div>
             </div>

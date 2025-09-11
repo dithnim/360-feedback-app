@@ -17,6 +17,9 @@ const FeedbackReport = lazy(
 const FeedbackReport2 = lazy(
   () => import("../report/FeedbackReport/FeedbackReport2.tsx")
 );
+const FeedbackReport3 = lazy(
+  () => import("../report/FeedbackReport/FeedbackReport3.tsx")
+);
 const Login = lazy(() => import("./pages/login.tsx"));
 const CurrentProjects = lazy(() => import("./pages/currentProjects.tsx"));
 import { UserProvider, useUser } from "./context/UserContext";
@@ -61,6 +64,9 @@ function AppRoutes() {
       <Route path="/survey/participate" element={<SurveyParticipation />} />
       <Route path="/survey-thank-you" element={<SurveyThankYou />} />
       <Route path="/survey-demo" element={<SurveyDemo />} />
+      <Route path="/feedback-report" element={<FeedbackReport />} />
+      <Route path="/feedback-report2" element={<FeedbackReport2 />} />
+      <Route path="/feedback-report3" element={<FeedbackReport3 />} />
       <Route
         path="/"
         element={
@@ -122,22 +128,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CreateTeam />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/feedback-report"
-        element={
-          <ProtectedRoute>
-            <FeedbackReport />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/feedback-report2"
-        element={
-          <ProtectedRoute>
-            <FeedbackReport2 />
           </ProtectedRoute>
         }
       />

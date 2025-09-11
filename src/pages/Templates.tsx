@@ -1,11 +1,13 @@
 import Navbar from "../components/Navbar";
 import MailImg from "../../imgs/mail.png";
 
+import PageNav from "@/components/ui/pageNav";
+
 const Templates = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Navbar */}
-      <Navbar />
+      <PageNav title="View Templates" position="Placeholder" />
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">

@@ -476,7 +476,7 @@ const Project = () => {
           JSON.stringify(updatedCompanyUsers)
         );
       } else {
-        localStorage.removeItem("CompanyUsers");
+        // localStorage.removeItem("CompanyUsers");
       }
 
       if (editIndex === index) {
@@ -1765,12 +1765,12 @@ const Project = () => {
                     }
 
                     // Clear all form data and localStorage after successful completion
-                    localStorage.removeItem("Company");
-                    localStorage.removeItem("CompanyFormData");
-                    localStorage.removeItem("CompanyUsers");
-                    localStorage.removeItem("SurveyUsers");
-                    localStorage.removeItem("Project");
-                    localStorage.removeItem("companyUsers");
+                    // localStorage.removeItem("Company");
+                    // localStorage.removeItem("CompanyFormData");
+                    // localStorage.removeItem("CompanyUsers");
+                    // localStorage.removeItem("SurveyUsers");
+                    // localStorage.removeItem("Project");
+                    // localStorage.removeItem("companyUsers");
 
                     // Reset all form states
                     resetCompany();
