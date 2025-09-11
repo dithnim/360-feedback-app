@@ -27,6 +27,8 @@ import {
   deleteUserByCompanyId,
 } from "./lib/apiService";
 
+import { sendEmail } from "./lib/mailService";
+
 function Home() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
