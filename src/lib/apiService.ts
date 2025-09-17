@@ -212,13 +212,10 @@ export async function createCompanyUsers(
     );
   }
 
-  const responseText = await response.text();
-  return responseText;
+  return response;
 }
 
-export async function createSurveyUsers(
-  users: CreateUserData[]
-): Promise<any> {
+export async function createSurveyUsers(users: CreateUserData[]): Promise<any> {
   const token = localStorage.getItem("token");
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -405,5 +402,5 @@ export interface SurveyCreationData {
 export async function createSurveyAll(
   surveyData: SurveyCreationData
 ): Promise<any> {
-  return apiPost<any>("/survey/all", surveyData);
+  return apiPost<any>("/project/survey/all", surveyData);
 }

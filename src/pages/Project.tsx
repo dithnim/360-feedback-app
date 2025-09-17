@@ -27,10 +27,13 @@ interface ProjectFormData {
 }
 
 interface CompanyUserFormData {
-  id: number;
   name: string;
   email: string;
   designation: string;
+}
+
+interface CompanyUserWithId extends CompanyUserFormData {
+  id: number;
   companyId: string;
 }
 
@@ -112,15 +115,7 @@ const Project = () => {
   };
 
   //!Company User Handler
-  const [companyUsers, setCompanyUsers] = useState<
-    {
-      id: number;
-      name: string;
-      email: string;
-      designation: string;
-      companyId: string;
-    }[]
-  >([]);
+  const [companyUsers, setCompanyUsers] = useState<CompanyUserWithId[]>([]);
   const {
     register: registerInfo,
     handleSubmit: handleSubmitInfo,
@@ -211,17 +206,63 @@ const Project = () => {
     );
     const transformedUsers: UserData[] = storedUsers.map(
       (participant: any, index: number) => ({
-        id: participant.id || index + 1,
+        id: Date.now() + index,
         name: participant.name,
         email: participant.email,
         designation: participant.designation,
-        type:
-          (participant.appraisee as "Appraisee" | "Appraiser") || "Appraisee",
-        role: participant.role || "Peer",
       })
     );
     setUsers(transformedUsers);
   }, [pageCase]);
+
+  // Update users state whenever companyUsers is updated (to reflect server-generated IDs)
+  useEffect(() => {
+    if (pageCase === 4 && companyUsers.length > 0) {
+      const transformedUsers: UserData[] = companyUsers.map(
+        (participant: any, index: number) => ({
+          id: Date.now() + index,
+          name: participant.name,
+          email: participant.email,
+          designation: participant.designation,
+        })
+      );
+      setUsers(transformedUsers);
+    }
+  }, [companyUsers, pageCase]);
+
+  // Update user groups when users are updated with server-generated IDs
+  useEffect(() => {
+    if (pageCase === 4 && users.length > 0 && userGroups.length > 0) {
+      // Update existing user groups with the new user IDs
+      const updatedUserGroups = userGroups.map((group) => {
+        const updatedAppraisee = group.appraisee
+          ? users.find((user) => user.email === group.appraisee?.email) ||
+            group.appraisee
+          : null;
+
+        const updatedAppraisers = group.appraisers.map(
+          (appraiser) =>
+            users.find((user) => user.email === appraiser.email) || appraiser
+        );
+
+        return {
+          ...group,
+          appraisee: updatedAppraisee,
+          appraisers: updatedAppraisers,
+        };
+      });
+
+      // Only update if there are actual changes
+      if (JSON.stringify(updatedUserGroups) !== JSON.stringify(userGroups)) {
+        setUserGroups(updatedUserGroups);
+        // Update localStorage with the refreshed user groups
+        localStorage.setItem(
+          LS_KEYS.surveyUsers,
+          JSON.stringify(updatedUserGroups)
+        );
+      }
+    }
+  }, [users, pageCase]);
 
   // Watch company form values to save to localStorage only when on company page
   const watchedCompanyValues = pageCase === 1 ? watchCompany() : {};
@@ -406,23 +447,129 @@ const Project = () => {
           return false;
         }
 
-        // Transform companyUsers data to match API structure
+        // Validate company users data
+        if (!companyUsersData || companyUsersData.length === 0) {
+          console.error("No company users data provided");
+          setUserCreationError("No users to create");
+          return false;
+        }
+
+        // Validate each user has required fields
+        for (const user of companyUsersData) {
+          if (!user.name || !user.email || !user.designation) {
+            console.error("Invalid user data:", user);
+            setUserCreationError(
+              "All user fields (name, email, designation) are required"
+            );
+            return false;
+          }
+        }
+
+        // Transform companyUsers data to match API structure (exclude frontend-generated IDs)
         const usersPayload: CreateUserData[] = companyUsersData.map(
           (companyUser) => ({
             name: companyUser.name,
             email: companyUser.email,
             designation: companyUser.designation,
             companyId: companyId,
+            // Explicitly exclude frontend-generated id - backend will generate its own
           })
         );
 
+        console.log(
+          "Original company users data (with frontend IDs):",
+          companyUsersData
+        );
+        console.log(
+          "Sending user creation payload (IDs excluded):",
+          usersPayload
+        );
+        console.log("Company ID:", companyId);
+
         const response = await createCompanyUsers(usersPayload);
+
+        console.log("API Response:", response);
+        console.log("Response type:", typeof response);
+        console.log("Is Array:", Array.isArray(response));
+
+        // Handle different response formats
+        let usersWithIds: any[] = [];
+
+        if (response && Array.isArray(response)) {
+          // Response is an array of created users
+          usersWithIds = response.map((createdUser: any, index: number) => ({
+            ...companyUsersData[index], // Original form data
+            id:
+              parseInt(createdUser.id) ||
+              parseInt(createdUser._id) ||
+              Date.now() + index, // API-generated ID converted to number
+            companyId: companyId,
+          }));
+        } else if (response && response.data && Array.isArray(response.data)) {
+          // Response has data property containing the array
+          usersWithIds = response.data.map(
+            (createdUser: any, index: number) => ({
+              ...companyUsersData[index], // Original form data
+              id:
+                parseInt(createdUser.id) ||
+                parseInt(createdUser._id) ||
+                Date.now() + index,
+              companyId: companyId,
+            })
+          );
+        } else if (
+          response &&
+          response.users &&
+          Array.isArray(response.users)
+        ) {
+          // Response has users property containing the array
+          usersWithIds = response.users.map(
+            (createdUser: any, index: number) => ({
+              ...companyUsersData[index], // Original form data
+              id:
+                parseInt(createdUser.id) ||
+                parseInt(createdUser._id) ||
+                Date.now() + index,
+              companyId: companyId,
+            })
+          );
+        } else if (response) {
+          // Response exists but is not in expected format - use fallback IDs
+          console.log(
+            "Response is not in expected array format, using fallback IDs"
+          );
+          usersWithIds = companyUsersData.map((companyUser, index) => ({
+            ...companyUser,
+            id: Date.now() + index,
+            companyId: companyId,
+          }));
+        } else {
+          throw new Error("No response received from server");
+        }
+
+        // Update the local state
+        setCompanyUsers(usersWithIds);
+
+        // Store in localStorage with the IDs
+        localStorage.setItem(
+          LS_KEYS.companyUsers,
+          JSON.stringify(usersWithIds)
+        );
+
+        console.log("Created company users with IDs:", usersWithIds);
+
         // Users created successfully
         setUserCreationError("");
         return true;
       } catch (error: any) {
+        console.error("User creation error:", error);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+
         if (error.message && error.message.includes("dup key")) {
           setUserCreationError("Duplicate emails found");
+        } else if (error.message) {
+          setUserCreationError(`Failed to create users: ${error.message}`);
         } else {
           setUserCreationError("Failed to create users. Please try again.");
         }
@@ -457,7 +604,6 @@ const Project = () => {
           name: "",
           email: "",
           designation: "",
-          companyId: "",
         });
       }
     },
@@ -598,8 +744,23 @@ const Project = () => {
         setCompanyUsers(updatedCompanyUsers);
         setEditIndex(null);
       } else {
-        // Add new participant
-        const newParticipant = { ...data, id: Date.now() };
+        // Add new participant with frontend-generated ID for local state management only
+        const companyStr = localStorage.getItem("Company");
+        let companyId = "";
+        if (companyStr) {
+          try {
+            const companyObj = JSON.parse(companyStr);
+            companyId = companyObj.id || "";
+          } catch (e) {
+            console.error("Error parsing company data:", e);
+          }
+        }
+
+        const newParticipant: CompanyUserWithId = {
+          ...data,
+          id: Date.now(), // Generate frontend ID for local state management only
+          companyId: companyId,
+        };
         const updatedParticipants = [...companyUsers, newParticipant];
         setCompanyUsers(updatedParticipants);
       }
@@ -1412,7 +1573,7 @@ const Project = () => {
                     }
                     // Save the complete user groups data instead of just selected user IDs
                     localStorage.setItem(
-                      "SurveyUsers",
+                      LS_KEYS.surveyUsers,
                       JSON.stringify(userGroups)
                     );
                     handleNext();
@@ -1717,20 +1878,50 @@ const Project = () => {
                   onClick={async () => {
                     setIsSubmitting(true);
 
+                    alert("Creating Users & Finalizing...");
+
                     // Create users before finishing if participants exist
                     const participantsData = localStorage.getItem(
-                      LS_KEYS.companyUsers
+                      LS_KEYS.surveyUsers
                     );
                     if (participantsData) {
                       try {
                         const participants = JSON.parse(participantsData);
                         if (participants.length > 0) {
-                          const success = await createSurveyUsers(participants);
-                          if (!success) {
+                          const response =
+                            await createSurveyUsers(participants);
+
+                          if (response && Array.isArray(response)) {
+                            // Store the created survey users with their IDs in local storage
+                            const surveyUsersWithIds = response.map(
+                              (createdUser: any, index: number) => ({
+                                ...participants[index], // Original form data
+                                id:
+                                  createdUser.id ||
+                                  createdUser._id ||
+                                  `survey_fallback_${Date.now()}_${index}`, // API-generated ID
+                              })
+                            );
+
+                            // Store updated survey users with IDs back to localStorage
+                            localStorage.setItem(
+                              LS_KEYS.surveyUsers,
+                              JSON.stringify(surveyUsersWithIds)
+                            );
+
+                            console.log(
+                              "Created survey users with IDs:",
+                              surveyUsersWithIds
+                            );
+                          } else if (!response) {
                             setIsSubmitting(false);
                             return; // Don't proceed if user creation failed
                           }
                         }
+                        console.log(
+                          "Participants data found:",
+                          participantsData
+                        );
                       } catch (error) {
                         console.error("Error parsing participants:", error);
                       }

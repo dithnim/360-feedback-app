@@ -100,16 +100,19 @@ const SurvayScratch = () => {
       const questionsData = JSON.parse(
         localStorage.getItem("savedQuestions") || "[]"
       );
-      const userGroupsData = JSON.parse(
-        localStorage.getItem("CompanyUsers") || "[]"
+      const surveyUsersData = JSON.parse(
+        localStorage.getItem("SurveyUsers") || "[]"
       );
 
       if (
         !projectData.id ||
         questionsData.length === 0 ||
-        userGroupsData.length === 0
+        surveyUsersData.length === 0
       ) {
         console.error("Missing required data in localStorage");
+        console.log("Project data:", projectData);
+        console.log("Questions data:", questionsData);
+        console.log("Survey Users data:", surveyUsersData);
         return null;
       }
 
@@ -119,31 +122,46 @@ const SurvayScratch = () => {
 
       const users: SurveyData["users"] = [];
 
-      userGroupsData.forEach((group: any) => {
-        if (group.appraisee) {
+      // Process Survey Users data
+      surveyUsersData.forEach((userGroup: any) => {
+        // Add appraisee (the person being evaluated)
+        if (userGroup.appraisee) {
           users.push({
-            userId: group.appraisee.id.toString(),
+            userId: userGroup.appraisee.id, // Use raw ID from DB
             appraiser: false,
-            role: group.appraisee.role,
+            role:
+              userGroup.appraisee.role ||
+              userGroup.appraisee.designation ||
+              "Employee",
           });
         }
 
-        if (group.appraisers && Array.isArray(group.appraisers)) {
-          group.appraisers.forEach((appraiser: any) => {
+        // Add appraisers (the people doing the evaluation)
+        if (userGroup.appraisers && Array.isArray(userGroup.appraisers)) {
+          userGroup.appraisers.forEach((appraiser: any) => {
             users.push({
-              userId: appraiser.id.toString(),
+              userId: appraiser.id, // Use raw ID from DB
               appraiser: true,
-              role: appraiser.role,
+              role: appraiser.role || appraiser.designation || "Appraiser",
             });
           });
         }
       });
 
-      // Remove duplicates
+      // Remove duplicates based on userId
       const uniqueUsers = users.filter(
         (user, index, self) =>
           index === self.findIndex((u) => u.userId === user.userId)
       );
+
+      console.log("Created survey data:", {
+        survey: {
+          surveyName: surveyName || "360 Feedback Survey",
+          projectId: projectData.id,
+        },
+        questions,
+        users: uniqueUsers,
+      });
 
       return {
         survey: {
@@ -382,9 +400,22 @@ const SurvayScratch = () => {
       setIsSaving(true);
       setSaveError(null);
 
+      // Validate that survey is ready for submission
+      if (templatePreviews.length === 0) {
+        throw new Error(
+          "Please add at least one competency with questions before submitting."
+        );
+      }
+
+      if (!surveyName.trim()) {
+        throw new Error("Please enter a survey name before submitting.");
+      }
+
       const surveyData = createSurveyFromLocalStorage();
       if (!surveyData) {
-        throw new Error("Failed to create survey data from localStorage.");
+        throw new Error(
+          "Failed to create survey data from localStorage. Please ensure all required data is saved."
+        );
       }
 
       console.log("Sending Survey Data to API:", surveyData);
@@ -394,18 +425,26 @@ const SurvayScratch = () => {
       localStorage.setItem("SurveyResponse", JSON.stringify(response));
 
       alert(
-        `Survey created successfully!\n\nSurvey Name: ${surveyData.survey.surveyName}\nProject ID: ${surveyData.survey.projectId}\nQuestions: ${surveyData.questions.length}\nUsers: ${surveyData.users.length}`
+        `🎉 Survey submitted successfully!\n\n` +
+          `Survey Name: ${surveyData.survey.surveyName}\n` +
+          `Project ID: ${surveyData.survey.projectId}\n` +
+          `Questions: ${surveyData.questions.length}\n` +
+          `Users: ${surveyData.users.length}\n\n` +
+          `The survey has been created and is ready for participants.`
       );
+
+      // Optionally navigate to a success page or clear the form
+      // navigate("/surveys"); // Uncomment if you want to redirect
     } catch (error: any) {
       console.error("Error creating survey:", error);
       setSaveError(
-        error.message || "Failed to create survey. Please try again."
+        error.message || "Failed to submit survey. Please try again."
       );
-      alert(`Failed to create survey: ${error.message}`);
+      alert(`❌ Failed to submit survey:\n\n${error.message}`);
     } finally {
       setIsSaving(false);
     }
-  }, [createSurveyFromLocalStorage]);
+  }, [createSurveyFromLocalStorage, templatePreviews.length, surveyName]);
 
   // Preview Component
   const PreviewCompetency = useMemo(() => {
@@ -825,6 +864,13 @@ const SurvayScratch = () => {
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save Survey"}
+          </Button>
+          <Button
+            className="bg-[#ed3f41] hover:bg-[#d23539] text-white font-semibold px-4 py-2 rounded-lg text-md w-full sm:w-auto"
+            onClick={handleCreateSurveyData}
+            disabled={isSaving || templatePreviews.length === 0}
+          >
+            {isSaving ? "Submitting..." : "Submit Survey"}
           </Button>
           <Button
             className="bg-transparent border border-[#ed3f41] text-[#ed3f41] font-semibold px-2 py-1 rounded-lg text-md w-full sm:w-auto"
