@@ -298,6 +298,7 @@ const Project = () => {
     }[]
   >([]);
   const [groupCounter, setGroupCounter] = useState(1);
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
 
   const handleRoleChange = useCallback((id: number, newRole: string) => {
     setUsers((prevUsers) =>
@@ -353,8 +354,13 @@ const Project = () => {
 
     const newGroup = {
       id: groupCounter,
-      appraisee,
-      appraisers,
+      appraisee: appraisee
+        ? { ...appraisee, role: appraisee.role || "" }
+        : null,
+      appraisers: appraisers.map((appraiser) => ({
+        ...appraiser,
+        role: appraiser.role || "",
+      })),
     };
 
     // Update state with the new group
@@ -380,6 +386,125 @@ const Project = () => {
     },
     [userGroups]
   );
+
+  const handleEditUserGroup = useCallback(
+    (groupId: number) => {
+      const groupToEdit = userGroups.find((group) => group.id === groupId);
+      if (!groupToEdit) return;
+
+      // Set editing mode
+      setEditingGroupId(groupId);
+
+      // Clear current selections
+      setSelectedUsers(new Set());
+      setUserTypes({});
+
+      // Populate form with existing group data by matching emails instead of IDs
+      const groupUserIds = new Set<number>();
+      const groupUserTypes: Record<number, string> = {};
+
+      if (groupToEdit.appraisee) {
+        // Find current user by email
+        const currentAppraisee = users.find(
+          (user) => user.email === groupToEdit.appraisee?.email
+        );
+        if (currentAppraisee) {
+          groupUserIds.add(currentAppraisee.id);
+          groupUserTypes[currentAppraisee.id] = "Appraisee";
+        }
+      }
+
+      groupToEdit.appraisers.forEach((appraiser) => {
+        // Find current user by email
+        const currentAppraiser = users.find(
+          (user) => user.email === appraiser.email
+        );
+        if (currentAppraiser) {
+          groupUserIds.add(currentAppraiser.id);
+          groupUserTypes[currentAppraiser.id] = "Appraiser";
+        }
+      });
+
+      setSelectedUsers(groupUserIds);
+      setUserTypes(groupUserTypes);
+
+      // Update users state to reflect the roles from the editing group
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => {
+          // Check if this user is the appraisee by email
+          if (
+            groupToEdit.appraisee &&
+            user.email === groupToEdit.appraisee.email
+          ) {
+            return { ...user, role: groupToEdit.appraisee.role || "" };
+          }
+
+          // Check if this user is one of the appraisers by email
+          const appraiser = groupToEdit.appraisers.find(
+            (app) => app.email === user.email
+          );
+          if (appraiser) {
+            return { ...user, role: appraiser.role || "" };
+          }
+
+          // For users not in the editing group, keep their current role
+          return user;
+        })
+      );
+    },
+    [userGroups, users]
+  );
+
+  const handleUpdateUserGroup = useCallback(() => {
+    if (editingGroupId === null) return;
+
+    const selectedUserIds = Array.from(selectedUsers);
+    if (selectedUserIds.length === 0) return;
+
+    const selectedUsersData = users.filter((user) =>
+      selectedUserIds.includes(user.id)
+    );
+    const appraisee =
+      selectedUsersData.find((user) => userTypes[user.id] === "Appraisee") ||
+      null;
+    const appraisers = selectedUsersData.filter(
+      (user) => userTypes[user.id] === "Appraiser"
+    );
+
+    if (!appraisee && appraisers.length === 0) return;
+
+    // Update the existing group with current roles from users state
+    const updatedGroups = userGroups.map((group) =>
+      group.id === editingGroupId
+        ? {
+            ...group,
+            appraisee: appraisee
+              ? { ...appraisee, role: appraisee.role || "" }
+              : null,
+            appraisers: appraisers.map((appraiser) => ({
+              ...appraiser,
+              role: appraiser.role || "",
+            })),
+          }
+        : group
+    );
+
+    setUserGroups(updatedGroups);
+
+    // Immediately save to localStorage
+    localStorage.setItem(LS_KEYS.surveyUsers, JSON.stringify(updatedGroups));
+
+    // Reset editing state and selections
+    setEditingGroupId(null);
+    setSelectedUsers(new Set());
+    setUserTypes({});
+  }, [editingGroupId, selectedUsers, users, userTypes, userGroups]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingGroupId(null);
+    setSelectedUsers(new Set());
+    setUserTypes({});
+  }, []);
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -1668,14 +1793,59 @@ const Project = () => {
                 </tbody>
               </table>
             </div>
-            <Button
-              variant="save"
-              className={`mt-10 p-6 text-lg  ${selectedUsers.size === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-              onClick={handleAddUserGroup}
-              disabled={selectedUsers.size === 0}
-            >
-              Add Selected Users
-            </Button>
+            {editingGroupId !== null && (
+              <div className="mb-4 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-blue-600 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <div>
+                    <h4 className="text-blue-800 font-medium">
+                      Editing Group #{editingGroupId}
+                    </h4>
+                    <p className="text-blue-700 text-sm">
+                      Modify the selections below and click "Update Group" to
+                      save changes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-3 mt-10">
+              <Button
+                variant="save"
+                className={`p-6 text-lg  ${selectedUsers.size === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                onClick={
+                  editingGroupId !== null
+                    ? handleUpdateUserGroup
+                    : handleAddUserGroup
+                }
+                disabled={selectedUsers.size === 0}
+              >
+                {editingGroupId !== null
+                  ? "Update Group"
+                  : "Add Selected Users"}
+              </Button>
+              {editingGroupId !== null && (
+                <Button
+                  variant="previous"
+                  className="p-6 text-lg cursor-pointer"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel Edit
+                </Button>
+              )}
+            </div>
             <div className="review-section mt-8">
               {userGroups.length > 0 && (
                 <div className="mb-10">
@@ -1774,6 +1944,7 @@ const Project = () => {
                               <div className="flex items-center justify-center space-x-2">
                                 <Button
                                   variant="delete"
+                                  onClick={() => handleEditUserGroup(group.id)}
                                   className="p-3 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg transition-all duration-200 hover:shadow-md group"
                                   title="Edit Group"
                                 >
@@ -1832,8 +2003,6 @@ const Project = () => {
                   className="font-semibold text-xl flex items-center justify-center p-6"
                   onClick={async () => {
                     setIsSubmitting(true);
-
-                    alert("Creating Users & Finalizing...");
 
                     // Create users before finishing if participants exist
                     const participantsData = localStorage.getItem(
@@ -1912,12 +2081,7 @@ const Project = () => {
 
                     setIsSubmitting(false);
 
-                    // Show completion popup before navigating
-                    setShowCompletionPopup(true);
-                    setTimeout(() => {
-                      setShowCompletionPopup(false);
-                      navigate("/create");
-                    }, 2000);
+                    navigate("/create");
                   }}
                   disabled={userGroups.length === 0 || isSubmitting}
                 >
@@ -2008,9 +2172,6 @@ const Project = () => {
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                       <tr className="border-b border-gray-300">
                         <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
-                          Group #
-                        </th>
-                        <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
                           Appraisee
                         </th>
                         <th className="text-left py-5 px-6 font-bold text-gray-800 text-sm uppercase tracking-wider">
@@ -2029,13 +2190,6 @@ const Project = () => {
                             index % 2 === 0 ? "bg-white" : "bg-gray-25"
                           }`}
                         >
-                          <td className="py-6 px-6 align-top">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                {group.id}
-                              </div>
-                            </div>
-                          </td>
                           <td className="py-6 px-6 align-top">
                             {group.appraisee ? (
                               <div className="flex items-start space-x-3 max-w-sm">

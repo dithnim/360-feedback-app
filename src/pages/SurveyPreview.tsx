@@ -1,14 +1,169 @@
+import { useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageNav from "../components/ui/pageNav";
+import { createSurveyAll } from "../lib/apiService";
+
+interface SurveyData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+  users: {
+    userId: string;
+    appraiser: boolean;
+    role: string;
+  }[];
+}
 
 const SurveyPreview = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // State for submission
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   // Data passed from SurvayScratch via location.state
   const templatePreviews = location.state?.templatePreviews || [];
+  const surveyName = location.state?.surveyName || "";
+
   // For this preview, show the first competency (can be extended for multi-step)
   const competency = templatePreviews[0];
+
+  // Create survey from localStorage function
+  const createSurveyFromLocalStorage = useCallback((): SurveyData | null => {
+    try {
+      const projectData = JSON.parse(localStorage.getItem("Project") || "{}");
+      const questionsData = JSON.parse(
+        localStorage.getItem("savedQuestions") || "[]"
+      );
+      const surveyUsersData = JSON.parse(
+        localStorage.getItem("SurveyUsers") || "[]"
+      );
+
+      if (
+        !projectData.id ||
+        questionsData.length === 0 ||
+        surveyUsersData.length === 0
+      ) {
+        console.error("Missing required data in localStorage");
+        console.log("Project data:", projectData);
+        console.log("Questions data:", questionsData);
+        console.log("Survey Users data:", surveyUsersData);
+        return null;
+      }
+
+      const questions = questionsData.map((q: any) => ({
+        questionId: q.questionId,
+      }));
+
+      const users: SurveyData["users"] = [];
+
+      // Process Survey Users data
+      surveyUsersData.forEach((userGroup: any) => {
+        // Add appraisee (the person being evaluated)
+        if (userGroup.appraisee) {
+          users.push({
+            userId: userGroup.appraisee.id,
+            appraiser: false,
+            role:
+              userGroup.appraisee.role ||
+              userGroup.appraisee.designation ||
+              "Employee",
+          });
+        }
+
+        // Add appraisers (the people doing the evaluation)
+        if (userGroup.appraisers && Array.isArray(userGroup.appraisers)) {
+          userGroup.appraisers.forEach((appraiser: any) => {
+            users.push({
+              userId: appraiser.id,
+              appraiser: true,
+              role: appraiser.role || appraiser.designation || "Appraiser",
+            });
+          });
+        }
+      });
+
+      // Remove duplicates based on userId
+      const uniqueUsers = users.filter(
+        (user, index, self) =>
+          index === self.findIndex((u) => u.userId === user.userId)
+      );
+
+      return {
+        survey: {
+          surveyName: surveyName || "360 Feedback Survey",
+          projectId: projectData.id,
+        },
+        questions,
+        users: uniqueUsers,
+      };
+    } catch (error) {
+      console.error("Error creating survey from localStorage:", error);
+      return null;
+    }
+  }, [surveyName]);
+
+  // Handle creating survey data
+  const handleCreateSurveyData = useCallback(async () => {
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+
+      // Validate that survey is ready for submission
+      if (templatePreviews.length === 0) {
+        throw new Error(
+          "Please add at least one competency with questions before submitting."
+        );
+      }
+
+      if (!surveyName.trim()) {
+        throw new Error("Please enter a survey name before submitting.");
+      }
+
+      const surveyData = createSurveyFromLocalStorage();
+      if (!surveyData) {
+        throw new Error(
+          "Failed to create survey data from localStorage. Please ensure all required data is saved."
+        );
+      }
+
+      console.log("Sending Survey Data to API:", surveyData);
+      const response = await createSurveyAll(surveyData);
+      console.log("Survey creation response:", response);
+
+      localStorage.setItem("SurveyResponse", JSON.stringify(response));
+
+      alert(
+        `🎉 Survey submitted successfully!\n\n` +
+          `Survey Name: ${surveyData.survey.surveyName}\n` +
+          `Project ID: ${surveyData.survey.projectId}\n` +
+          `Questions: ${surveyData.questions.length}\n` +
+          `Users: ${surveyData.users.length}\n\n` +
+          `The survey has been created and is ready for participants.`
+      );
+
+      // Navigate back to surveys or dashboard
+      navigate("/");
+    } catch (error: any) {
+      console.error("Error creating survey:", error);
+      setSaveError(
+        error.message || "Failed to submit survey. Please try again."
+      );
+      alert(`❌ Failed to submit survey:\n\n${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    createSurveyFromLocalStorage,
+    templatePreviews.length,
+    surveyName,
+    navigate,
+  ]);
 
   if (!competency) {
     return (
@@ -72,15 +227,19 @@ const SurveyPreview = () => {
                   className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 font-semibold"
                   onClick={() => navigate(-1)}
                 >
-                  Previous
+                  Back to Edit
                 </button>
                 <button
-                  className="bg-green-700 hover:bg-green-800 text-white rounded px-6 py-2 font-semibold"
-                  disabled
+                  className="bg-[#ed3f41] hover:bg-[#d23539] text-white font-semibold px-4 py-2 rounded-lg"
+                  onClick={handleCreateSurveyData}
+                  disabled={isSaving || templatePreviews.length === 0}
                 >
-                  NEXT
+                  {isSaving ? "Submitting..." : "Submit Survey"}
                 </button>
               </div>
+              {saveError && (
+                <div className="text-red-600 mt-2">{saveError}</div>
+              )}
             </div>
           </div>
         </main>

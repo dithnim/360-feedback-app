@@ -488,8 +488,12 @@ const SurvayScratch = () => {
             </button>
           </div>
         </div>
-        <div className="mb-2 text-sm font-medium text-black">
-          {description || <span className="text-gray-400">No description</span>}
+        <div className="mb-3 text-sm text-gray-700 leading-relaxed">
+          {description || (
+            <span className="text-gray-400 italic">
+              No description provided
+            </span>
+          )}
         </div>
         <ul className="list-disc ml-6">
           {questions.map((q) => (
@@ -845,6 +849,7 @@ const SurvayScratch = () => {
           <div key={idx}>
             <CompetencySection
               title={item.competency}
+              description={item.description}
               questions={item.questions.map((q) => ({
                 id: q.id.toString(),
                 text: q.text,
@@ -866,17 +871,15 @@ const SurvayScratch = () => {
             {isSaving ? "Saving..." : "Save Survey"}
           </Button>
           <Button
-            className="bg-[#ed3f41] hover:bg-[#d23539] text-white font-semibold px-4 py-2 rounded-lg text-md w-full sm:w-auto"
-            onClick={handleCreateSurveyData}
-            disabled={isSaving || templatePreviews.length === 0}
-          >
-            {isSaving ? "Submitting..." : "Submit Survey"}
-          </Button>
-          <Button
             className="bg-transparent border border-[#ed3f41] text-[#ed3f41] font-semibold px-2 py-1 rounded-lg text-md w-full sm:w-auto"
             variant="next"
             onClick={() =>
-              navigate("/survey-preview", { state: { templatePreviews } })
+              navigate("/survey-preview", {
+                state: {
+                  templatePreviews,
+                  surveyName,
+                },
+              })
             }
           >
             Preview

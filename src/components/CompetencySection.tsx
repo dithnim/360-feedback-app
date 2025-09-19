@@ -15,6 +15,7 @@ interface LikertQuestion {
 
 interface CompetencySectionProps {
   title: string;
+  description?: string;
   questions: LikertQuestion[];
   commentLabel?: string;
 }
@@ -42,6 +43,7 @@ const yesNoOptions = [
 
 const CompetencySection: React.FC<CompetencySectionProps> = ({
   title,
+  description,
   questions,
   commentLabel = "",
 }) => {
@@ -149,6 +151,7 @@ const CompetencySection: React.FC<CompetencySectionProps> = ({
     <div className="bg-white rounded-lg pb-6 w-full mx-auto border border-gray-200 mt-6">
       <div className="bg-green-700 text-white rounded-t-lg px-6 py-5 mb-6">
         <h2 className="text-xl font-semibold">{title}</h2>
+        <p>{description}</p>
       </div>
       <div className="space-y-8 p-6 rounded-lg">
         {questions.map((q, idx) => (
