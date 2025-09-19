@@ -212,7 +212,7 @@ export async function createCompanyUsers(
     );
   }
 
-  return response;
+  return response.json();
 }
 
 export async function createSurveyUsers(users: CreateUserData[]): Promise<any> {

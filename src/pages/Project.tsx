@@ -33,7 +33,7 @@ interface CompanyUserFormData {
 }
 
 interface CompanyUserWithId extends CompanyUserFormData {
-  id: number;
+  id: number; // Temporary frontend ID for UI - backend generates the real ID
   companyId: string;
 }
 
@@ -197,9 +197,11 @@ const Project = () => {
     }
   }, [pageCase]);
 
-  // Page 4: transform company users into role assignment list
+  // Page 4: transform company users into role assignment list and load existing user groups
   useEffect(() => {
     if (pageCase !== 4) return;
+
+    // Load company users
     const storedUsers = safeParse<any[]>(
       localStorage.getItem(LS_KEYS.companyUsers),
       []
@@ -213,6 +215,19 @@ const Project = () => {
       })
     );
     setUsers(transformedUsers);
+
+    // Load existing user groups from localStorage
+    const existingGroups = safeParse<any[]>(
+      localStorage.getItem(LS_KEYS.surveyUsers),
+      []
+    );
+
+    if (existingGroups.length > 0) {
+      setUserGroups(existingGroups);
+      // Set group counter to the next available ID
+      const maxId = Math.max(...existingGroups.map((group) => group.id), 0);
+      setGroupCounter(maxId + 1);
+    }
   }, [pageCase]);
 
   // Update users state whenever companyUsers is updated (to reflect server-generated IDs)
@@ -229,40 +244,6 @@ const Project = () => {
       setUsers(transformedUsers);
     }
   }, [companyUsers, pageCase]);
-
-  // Update user groups when users are updated with server-generated IDs
-  useEffect(() => {
-    if (pageCase === 4 && users.length > 0 && userGroups.length > 0) {
-      // Update existing user groups with the new user IDs
-      const updatedUserGroups = userGroups.map((group) => {
-        const updatedAppraisee = group.appraisee
-          ? users.find((user) => user.email === group.appraisee?.email) ||
-            group.appraisee
-          : null;
-
-        const updatedAppraisers = group.appraisers.map(
-          (appraiser) =>
-            users.find((user) => user.email === appraiser.email) || appraiser
-        );
-
-        return {
-          ...group,
-          appraisee: updatedAppraisee,
-          appraisers: updatedAppraisers,
-        };
-      });
-
-      // Only update if there are actual changes
-      if (JSON.stringify(updatedUserGroups) !== JSON.stringify(userGroups)) {
-        setUserGroups(updatedUserGroups);
-        // Update localStorage with the refreshed user groups
-        localStorage.setItem(
-          LS_KEYS.surveyUsers,
-          JSON.stringify(updatedUserGroups)
-        );
-      }
-    }
-  }, [users, pageCase]);
 
   // Watch company form values to save to localStorage only when on company page
   const watchedCompanyValues = pageCase === 1 ? watchCompany() : {};
@@ -376,17 +357,29 @@ const Project = () => {
       appraisers,
     };
 
-    setUserGroups((prev) => [...prev, newGroup]);
+    // Update state with the new group
+    const updatedGroups = [...userGroups, newGroup];
+    setUserGroups(updatedGroups);
     setGroupCounter((prev) => prev + 1);
+
+    // Immediately save to localStorage
+    localStorage.setItem(LS_KEYS.surveyUsers, JSON.stringify(updatedGroups));
 
     // Reset selection state
     setSelectedUsers(new Set());
     setUserTypes({});
-  }, [selectedUsers, users, userTypes, groupCounter]);
+  }, [selectedUsers, users, userTypes, groupCounter, userGroups]);
 
-  const handleRemoveUserGroup = useCallback((groupId: number) => {
-    setUserGroups((prev) => prev.filter((group) => group.id !== groupId));
-  }, []);
+  const handleRemoveUserGroup = useCallback(
+    (groupId: number) => {
+      const updatedGroups = userGroups.filter((group) => group.id !== groupId);
+      setUserGroups(updatedGroups);
+
+      // Immediately save to localStorage
+      localStorage.setItem(LS_KEYS.surveyUsers, JSON.stringify(updatedGroups));
+    },
+    [userGroups]
+  );
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -492,59 +485,21 @@ const Project = () => {
         console.log("Response type:", typeof response);
         console.log("Is Array:", Array.isArray(response));
 
-        // Handle different response formats
+        // Handle the response - it should be an array of created users directly
         let usersWithIds: any[] = [];
 
         if (response && Array.isArray(response)) {
-          // Response is an array of created users
-          usersWithIds = response.map((createdUser: any, index: number) => ({
-            ...companyUsersData[index], // Original form data
-            id:
-              parseInt(createdUser.id) ||
-              parseInt(createdUser._id) ||
-              Date.now() + index, // API-generated ID converted to number
-            companyId: companyId,
-          }));
-        } else if (response && response.data && Array.isArray(response.data)) {
-          // Response has data property containing the array
-          usersWithIds = response.data.map(
-            (createdUser: any, index: number) => ({
-              ...companyUsersData[index], // Original form data
-              id:
-                parseInt(createdUser.id) ||
-                parseInt(createdUser._id) ||
-                Date.now() + index,
-              companyId: companyId,
-            })
-          );
-        } else if (
-          response &&
-          response.users &&
-          Array.isArray(response.users)
-        ) {
-          // Response has users property containing the array
-          usersWithIds = response.users.map(
-            (createdUser: any, index: number) => ({
-              ...companyUsersData[index], // Original form data
-              id:
-                parseInt(createdUser.id) ||
-                parseInt(createdUser._id) ||
-                Date.now() + index,
-              companyId: companyId,
-            })
-          );
-        } else if (response) {
-          // Response exists but is not in expected format - use fallback IDs
-          console.log(
-            "Response is not in expected array format, using fallback IDs"
-          );
-          usersWithIds = companyUsersData.map((companyUser, index) => ({
-            ...companyUser,
-            id: Date.now() + index,
-            companyId: companyId,
+          // Response is an array of created users - filter only required attributes
+          usersWithIds = response.map((createdUser: any) => ({
+            id: createdUser.id,
+            name: createdUser.name,
+            email: createdUser.email,
+            designation: createdUser.designation,
+            companyId: createdUser.companyId,
+            // Exclude createdAt and passwordHash as requested
           }));
         } else {
-          throw new Error("No response received from server");
+          throw new Error("Invalid response format from server");
         }
 
         // Update the local state
@@ -744,7 +699,7 @@ const Project = () => {
         setCompanyUsers(updatedCompanyUsers);
         setEditIndex(null);
       } else {
-        // Add new participant with frontend-generated ID for local state management only
+        // Add new participant without ID - backend will generate ID when saved
         const companyStr = localStorage.getItem("Company");
         let companyId = "";
         if (companyStr) {
@@ -758,7 +713,7 @@ const Project = () => {
 
         const newParticipant: CompanyUserWithId = {
           ...data,
-          id: Date.now(), // Generate frontend ID for local state management only
+          id: Date.now(), // Temporary ID for UI only - backend will generate the real ID
           companyId: companyId,
         };
         const updatedParticipants = [...companyUsers, newParticipant];
