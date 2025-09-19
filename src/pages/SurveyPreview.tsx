@@ -25,13 +25,16 @@ const SurveyPreview = () => {
   // State for submission
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // State for competency navigation
+  const [currentCompetencyIndex, setCurrentCompetencyIndex] = useState(0);
 
   // Data passed from SurvayScratch via location.state
   const templatePreviews = location.state?.templatePreviews || [];
   const surveyName = location.state?.surveyName || "";
 
-  // For this preview, show the first competency (can be extended for multi-step)
-  const competency = templatePreviews[0];
+  // Current competency based on index
+  const currentCompetency = templatePreviews[currentCompetencyIndex];
+  const totalCompetencies = templatePreviews.length;
 
   // Create survey from localStorage function
   const createSurveyFromLocalStorage = useCallback((): SurveyData | null => {
@@ -108,6 +111,19 @@ const SurveyPreview = () => {
     }
   }, [surveyName]);
 
+  // Navigation helper functions
+  const handlePrevious = () => {
+    if (currentCompetencyIndex > 0) {
+      setCurrentCompetencyIndex((prev) => prev - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentCompetencyIndex < totalCompetencies - 1) {
+      setCurrentCompetencyIndex((prev) => prev + 1);
+    }
+  };
+
   // Handle creating survey data
   const handleCreateSurveyData = useCallback(async () => {
     try {
@@ -165,7 +181,7 @@ const SurveyPreview = () => {
     navigate,
   ]);
 
-  if (!competency) {
+  if (!currentCompetency || templatePreviews.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg text-gray-600">No preview data available.</div>
@@ -174,75 +190,132 @@ const SurveyPreview = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-row">
-      <div className="flex-1 flex flex-col min-h-screen">
-        <PageNav position="HR Manager" title="Preview Survey" />
+    <div className=" flex flex-col">
+      <PageNav position="HR Manager" title="Preview Survey" />
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center py-8">
-          <div className="w-full  bg-white rounded-xl  p-8">
-            {/* Competency Header */}
-            <div className="rounded-t-lg bg-green-700 px-6 py-4">
-              <div className="text-white font-bold text-lg">
-                {competency.competency}
+      {/* Main Content */}
+      <div className="py-20 bg-white flex items-center justify-center">
+        <div className="">
+          {/* Action Buttons at Top */}
+          <div className="flex justify-end w-full mb-4 gap-3 px-4">
+            <button
+              className="bg-gray-400 hover:bg-gray-500 text-white rounded-full px-6 py-2 font-semibold"
+              onClick={() => navigate(-1)}
+            >
+              Back to Edit
+            </button>
+            <button
+              className="bg-[#ed3f41] hover:bg-[#d23539] text-white font-semibold px-4 py-2 rounded-full"
+              onClick={handleCreateSurveyData}
+              disabled={isSaving || templatePreviews.length === 0}
+            >
+              {isSaving ? "Submitting..." : "Finish Survey"}
+            </button>
+          </div>
+          <div className="max-w-4xl mx-auto px-4">
+            {/* Survey Preview Form */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              {/* Competency Header */}
+              <div className="bg-green-700 px-10 py-8">
+                <h3 className="text-white font-bold text-2xl mb-2">
+                  {currentCompetency.competency}
+                </h3>
+                <p className="text-white text-md opacity-90">
+                  {currentCompetency.description || "No description provided."}
+                </p>
               </div>
-              <div className="text-white text-sm mt-1">
-                {competency.description || "No description provided."}
-              </div>
-            </div>
-            <div className="bg-white px-6 py-8 rounded-b-lg border border-t-0">
-              {competency.questions.map((q: any, idx: number) => (
-                <div key={q.id} className="mb-8">
-                  <div className="font-medium mb-2">
-                    {idx + 1}. {q.text}
-                  </div>
-                  <div className="flex flex-wrap gap-6 mb-2">
-                    {q.options.map((opt: string, oidx: number) => (
-                      <label key={oidx} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name={`q${q.id}`}
-                          className="accent-green-700"
+
+              {/* Questions */}
+              <div className="p-8 space-y-8">
+                {currentCompetency.questions.map((q: any, idx: number) => (
+                  <div key={q.id} className="space-y-4">
+                    <h4 className="font-semibold text-gray-800 text-xl leading-relaxed">
+                      {idx + 1}. {q.text}
+                    </h4>
+
+                    {q.type === "open-ended" ? (
+                      <div className="mt-4">
+                        <textarea
+                          className="w-full p-3 border border-gray-300 rounded-lg resize-y min-h-[100px] focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="Enter your response here..."
+                          rows={4}
                           disabled
                         />
-                        <span className="font-semibold text-gray-700">
-                          {opt}
-                        </span>
-                      </label>
-                    ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-5 gap-4 mb-8">
+                        {q.options.map((option: string, oidx: number) => (
+                          <label
+                            key={oidx}
+                            className="flex flex-col items-center space-y-2 cursor-pointer group"
+                          >
+                            <input
+                              type="radio"
+                              name={`q${q.id}`}
+                              className="w-5 h-5 text-green-700 border-2 border-gray-300 focus:ring-green-500 focus:ring-2"
+                              disabled
+                            />
+                            <span className="text-sm font-medium text-gray-700 text-center group-hover:text-green-700 transition-colors">
+                              {option}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {/* Last question gets a comment box */}
-                  {idx === competency.questions.length - 1 && (
-                    <input
-                      type="text"
-                      className="border border-gray-300 rounded-lg p-2 w-full mt-2"
-                      placeholder="Add a comment..."
-                      disabled
-                    />
-                  )}
-                </div>
-              ))}
-              <div className="flex justify-between mt-8">
+                ))}
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="px-6 py-4 flex justify-between items-center border-t">
                 <button
-                  className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 font-semibold"
-                  onClick={() => navigate(-1)}
+                  onClick={handlePrevious}
+                  disabled={currentCompetencyIndex === 0}
+                  className={`px-6 py-2 font-semibold rounded-full ${
+                    currentCompetencyIndex === 0
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-500 hover:bg-gray-600 text-white"
+                  }`}
                 >
-                  Back to Edit
+                  Previous
                 </button>
+
+                <div className="text-sm text-gray-600">
+                  {currentCompetencyIndex + 1} of {totalCompetencies}{" "}
+                  Competencies
+                </div>
+
                 <button
-                  className="bg-[#ed3f41] hover:bg-[#d23539] text-white font-semibold px-4 py-2 rounded-lg"
-                  onClick={handleCreateSurveyData}
-                  disabled={isSaving || templatePreviews.length === 0}
+                  onClick={handleNext}
+                  disabled={currentCompetencyIndex === totalCompetencies - 1}
+                  className={`px-6 py-2 font-semibold rounded-full ${
+                    currentCompetencyIndex === totalCompetencies - 1
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-green-700 hover:bg-green-800 text-white"
+                  }`}
                 >
-                  {isSaving ? "Submitting..." : "Submit Survey"}
+                  Next
                 </button>
               </div>
+
+              {/* Error Display */}
               {saveError && (
-                <div className="text-red-600 mt-2">{saveError}</div>
+                <div className="px-8 pb-4">
+                  <div className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                    {saveError}
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Progress Info */}
+            <div className="mt-6 text-center text-sm text-gray-600">
+              Preview • {currentCompetency.competency} •{" "}
+              {currentCompetency.questions.length} Questions • Step{" "}
+              {currentCompetencyIndex + 1} of {totalCompetencies}
+            </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
