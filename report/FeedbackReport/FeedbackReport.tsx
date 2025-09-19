@@ -318,7 +318,7 @@ const FeedbackReport: React.FC = () => {
   const boundTouchEndRef = useRef<any>(null);
   const boundTouchCancelRef = useRef<any>(null);
 
-  const [summaryOfRatings, setSummaryOfRatings] = useState<any[]>([
+  const [summaryOfRatings] = useState<any[]>([
     {
       category: "Leadership",
       ratings: [
