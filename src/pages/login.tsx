@@ -6,6 +6,7 @@ import { getUserFromToken, storeUserData } from "../lib/util";
 import Loader from "../components/ui/loader";
 import dashLogo from "../../imgs/dash-logo.png";
 
+
 interface AuthResponse {
   data: string;
   token?: string;
