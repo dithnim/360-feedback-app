@@ -13,6 +13,16 @@ export interface userData {
   deadline: string;
 }
 
+export interface BulkEmailRecipient {
+  [name: string]: string; // name: email
+}
+
+export interface BulkEmailData {
+  to: BulkEmailRecipient[];
+  subject: string;
+  html: string;
+}
+
 export const sendEmail = async (userData?: userData) => {
   try {
     // Use default data if none provided (for backward compatibility)
@@ -65,6 +75,78 @@ export const sendEmail = async (userData?: userData) => {
     return data;
   } catch (error) {
     console.error("Error sending mail:", error);
+    throw error;
+  }
+};
+
+export const sendBulkEmails = async (
+  recipients: BulkEmailRecipient[],
+  surveyName: string,
+  surveyLink?: string
+) => {
+  try {
+    // Generate deadline (e.g., 2 weeks from now)
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 14);
+    const formattedDeadline = deadline.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const emailRequest: BulkEmailData = {
+      to: recipients,
+      subject: "Invitation: 360° Feedback Survey",
+      html: `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>360° Feedback Survey Invitation</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
+    <table width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+      <tr>
+        <td style="background-color: #059629; padding: 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px;">360° Feedback Survey</h1>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 20px; color: #333333; font-size: 15px; line-height: 1.6;">
+          <p>Dear <strong>{{ username }}</strong>,</p>
+          <p>
+            You have been invited to participate in our <strong>360° Feedback Survey: ${surveyName}</strong>. Your input is valuable and will help us build a better feedback culture.
+          </p>
+          <p style="margin: 20px 0; text-align: center;">
+            <a href="{{surveyLink}}" target="_blank" style="background-color: #059629; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Start Survey
+            </a>
+          </p>
+          <p>
+            Please complete the survey by <strong>{{deadline}}</strong>. If you have any questions, feel free to contact us.
+          </p>
+          <p>Thank you for your time and valuable contribution.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 12px; color: #555555;">
+          © 2025 Talentboozt · This is an automated message, please do not reply.
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`
+        .replace("{{deadline}}", formattedDeadline)
+        .replace("{{surveyLink}}", surveyLink || "#"),
+    };
+
+    console.log("Sending bulk emails to:", recipients);
+    console.log("Email request:", emailRequest);
+
+    const data = await apiPost<any>("/email/bulk", emailRequest);
+    console.log("Bulk mail API response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error sending bulk emails:", error);
     throw error;
   }
 };

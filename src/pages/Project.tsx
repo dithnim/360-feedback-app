@@ -207,8 +207,8 @@ const Project = () => {
       []
     );
     const transformedUsers: UserData[] = storedUsers.map(
-      (participant: any, index: number) => ({
-        id: Date.now() + index,
+      (participant: any) => ({
+        id: participant.id || Date.now() + Math.random(), // Use actual company user ID
         name: participant.name,
         email: participant.email,
         designation: participant.designation,
@@ -224,9 +224,8 @@ const Project = () => {
 
     if (existingGroups.length > 0) {
       setUserGroups(existingGroups);
-      // Set group counter to the next available ID
-      const maxId = Math.max(...existingGroups.map((group) => group.id), 0);
-      setGroupCounter(maxId + 1);
+      // Group counter is just for tracking, no need to set from existing groups since we use generated IDs
+      setGroupCounter(existingGroups.length + 1);
     }
   }, [pageCase]);
 
@@ -234,8 +233,8 @@ const Project = () => {
   useEffect(() => {
     if (pageCase === 4 && companyUsers.length > 0) {
       const transformedUsers: UserData[] = companyUsers.map(
-        (participant: any, index: number) => ({
-          id: Date.now() + index,
+        (participant: any) => ({
+          id: participant.id || Date.now() + Math.random(), // Use actual company user ID
           name: participant.name,
           email: participant.email,
           designation: participant.designation,
@@ -292,13 +291,18 @@ const Project = () => {
   const [userTypes, setUserTypes] = useState<Record<number, string>>({});
   const [userGroups, setUserGroups] = useState<
     {
-      id: number;
+      id: string;
       appraisee: UserData | null;
       appraisers: UserData[];
     }[]
   >([]);
   const [groupCounter, setGroupCounter] = useState(1);
-  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+
+  // Helper function to generate unique group ID
+  const generateGroupId = useCallback(() => {
+    return `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
 
   const handleRoleChange = useCallback((id: number, newRole: string) => {
     setUsers((prevUsers) =>
@@ -353,7 +357,7 @@ const Project = () => {
     if (!appraisee && appraisers.length === 0) return;
 
     const newGroup = {
-      id: groupCounter,
+      id: generateGroupId(),
       appraisee: appraisee
         ? { ...appraisee, role: appraisee.role || "" }
         : null,
@@ -366,7 +370,7 @@ const Project = () => {
     // Update state with the new group
     const updatedGroups = [...userGroups, newGroup];
     setUserGroups(updatedGroups);
-    setGroupCounter((prev) => prev + 1);
+    setGroupCounter((prev) => prev + 1); // Keep for UI tracking
 
     // Immediately save to localStorage
     localStorage.setItem(LS_KEYS.surveyUsers, JSON.stringify(updatedGroups));
@@ -377,7 +381,7 @@ const Project = () => {
   }, [selectedUsers, users, userTypes, groupCounter, userGroups]);
 
   const handleRemoveUserGroup = useCallback(
-    (groupId: number) => {
+    (groupId: string) => {
       const updatedGroups = userGroups.filter((group) => group.id !== groupId);
       setUserGroups(updatedGroups);
 
@@ -388,7 +392,7 @@ const Project = () => {
   );
 
   const handleEditUserGroup = useCallback(
-    (groupId: number) => {
+    (groupId: string) => {
       const groupToEdit = userGroups.find((group) => group.id === groupId);
       if (!groupToEdit) return;
 
