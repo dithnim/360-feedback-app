@@ -11,6 +11,7 @@ export interface userData {
   username: string;
   surveyLink: string;
   deadline: string;
+  userId?: string;
 }
 
 export interface BulkEmailRecipient {
@@ -82,7 +83,9 @@ export const sendEmail = async (userData?: userData) => {
 export const sendBulkEmails = async (
   recipients: BulkEmailRecipient[],
   surveyName: string,
-  surveyLink?: string
+  users: { userId: string; appraiser: boolean; role: string }[],
+  baseSurveyLink?: string,
+  surveyId?: string
 ) => {
   try {
     // Generate deadline (e.g., 2 weeks from now)
@@ -94,10 +97,53 @@ export const sendBulkEmails = async (
       day: "numeric",
     });
 
-    const emailRequest: BulkEmailData = {
-      to: recipients,
-      subject: "Invitation: 360° Feedback Survey",
-      html: `<!DOCTYPE html>
+    // Send individual emails to each recipient with their personalized survey link
+    const emailPromises = recipients.map(async (recipient) => {
+      const recipientName = Object.keys(recipient)[0];
+      const recipientEmail = Object.values(recipient)[0];
+
+      // Find the user ID for this recipient by matching email
+      // We'll need to get user details from localStorage to match email to userId
+      const createdUsers = JSON.parse(
+        localStorage.getItem("createdUsers") || "[]"
+      );
+      const companyUsers = JSON.parse(
+        localStorage.getItem("CompanyUsers") || "[]"
+      );
+
+      let userId = null;
+
+      // Try to find user ID by matching email
+      const userDetail =
+        createdUsers.find((user: any) => user.email === recipientEmail) ||
+        companyUsers.find((user: any) => user.email === recipientEmail);
+
+      if (userDetail) {
+        userId = userDetail.id || userDetail._id || userDetail.manageUserId;
+      }
+
+      // If we can't find userId from user details, try to match from the users array
+      if (!userId) {
+        // This is a fallback - we might need to enhance the data structure
+        console.warn(`Could not find userId for email: ${recipientEmail}`);
+        userId = "unknown";
+      }
+
+      // Create personalized survey link with user ID and token (survey ID)
+      let personalizedSurveyLink = `${baseSurveyLink}?userId=${userId}`;
+      if (surveyId) {
+        personalizedSurveyLink += `&token=${surveyId}`;
+      }
+
+      console.log(
+        `Generated URL for ${recipientName}: ${personalizedSurveyLink}`
+      );
+
+      const individualEmailRequest = {
+        to: recipientEmail,
+        name: recipientName,
+        subject: "Invitation: 360° Feedback Survey",
+        html: `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -112,17 +158,17 @@ export const sendBulkEmails = async (
       </tr>
       <tr>
         <td style="padding: 20px; color: #333333; font-size: 15px; line-height: 1.6;">
-          <p>Dear <strong>{{ username }}</strong>,</p>
+          <p>Dear <strong>${recipientName}</strong>,</p>
           <p>
             You have been invited to participate in our <strong>360° Feedback Survey: ${surveyName}</strong>. Your input is valuable and will help us build a better feedback culture.
           </p>
           <p style="margin: 20px 0; text-align: center;">
-            <a href="{{surveyLink}}" target="_blank" style="background-color: #059629; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            <a href="${personalizedSurveyLink}" target="_blank" style="background-color: #059629; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
               Start Survey
             </a>
           </p>
           <p>
-            Please complete the survey by <strong>{{deadline}}</strong>. If you have any questions, feel free to contact us.
+            Please complete the survey by <strong>${formattedDeadline}</strong>. If you have any questions, feel free to contact us.
           </p>
           <p>Thank you for your time and valuable contribution.</p>
         </td>
@@ -134,17 +180,21 @@ export const sendBulkEmails = async (
       </tr>
     </table>
   </body>
-</html>`
-        .replace("{{deadline}}", formattedDeadline)
-        .replace("{{surveyLink}}", surveyLink || "#"),
-    };
+</html>`,
+      };
 
-    console.log("Sending bulk emails to:", recipients);
-    console.log("Email request:", emailRequest);
+      console.log(
+        `Sending personalized email to ${recipientName} (${recipientEmail}) with survey link: ${personalizedSurveyLink} (userId: ${userId}, token: ${surveyId || "not provided"})`
+      );
+      return apiPost<any>("/email", individualEmailRequest);
+    });
 
-    const data = await apiPost<any>("/email/bulk", emailRequest);
-    console.log("Bulk mail API response:", data);
-    return data;
+    // Wait for all emails to be sent
+    const results = await Promise.all(emailPromises);
+    console.log(
+      `Successfully sent ${results.length} personalized survey invitations`
+    );
+    return results;
   } catch (error) {
     console.error("Error sending bulk emails:", error);
     throw error;

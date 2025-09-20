@@ -240,19 +240,38 @@ const SurveyPreview = () => {
 
       localStorage.setItem("SurveyResponse", JSON.stringify(response));
 
+      // Extract survey ID from response.data field
+      const surveyId = response?.data;
+      console.log("Extracted survey ID from response.data:", surveyId);
+
+      if (!surveyId) {
+        console.error(
+          "Survey ID not found in response.data. Full response:",
+          response
+        );
+        throw new Error(
+          "Survey was created but survey ID could not be extracted for email notifications."
+        );
+      }
+
       // Send emails to all participants
       try {
         const recipients = getEmailRecipients();
         if (recipients.length > 0) {
           console.log("Sending invitation emails to participants...");
+          console.log("Survey ID being passed to email service:", surveyId);
+          console.log("Recipients count:", recipients.length);
 
           // Generate survey link (you may need to adjust this based on your routing)
-          const surveyLink = `${window.location.origin}/survey-participation`;
+          const surveyLink = `${window.location.origin}/survey/participate`;
+          console.log("Base survey link:", surveyLink);
 
           await sendBulkEmails(
             recipients,
             surveyData.survey.surveyName,
-            surveyLink
+            surveyData.users,
+            surveyLink,
+            surveyId
           );
           console.log("Invitation emails sent successfully!");
 
@@ -263,7 +282,7 @@ const SurveyPreview = () => {
               `Questions: ${surveyData.questions.length}\n` +
               `Users: ${surveyData.users.length}\n` +
               `Invitation emails sent to: ${recipients.length} participants\n\n` +
-              `The survey has been created and participants have been notified.`
+              `The survey has been created and participants have been notified with personalized links containing user ID and token.`
           );
         } else {
           console.warn(
