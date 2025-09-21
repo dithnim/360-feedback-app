@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import PublicNavbar from "../components/PublicNavbar";
-import { apiGet, apiPost } from "@/lib/apiService";
+import { apiGet, apiPost, apiClient } from "@/lib/apiService";
+import { useUser } from "../context/UserContext";
 // import { getSurveyByToken, submitSurveyResponse } from "../lib/apiService";
 // import type { Survey, SurveyResponse as APISurveyResponse } from "../lib/apiService";
 
@@ -146,6 +147,7 @@ interface SurveyResponse {
 const SurveyParticipation = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useUser();
   const [currentStep, setCurrentStep] = useState(0);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,8 +157,9 @@ const SurveyParticipation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get survey token from URL parameters (in real implementation)
+  // Get survey token and userId from URL parameters
   const surveyToken = searchParams.get("token") || "demo-token";
+  const userIdFromUrl = searchParams.get("userId");
 
   useEffect(() => {
     const fetchSurveyData = async () => {
@@ -185,7 +188,7 @@ const SurveyParticipation = () => {
       const surveyId = token;
 
       // Step 1: Get all question IDs for the survey
-      const surveyQuestions = await apiGet<
+      const surveyQuestions = await apiClient.getPublic<
         Array<{
           _id: string;
           surveyId: string;
@@ -195,7 +198,7 @@ const SurveyParticipation = () => {
 
       // Step 2: Fetch individual question details for each questionId
       const questionDetailsPromises = surveyQuestions.map((sq) =>
-        apiGet<{
+        apiClient.getPublic<{
           id: string;
           competencyId: string;
           question: string;
@@ -215,9 +218,10 @@ const SurveyParticipation = () => {
       const competencyEntries = await Promise.all(
         uniqueCompetencyIds.map(async (id) => {
           try {
-            const comp = await apiGet<{ id: string; competency: string }>(
-              `/competency/${id}`
-            );
+            const comp = await apiClient.getPublic<{
+              id: string;
+              competency: string;
+            }>(`/competency/${id}`);
             return [id, comp.competency] as const;
           } catch (e) {
             console.warn(`Failed to fetch competency ${id}:`, e);
@@ -349,7 +353,7 @@ const SurveyParticipation = () => {
 
   const getProjectId = async (surveyId: string): Promise<string> => {
     try {
-      const surveyProject = await apiGet<{
+      const surveyProject = await apiClient.getPublic<{
         id: string;
         surveyName: string;
         projectId: string;
@@ -364,11 +368,41 @@ const SurveyParticipation = () => {
     }
   };
 
-  const createAnswerSheet = async (projectId: string) =>
-    apiPost<{ id: string }>("/survey/answer/sheet", {
+  const createAnswerSheet = async (projectId: string) => {
+    // Get userId from URL parameter, fallback to authenticated user, or throw error
+    const userId = userIdFromUrl || user?.id;
+
+    if (!userId) {
+      throw new Error(
+        "User ID is required to create answer sheet. Please ensure you are logged in or the userId is provided in the URL."
+      );
+    }
+
+    return apiClient.postPublic<{ id: string }>("/survey/answer/sheet", {
       surveyId: surveyToken,
       projectId,
+      userId,
     });
+  };
+
+  // Function to convert text answers to numerical values (1-5)
+  const convertAnswerToNumerical = (answer: string): number => {
+    // Map common Likert scale responses to numbers
+    const answerMap: { [key: string]: number } = {
+      "Strongly Agree": 5,
+      Agree: 4,
+      Neutral: 3,
+      Disagree: 2,
+      "Strongly Disagree": 1,
+      Excellent: 5,
+      Good: 4,
+      Average: 3,
+      "Below Average": 2,
+      Poor: 1,
+    };
+
+    return answerMap[answer] || 3; // Default to 3 (neutral) if not found
+  };
 
   const createAnswers = async (answerSheetId: string) => {
     if (!surveyData) return;
@@ -402,12 +436,12 @@ const SurveyParticipation = () => {
           : {
               answerSheetId,
               questionId: questionIdStr,
-              answerType: "single",
+              answerType: "likert",
               multiple: null,
-              answer: response.answer,
+              answer: convertAnswerToNumerical(response.answer),
             };
 
-      return apiPost("/survey/answer", payload);
+      return apiClient.postPublic("/survey/answer", payload);
     });
 
     await Promise.all(answerPromises);
