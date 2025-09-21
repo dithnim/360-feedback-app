@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageNav from "../components/ui/pageNav";
-import { createSurveyAll } from "../lib/apiService";
+import { createSurveyAll, createSurveyUserRecords } from "../lib/apiService";
 import { sendBulkEmails } from "../lib/mailService";
 import type { BulkEmailRecipient } from "../lib/mailService";
 
@@ -210,6 +210,39 @@ const SurveyPreview = () => {
     }
   };
 
+  // Function to clear all localStorage except token and userData
+  const clearSurveyLocalStorage = useCallback(() => {
+    const itemsToKeep = ["token", "userData"];
+    const itemsToRemove = [
+      "Company",
+      "CompanyFormData",
+      "CompanyUsers",
+      "Project",
+      "SurveyResponse",
+      "SurveyUsers",
+      "SurveyUsersResponse",
+      "loglevel",
+      "savedQuestions",
+      "surveyCreationData",
+      "createdUsers",
+    ];
+
+    // Remove specific survey-related items
+    itemsToRemove.forEach((item) => {
+      localStorage.removeItem(item);
+    });
+
+    // Also remove any other items not in the keep list (except token and userData)
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach((key) => {
+      if (!itemsToKeep.includes(key)) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    console.log("Survey-related localStorage items cleared successfully");
+  }, []);
+
   // Handle creating survey data
   const handleCreateSurveyData = useCallback(async () => {
     try {
@@ -251,6 +284,34 @@ const SurveyPreview = () => {
         );
         throw new Error(
           "Survey was created but survey ID could not be extracted for email notifications."
+        );
+      }
+
+      // Create Survey Users after successful survey creation
+      try {
+        // Transform surveyData.users to match MongoDB document structure
+        const surveyUserRecords = surveyData.users.map((user) => ({
+          surveyId: surveyId, // Use the survey ID from response
+          userId: user.userId,
+          appraiser: user.appraiser,
+          role: user.role,
+        }));
+
+        console.log("Creating Survey Users with records:", surveyUserRecords);
+        const surveyUsersResponse =
+          await createSurveyUserRecords(surveyUserRecords);
+        console.log("Survey Users creation response:", surveyUsersResponse);
+
+        // Store the Survey Users response
+        localStorage.setItem(
+          "SurveyUsersResponse",
+          JSON.stringify(surveyUsersResponse)
+        );
+      } catch (surveyUsersError) {
+        console.error("Error creating Survey Users:", surveyUsersError);
+        // Don't throw error here - continue with email sending even if Survey Users creation fails
+        console.warn(
+          "Survey created successfully but Survey Users creation failed"
         );
       }
 
@@ -310,6 +371,9 @@ const SurveyPreview = () => {
         );
       }
 
+      // Clear all survey-related localStorage items after successful completion
+      clearSurveyLocalStorage();
+
       // Navigate back to surveys or dashboard
       navigate("/");
     } catch (error: any) {
@@ -327,6 +391,7 @@ const SurveyPreview = () => {
     templatePreviews.length,
     surveyName,
     navigate,
+    clearSurveyLocalStorage,
   ]);
 
   if (!currentCompetency || templatePreviews.length === 0) {

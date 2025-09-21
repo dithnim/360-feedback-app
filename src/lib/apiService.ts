@@ -404,3 +404,18 @@ export async function createSurveyAll(
 ): Promise<any> {
   return apiPost<any>("/project/survey/all", surveyData);
 }
+
+// Survey Users creation types and functions
+export interface SurveyUserRecord {
+  surveyId: string;
+  userId: string;
+  appraiser: boolean;
+  role: string;
+}
+
+// Create Survey Users with individual records including surveyId
+export async function createSurveyUserRecords(
+  surveyUsers: SurveyUserRecord[]
+): Promise<any> {
+  return apiPost<any>("/project/survey/user/set", surveyUsers);
+}
