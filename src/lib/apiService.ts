@@ -1,249 +1,25 @@
+import axios from "axios";
 import { clearAuthData } from "./util";
 
+// Environment configuration
 const BASE_URL = import.meta.env.VITE_API_ENDPOINT;
+const DEFAULT_TIMEOUT_MS = 20_000; // 20 seconds
 
-// Default network settings
-const DEFAULT_TIMEOUT_MS = 20_000; // 20s
-
-// Fetch with timeout and abort to avoid hanging requests consuming memory
-async function fetchWithTimeout(
-  input: RequestInfo | URL,
-  init: RequestInit = {},
-  timeoutMs = DEFAULT_TIMEOUT_MS
-): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(input, { ...init, signal: controller.signal });
-    return response;
-  } finally {
-    clearTimeout(id);
-  }
+// Types
+export interface ApiError extends Error {
+  status?: number;
+  data?: any;
 }
 
-const handleUnauthorized = () => {
-  clearAuthData();
-  window.location.href = "/login";
-};
-
-export async function apiGet<T>(
-  endpoint: string,
-  opts?: { timeoutMs?: number; headers?: HeadersInit }
-): Promise<T> {
-  const token = localStorage.getItem("token"); // Get token from localStorage
-  const headers: HeadersInit = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(opts?.headers ?? {}),
-  };
-
-  const response = await fetchWithTimeout(
-    `${BASE_URL}${endpoint}`,
-    { headers },
-    opts?.timeoutMs
-  );
-  if (!response.ok) {
-    if (response.status === 401) {
-      handleUnauthorized();
-    }
-    throw new Error(`GET ${endpoint} failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function apiPost<T>(
-  endpoint: string,
-  data: any,
-  headers: Record<string, string> = {},
-  opts?: { timeoutMs?: number }
-): Promise<T | string> {
-  const token = localStorage.getItem("token");
-  const mergedHeaders = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...headers,
-  };
-
-  const response = await fetchWithTimeout(
-    `${BASE_URL}${endpoint}`,
-    {
-      method: "POST",
-      headers: mergedHeaders,
-      body: JSON.stringify(data),
-    },
-    opts?.timeoutMs
-  );
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      handleUnauthorized();
-    }
-    throw new Error(`POST ${endpoint} failed: ${response.status}`);
-  }
-  const contentType = response.headers.get("content-type");
-  if (contentType && contentType.includes("application/json")) {
-    return response.json();
-  } else {
-    return response.text();
-  }
-}
-
-export async function apiPut<T>(
-  endpoint: string,
-  data: any,
-  opts?: { timeoutMs?: number }
-): Promise<T> {
-  const token = localStorage.getItem("token");
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
-  const response = await fetchWithTimeout(
-    `${BASE_URL}${endpoint}`,
-    {
-      method: "PUT",
-      headers,
-      body: JSON.stringify(data),
-    },
-    opts?.timeoutMs
-  );
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      handleUnauthorized();
-    }
-    throw new Error(`PUT ${endpoint} failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function apiDelete<T>(
-  endpoint: string,
-  opts?: { timeoutMs?: number }
-): Promise<T> {
-  const token = localStorage.getItem("token");
-  const headers: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
-
-  const response = await fetchWithTimeout(
-    `${BASE_URL}${endpoint}`,
-    {
-      method: "DELETE",
-      headers,
-    },
-    opts?.timeoutMs
-  );
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      handleUnauthorized();
-    }
-    throw new Error(`DELETE ${endpoint} failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function deleteOrganization(companyId: string): Promise<any> {
-  const token = localStorage.getItem("token");
-  const headers: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
-  const response = await fetchWithTimeout(`${BASE_URL}/company/${companyId}`, {
-    method: "DELETE",
-    headers,
-  });
-  if (!response.ok) {
-    throw new Error(`DELETE /company/${companyId} failed: ${response.status}`);
-  }
-}
-
-// Delete a user by company ID
-export async function deleteUserByCompanyId(companyId: string): Promise<any> {
-  const token = localStorage.getItem("token");
-  const headers: HeadersInit = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
-  const response = await fetchWithTimeout(
-    `${BASE_URL}/company/user/${companyId}`,
-    {
-      method: "DELETE",
-      headers,
-    }
-  );
-  console.log("Delete user response:", response);
-  if (!response.ok) {
-    throw new Error(
-      `DELETE /company/user/${companyId} failed: ${response.status}`
-    );
-  }
-
-  return response.status;
-}
-
-// Create users for a company
-export interface CreateUserData {
-  name: string;
-  email: string;
-  designation: string;
-  companyId: string;
-}
-
-export async function createCompanyUsers(
-  users: CreateUserData[]
-): Promise<any> {
-  const token = localStorage.getItem("token");
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
-  const response = await fetchWithTimeout(`${BASE_URL}/company/user/set`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(users),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.log("Error response body:", errorText);
-    throw new Error(
-      errorText || `POST /company/user/set failed: ${response.status}`
-    );
-  }
-
-  return response.json();
-}
-
-export async function createSurveyUsers(users: CreateUserData[]): Promise<any> {
-  const token = localStorage.getItem("token");
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
-  const response = await fetchWithTimeout(`${BASE_URL}/survey/user/set`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(users),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.log("Error response body:", errorText);
-    throw new Error(
-      errorText || `POST /survey/user/set failed: ${response.status}`
-    );
-  }
-
-  const responseText = await response.text();
-  return responseText;
-}
-
-// Authentication types
 export interface LoginData {
   email: string;
   password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user?: any;
+  message?: string;
 }
 
 export interface ClientRegistrationData {
@@ -263,37 +39,13 @@ export interface Company {
   createdAt: string;
 }
 
-export async function getCompanies(): Promise<Company[]> {
-  return apiGet<Company[]>("/company");
+export interface CreateUserData {
+  name: string;
+  email: string;
+  designation: string;
+  companyId: string;
 }
 
-export async function createQuestion(data: {
-  competencyId: string;
-  question: string;
-  optionType: string;
-  options: string[];
-}) {
-  return apiPost<{
-    id: string;
-    competencyId: string;
-    question: string;
-    optionType: string;
-    options: string[];
-  }>("/question", data);
-}
-
-// Authentication functions
-export async function login(loginData: LoginData): Promise<any> {
-  return apiPost<any>("/auth/login", loginData);
-}
-
-export async function registerClient(
-  registrationData: ClientRegistrationData
-): Promise<any> {
-  return apiPost<any>("/auth/register", registrationData);
-}
-
-// Survey related types and functions
 export interface SurveyQuestion {
   id: number;
   text: string;
@@ -320,49 +72,6 @@ export interface SurveyResponse {
   comment?: string;
 }
 
-// Get survey data by token (public endpoint - no auth required)
-export async function getSurveyByToken(token: string): Promise<Survey> {
-  const response = await fetchWithTimeout(
-    `${BASE_URL}/survey/public/${token}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch survey: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// Submit survey responses (public endpoint - no auth required)
-export async function submitSurveyResponse(
-  token: string,
-  responses: SurveyResponse[]
-): Promise<any> {
-  const response = await fetchWithTimeout(
-    `${BASE_URL}/survey/public/${token}/submit`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ responses }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to submit survey: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// Team-related types and functions
 export interface CreateTeamData {
   teamName: string;
   createdUserId: string;
@@ -375,14 +84,6 @@ export interface TeamResponse {
   createdAt: string;
 }
 
-// Create a new team
-export async function createTeamAPI(
-  teamData: CreateTeamData
-): Promise<TeamResponse> {
-  return apiPost<TeamResponse>("/team", teamData) as Promise<TeamResponse>;
-}
-
-// Survey creation types and functions
 export interface SurveyCreationData {
   survey: {
     surveyName: string;
@@ -398,14 +99,6 @@ export interface SurveyCreationData {
   }[];
 }
 
-// Create a complete survey with all data
-export async function createSurveyAll(
-  surveyData: SurveyCreationData
-): Promise<any> {
-  return apiPost<any>("/project/survey/all", surveyData);
-}
-
-// Survey Users creation types and functions
 export interface SurveyUserRecord {
   surveyId: string;
   userId: string;
@@ -413,9 +106,303 @@ export interface SurveyUserRecord {
   role: string;
 }
 
-// Create Survey Users with individual records including surveyId
+export interface QuestionData {
+  competencyId: string;
+  question: string;
+  optionType: string;
+  options: string[];
+}
+
+// Token management with better security
+class TokenManager {
+  private static TOKEN_KEY = "token";
+
+  static getToken(): string | null {
+    try {
+      return localStorage.getItem(this.TOKEN_KEY);
+    } catch (error) {
+      console.error("Failed to retrieve token:", error);
+      return null;
+    }
+  }
+
+  static setToken(token: string): void {
+    try {
+      localStorage.setItem(this.TOKEN_KEY, token);
+    } catch (error) {
+      console.error("Failed to store token:", error);
+    }
+  }
+
+  static removeToken(): void {
+    try {
+      localStorage.removeItem(this.TOKEN_KEY);
+    } catch (error) {
+      console.error("Failed to remove token:", error);
+    }
+  }
+}
+
+// Create and configure Axios instance
+class ApiClient {
+  private axiosInstance: any;
+  private publicAxiosInstance: any;
+
+  constructor() {
+    // Main instance with authentication
+    this.axiosInstance = axios.create({
+      baseURL: BASE_URL,
+      timeout: DEFAULT_TIMEOUT_MS,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Public instance without authentication
+    this.publicAxiosInstance = axios.create({
+      baseURL: BASE_URL,
+      timeout: DEFAULT_TIMEOUT_MS,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    this.setupInterceptors();
+  }
+
+  private setupInterceptors(): void {
+    // Request interceptor for authentication
+    this.axiosInstance.interceptors.request.use(
+      (config: any) => {
+        const token = TokenManager.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error: any) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor for error handling
+    this.axiosInstance.interceptors.response.use(
+      (response: any) => response,
+      (error: any) => {
+        if (error.response?.status === 401) {
+          this.handleUnauthorized();
+        }
+        return Promise.reject(this.createApiError(error));
+      }
+    );
+
+    // Response interceptor for public instance
+    this.publicAxiosInstance.interceptors.response.use(
+      (response: any) => response,
+      (error: any) => {
+        return Promise.reject(this.createApiError(error));
+      }
+    );
+  }
+
+  private handleUnauthorized(): void {
+    clearAuthData();
+    TokenManager.removeToken();
+    window.location.href = "/login";
+  }
+
+  private createApiError(error: any): ApiError {
+    const apiError: ApiError = new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "An unknown error occurred"
+    );
+    apiError.status = error.response?.status;
+    apiError.data = error.response?.data;
+    return apiError;
+  }
+
+  // Generic HTTP methods
+  async get<T>(endpoint: string, config?: any): Promise<T> {
+    const response = await this.axiosInstance.get(endpoint, config);
+    return response.data;
+  }
+
+  async post<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    const response = await this.axiosInstance.post(endpoint, data, config);
+    return response.data;
+  }
+
+  async put<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    const response = await this.axiosInstance.put(endpoint, data, config);
+    return response.data;
+  }
+
+  async delete<T>(endpoint: string, config?: any): Promise<T> {
+    const response = await this.axiosInstance.delete(endpoint, config);
+    return response.data;
+  }
+
+  // Public endpoints (no authentication)
+  async getPublic<T>(endpoint: string, config?: any): Promise<T> {
+    const response = await this.publicAxiosInstance.get(endpoint, config);
+    return response.data;
+  }
+
+  async postPublic<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    const response = await this.publicAxiosInstance.post(
+      endpoint,
+      data,
+      config
+    );
+    return response.data;
+  }
+}
+
+// Create singleton instance
+const apiClient = new ApiClient();
+
+// ============================================
+// Public API Functions
+// ============================================
+
+// Authentication
+export async function login(loginData: LoginData): Promise<LoginResponse> {
+  const response = await apiClient.postPublic<LoginResponse>(
+    "/auth/login",
+    loginData
+  );
+  // Store token if login successful
+  if (response?.token) {
+    TokenManager.setToken(response.token);
+  }
+  return response;
+}
+
+export async function registerClient(
+  registrationData: ClientRegistrationData
+): Promise<any> {
+  return apiClient.postPublic("/auth/register", registrationData);
+}
+
+// Company Management
+export async function getCompanies(): Promise<Company[]> {
+  return apiClient.get<Company[]>("/company");
+}
+
+export async function deleteOrganization(companyId: string): Promise<void> {
+  if (!companyId) {
+    throw new Error("Company ID is required");
+  }
+  await apiClient.delete(`/company/${companyId}`);
+}
+
+// User Management
+export async function deleteUserByCompanyId(
+  companyId: string
+): Promise<number> {
+  if (!companyId) {
+    throw new Error("Company ID is required");
+  }
+  const response = await apiClient.delete<any>(`/company/user/${companyId}`);
+  return response.status || 200;
+}
+
+export async function createCompanyUsers(
+  users: CreateUserData[]
+): Promise<any> {
+  if (!users || users.length === 0) {
+    throw new Error("At least one user is required");
+  }
+  return apiClient.post("/company/user/set", users);
+}
+
+export async function createSurveyUsers(
+  users: CreateUserData[]
+): Promise<string> {
+  if (!users || users.length === 0) {
+    throw new Error("At least one user is required");
+  }
+  return apiClient.post<string>("/survey/user/set", users);
+}
+
+// Question Management
+export async function createQuestion(
+  data: QuestionData
+): Promise<QuestionData & { id: string }> {
+  return apiClient.post<QuestionData & { id: string }>("/question", data);
+}
+
+// Survey Management (Public)
+export async function getSurveyByToken(token: string): Promise<Survey> {
+  if (!token) {
+    throw new Error("Survey token is required");
+  }
+  return apiClient.getPublic<Survey>(`/survey/public/${token}`);
+}
+
+export async function submitSurveyResponse(
+  token: string,
+  responses: SurveyResponse[]
+): Promise<any> {
+  if (!token) {
+    throw new Error("Survey token is required");
+  }
+  if (!responses || responses.length === 0) {
+    throw new Error("At least one response is required");
+  }
+  return apiClient.postPublic(`/survey/public/${token}/submit`, { responses });
+}
+
+// Team Management
+export async function createTeamAPI(
+  teamData: CreateTeamData
+): Promise<TeamResponse> {
+  return apiClient.post<TeamResponse>("/team", teamData);
+}
+
+// Survey Creation
+export async function createSurveyAll(
+  surveyData: SurveyCreationData
+): Promise<any> {
+  return apiClient.post("/project/survey/all", surveyData);
+}
+
 export async function createSurveyUserRecords(
   surveyUsers: SurveyUserRecord[]
 ): Promise<any> {
-  return apiPost<any>("/project/survey/user/set", surveyUsers);
+  if (!surveyUsers || surveyUsers.length === 0) {
+    throw new Error("At least one survey user record is required");
+  }
+  return apiClient.post("/project/survey/user/set", surveyUsers);
+}
+
+// Utility function to check authentication status
+export function isAuthenticated(): boolean {
+  return TokenManager.getToken() !== null;
+}
+
+// Export the token manager for advanced use cases
+export { TokenManager };
+
+// Export the raw client for custom endpoints if needed
+export { apiClient };
+
+// Generic post function for backward compatibility
+export async function apiPost<T>(
+  endpoint: string,
+  data?: any,
+  config?: any
+): Promise<T> {
+  return apiClient.post<T>(endpoint, data, config);
+}
+
+// Generic get function for backward compatibility
+export async function apiGet<T>(endpoint: string, config?: any): Promise<T> {
+  return apiClient.get<T>(endpoint, config);
+}
+
+// Generic delete function for backward compatibility
+export async function apiDelete<T>(endpoint: string, config?: any): Promise<T> {
+  return apiClient.delete<T>(endpoint, config);
 }
