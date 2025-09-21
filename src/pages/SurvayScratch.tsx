@@ -501,7 +501,10 @@ const SurvayScratch = () => {
       const competencyMap = new Map<string, string>();
       for (const template of templatePreviews) {
         if (template.competency.trim()) {
-          const res = await createCompetency(template.competency.trim());
+          const res = await createCompetency(
+            template.competency.trim(),
+            template.description || ""
+          );
           competencyMap.set(
             template.competency,
             typeof res === "string" ? res : res.id
@@ -732,7 +735,6 @@ const SurvayScratch = () => {
           <div>
             <label className="mb-2 block text-md font-medium text-gray-700">
               Description{" "}
-              <span className="text-gray-400 text-sm">(Optional)</span>
             </label>
             <textarea
               className="border border-gray-300 rounded-lg p-2 w-full mb-4"

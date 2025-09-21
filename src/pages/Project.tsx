@@ -699,21 +699,31 @@ const Project = () => {
     async (data: CompanyFormData) => {
       const payload = {
         name: data.companyName,
+        description: data.description,
         email: data.email,
         contactNumber: data.phone,
         contactPerson: data.contactPerson,
         logoImg: companyLogoUrl || "",
         createdAt: new Date().toISOString(),
       };
+      
+      // Debug: Log the payload to see what's being sent
+      console.log("Company creation payload:", payload);
+      console.log("Form data:", data);
+      
       // Company creation payload prepared
       setIsSubmitting(true);
       try {
         const token = localStorage.getItem("token") || "";
+        console.log("Sending POST request to /company with payload:", JSON.stringify(payload, null, 2));
+        
         const response = await apiPost<any>(
           "/company",
           payload,
           token ? { Authorization: `Bearer ${token}` } : {}
         );
+        
+        console.log("Company creation response:", response);
         // API responded with company data
         // Save the backend response data to localStorage if it contains an id
         if (response && response.id) {
@@ -741,10 +751,16 @@ const Project = () => {
           setUploadError(""); // Clear any upload errors
         } else {
           console.error("Invalid response from API:", response);
+          console.error("Expected response to have an 'id' field");
         }
       } catch (error) {
         // Handle error (e.g., show error message)
         console.error("Error creating company:", error);
+        console.error("Error type:", typeof error);
+        console.error("Error message:", error instanceof Error ? error.message : String(error));
+        
+        // Show user-friendly error message
+        alert(`Failed to create company: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
       } finally {
         setIsSubmitting(false);
       }
