@@ -113,8 +113,8 @@ const SurveyPreview = () => {
     }
   }, [surveyName]);
 
-  // Extract email recipients from localStorage
-  const getEmailRecipients = useCallback((): BulkEmailRecipient[] => {
+  // Extract email recipients grouped by user group from localStorage
+  const getEmailRecipientsByGroup = useCallback(() => {
     try {
       const surveyUsersData = JSON.parse(
         localStorage.getItem("SurveyUsers") || "[]"
@@ -146,10 +146,17 @@ const SurveyPreview = () => {
         });
       }
 
-      const recipients: BulkEmailRecipient[] = [];
+      // Group recipients by user group (each group represents a separate evaluation)
+      const recipientGroups: Array<{
+        recipients: BulkEmailRecipient[];
+        appraiseeInfo: { name: string; email: string; id: string };
+      }> = [];
 
-      // Process Survey Users data to extract all participants
-      surveyUsersData.forEach((userGroup: any) => {
+      // Process each user group separately
+      surveyUsersData.forEach((userGroup: any, groupIndex: number) => {
+        const groupRecipients: BulkEmailRecipient[] = [];
+        let appraiseeInfo = null;
+
         // Add appraisee
         if (userGroup.appraisee) {
           const userDetails = userDetailsMap.get(userGroup.appraisee.id);
@@ -159,7 +166,13 @@ const SurveyPreview = () => {
                 ? `${userDetails.firstName} ${userDetails.lastName}`
                 : userDetails.username || userDetails.email.split("@")[0];
 
-            recipients.push({
+            appraiseeInfo = {
+              name,
+              email: userDetails.email,
+              id: userGroup.appraisee.id,
+            };
+
+            groupRecipients.push({
               [name]: userDetails.email,
             });
           }
@@ -175,24 +188,36 @@ const SurveyPreview = () => {
                   ? `${userDetails.firstName} ${userDetails.lastName}`
                   : userDetails.username || userDetails.email.split("@")[0];
 
-              recipients.push({
+              groupRecipients.push({
                 [name]: userDetails.email,
               });
             }
           });
         }
+
+        // Only add group if it has recipients and appraisee info
+        if (groupRecipients.length > 0 && appraiseeInfo) {
+          recipientGroups.push({
+            recipients: groupRecipients,
+            appraiseeInfo,
+          });
+          console.log(
+            `User Group ${groupIndex + 1}: ${
+              groupRecipients.length
+            } recipients for ${appraiseeInfo.name}'s evaluation`
+          );
+        }
       });
 
-      // Remove duplicates based on email
-      const uniqueRecipients = recipients.filter((recipient, index, self) => {
-        const email = Object.values(recipient)[0];
-        return index === self.findIndex((r) => Object.values(r)[0] === email);
-      });
-
-      console.log("Email recipients extracted:", uniqueRecipients);
-      return uniqueRecipients;
+      console.log(
+        `Total groups: ${recipientGroups.length}, Total emails to send: ${recipientGroups.reduce(
+          (sum, group) => sum + group.recipients.length,
+          0
+        )}`
+      );
+      return recipientGroups;
     } catch (error) {
-      console.error("Error extracting email recipients:", error);
+      console.error("Error extracting email recipients by group:", error);
       return [];
     }
   }, []);
@@ -315,26 +340,45 @@ const SurveyPreview = () => {
         );
       }
 
-      // Send emails to all participants
+      // Send emails to participants for each user group separately
       try {
-        const recipients = getEmailRecipients();
-        if (recipients.length > 0) {
-          console.log("Sending invitation emails to participants...");
-          console.log("Survey ID being passed to email service:", surveyId);
-          console.log("Recipients count:", recipients.length);
-
-          // Generate survey link (you may need to adjust this based on your routing)
-          const surveyLink = `${window.location.origin}/survey/participate`;
-          console.log("Base survey link:", surveyLink);
-
-          await sendBulkEmails(
-            recipients,
-            surveyData.survey.surveyName,
-            surveyData.users,
-            surveyLink,
-            surveyId
+        const recipientGroups = getEmailRecipientsByGroup();
+        if (recipientGroups.length > 0) {
+          console.log(
+            `Sending invitation emails for ${recipientGroups.length} evaluation groups...`
           );
-          console.log("Invitation emails sent successfully!");
+          console.log("Survey ID being passed to email service:", surveyId);
+
+          // Generate base survey link
+          const baseSurveyLink = `${window.location.origin}/survey/participate`;
+          console.log("Base survey link:", baseSurveyLink);
+
+          let totalEmailsSent = 0;
+          const emailPromises = recipientGroups.map(
+            async (group, groupIndex) => {
+              console.log(
+                `Sending emails for Group ${groupIndex + 1}: ${group.appraiseeInfo.name}'s evaluation to ${group.recipients.length} participants`
+              );
+
+              await sendBulkEmails(
+                group.recipients,
+                `${surveyData.survey.surveyName} - ${group.appraiseeInfo.name}'s Evaluation`,
+                surveyData.users,
+                baseSurveyLink,
+                surveyId
+              );
+
+              totalEmailsSent += group.recipients.length;
+              return group.recipients.length;
+            }
+          );
+
+          // Wait for all email groups to be sent
+          await Promise.all(emailPromises);
+
+          console.log(
+            `All invitation emails sent successfully! Total: ${totalEmailsSent} emails for ${recipientGroups.length} evaluation groups`
+          );
 
           alert(
             `🎉 Survey submitted successfully!\n\n` +
@@ -342,12 +386,13 @@ const SurveyPreview = () => {
               `Project ID: ${surveyData.survey.projectId}\n` +
               `Questions: ${surveyData.questions.length}\n` +
               `Users: ${surveyData.users.length}\n` +
-              `Invitation emails sent to: ${recipients.length} participants\n\n` +
-              `The survey has been created and participants have been notified with personalized links containing user ID and token.`
+              `Evaluation Groups: ${recipientGroups.length}\n` +
+              `Total invitation emails sent: ${totalEmailsSent}\n\n` +
+              `Each user group has received separate emails for their specific evaluation. Users participating in multiple evaluations will receive multiple emails.`
           );
         } else {
           console.warn(
-            "No email recipients found, skipping email notifications"
+            "No email recipient groups found, skipping email notifications"
           );
           alert(
             `🎉 Survey submitted successfully!\n\n` +
@@ -387,7 +432,7 @@ const SurveyPreview = () => {
     }
   }, [
     createSurveyFromLocalStorage,
-    getEmailRecipients,
+    getEmailRecipientsByGroup,
     templatePreviews.length,
     surveyName,
     navigate,
