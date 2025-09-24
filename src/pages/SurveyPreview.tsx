@@ -161,10 +161,23 @@ const SurveyPreview = () => {
         if (userGroup.appraisee) {
           const userDetails = userDetailsMap.get(userGroup.appraisee.id);
           if (userDetails && userDetails.email) {
-            const name =
-              userDetails.firstName && userDetails.lastName
-                ? `${userDetails.firstName} ${userDetails.lastName}`
-                : userDetails.username || userDetails.email.split("@")[0];
+            // Priority order for getting the name:
+            // 1. firstName + lastName
+            // 2. username (if available and not an email)
+            // 3. name field (if available)
+            // 4. Extract from email as last resort
+            let name = "";
+            
+            if (userDetails.firstName && userDetails.lastName) {
+              name = `${userDetails.firstName} ${userDetails.lastName}`;
+            } else if (userDetails.username && !userDetails.username.includes("@")) {
+              name = userDetails.username;
+            } else if (userDetails.name && !userDetails.name.includes("@")) {
+              name = userDetails.name;
+            } else {
+              // Last resort: extract from email
+              name = userDetails.email.split("@")[0];
+            }
 
             appraiseeInfo = {
               name,
@@ -183,10 +196,23 @@ const SurveyPreview = () => {
           userGroup.appraisers.forEach((appraiser: any) => {
             const userDetails = userDetailsMap.get(appraiser.id);
             if (userDetails && userDetails.email) {
-              const name =
-                userDetails.firstName && userDetails.lastName
-                  ? `${userDetails.firstName} ${userDetails.lastName}`
-                  : userDetails.username || userDetails.email.split("@")[0];
+              // Priority order for getting the name:
+              // 1. firstName + lastName
+              // 2. username (if available and not an email)
+              // 3. name field (if available)
+              // 4. Extract from email as last resort
+              let name = "";
+              
+              if (userDetails.firstName && userDetails.lastName) {
+                name = `${userDetails.firstName} ${userDetails.lastName}`;
+              } else if (userDetails.username && !userDetails.username.includes("@")) {
+                name = userDetails.username;
+              } else if (userDetails.name && !userDetails.name.includes("@")) {
+                name = userDetails.name;
+              } else {
+                // Last resort: extract from email
+                name = userDetails.email.split("@")[0];
+              }
 
               groupRecipients.push({
                 [name]: userDetails.email,
@@ -362,10 +388,11 @@ const SurveyPreview = () => {
 
               await sendBulkEmails(
                 group.recipients,
-                `${surveyData.survey.surveyName} - ${group.appraiseeInfo.name}'s Evaluation`,
+                surveyData.survey.surveyName,
                 surveyData.users,
                 baseSurveyLink,
-                surveyId
+                surveyId,
+                group.appraiseeInfo.name
               );
 
               totalEmailsSent += group.recipients.length;
