@@ -164,11 +164,11 @@ export const sendBulkEmails = async (
             You've been invited to give feedback for <strong>${appraiseeeName || "your colleague"}</strong> as part of a 360° feedback process. Your input will really help them understand their strengths and where they can grow.
           </p>
           <p>
-            The survey is quick (about 10-15 minutes) and your responses will stay confidential. Please complete it by <strong>${formattedDeadline}</strong> using the link below:
+            The survey is quick (about 2-3 minutes) and your responses will stay confidential. Please complete it by <strong>${formattedDeadline}</strong> using the link below:
           </p>
           <p style="margin: 20px 0; text-align: center;">
             <a href="${personalizedSurveyLink}" target="_blank" style="background-color: #059629; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-              🔗 Start Survey
+              Start Survey
             </a>
           </p>
           <p>
