@@ -167,10 +167,13 @@ const SurveyPreview = () => {
             // 3. name field (if available)
             // 4. Extract from email as last resort
             let name = "";
-            
+
             if (userDetails.firstName && userDetails.lastName) {
               name = `${userDetails.firstName} ${userDetails.lastName}`;
-            } else if (userDetails.username && !userDetails.username.includes("@")) {
+            } else if (
+              userDetails.username &&
+              !userDetails.username.includes("@")
+            ) {
               name = userDetails.username;
             } else if (userDetails.name && !userDetails.name.includes("@")) {
               name = userDetails.name;
@@ -202,10 +205,13 @@ const SurveyPreview = () => {
               // 3. name field (if available)
               // 4. Extract from email as last resort
               let name = "";
-              
+
               if (userDetails.firstName && userDetails.lastName) {
                 name = `${userDetails.firstName} ${userDetails.lastName}`;
-              } else if (userDetails.username && !userDetails.username.includes("@")) {
+              } else if (
+                userDetails.username &&
+                !userDetails.username.includes("@")
+              ) {
                 name = userDetails.username;
               } else if (userDetails.name && !userDetails.name.includes("@")) {
                 name = userDetails.name;
