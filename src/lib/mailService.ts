@@ -143,7 +143,7 @@ export const sendBulkEmails = async (
       const individualEmailRequest = {
         to: recipientEmail,
         name: recipientName,
-        subject: `Invitation: ${surveyName}${appraiseeeName ? ` - ${appraiseeeName}'s Evaluation` : ""}`,
+        subject: `Share Your Feedback for ${appraiseeeName || "Your Colleague"}`,
         html: `<!DOCTYPE html>
 <html>
   <head>
@@ -159,19 +159,21 @@ export const sendBulkEmails = async (
       </tr>
       <tr>
         <td style="padding: 20px; color: #333333; font-size: 15px; line-height: 1.6;">
-          <p>Dear <strong>${recipientName}</strong>,</p>
+          <p>Hi <strong>${recipientName}</strong>,</p>
           <p>
-            You have been invited to participate in our <strong>360° Feedback Survey: ${surveyName}</strong>${appraiseeeName ? ` for <strong>${appraiseeeName}</strong>` : ""}. Your input is valuable and will help us build a better feedback culture.
+            You've been invited to give feedback for <strong>${appraiseeeName || "your colleague"}</strong> as part of a 360° feedback process. Your input will really help them understand their strengths and where they can grow.
+          </p>
+          <p>
+            The survey is quick (about 10-15 minutes) and your responses will stay confidential. Please complete it by <strong>${formattedDeadline}</strong> using the link below:
           </p>
           <p style="margin: 20px 0; text-align: center;">
             <a href="${personalizedSurveyLink}" target="_blank" style="background-color: #059629; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-              Start Survey
+              🔗 Start Survey
             </a>
           </p>
           <p>
-            Please complete the survey by <strong>${formattedDeadline}</strong>. If you have any questions, feel free to contact us.
+            Thanks so much for taking the time to support your colleague!
           </p>
-          <p>Thank you for your time and valuable contribution.</p>
         </td>
       </tr>
       <tr>
