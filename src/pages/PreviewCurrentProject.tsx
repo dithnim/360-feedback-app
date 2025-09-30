@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BarChart from "../../report/shared/charts/BarChart/BarChart";
 import PageNav from "../components/ui/pageNav";
 import { Button } from "../components/ui/Button";
+import { useNavigate } from "react-router-dom";
 
 // Import template images
 import template1 from "../../imgs/Report 1.png";
@@ -62,9 +63,67 @@ const templates = [
 
 export default function PreviewCurrentProject() {
   const [selectedTemplate, setSelectedTemplate] = useState(1);
+  const [surveyId, setSurveyId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Function to get surveyId from localStorage
+  const getSurveyIdFromLocalStorage = () => {
+    try {
+      const surveyDetailsData = localStorage.getItem("SurveyDetails");
+      if (surveyDetailsData) {
+        const surveyDetails = JSON.parse(surveyDetailsData);
+        console.log("Survey details from localStorage:", surveyDetails);
+
+        // Extract surveyId from the survey details
+        // Handle different possible data structures
+        let extractedSurveyId = null;
+
+        if (Array.isArray(surveyDetails) && surveyDetails.length > 0) {
+          extractedSurveyId = surveyDetails[0].id || surveyDetails[0].surveyId;
+        } else if (surveyDetails.id) {
+          extractedSurveyId = surveyDetails.id;
+        } else if (surveyDetails.surveyId) {
+          extractedSurveyId = surveyDetails.surveyId;
+        }
+
+        console.log("Extracted surveyId:", extractedSurveyId);
+        return extractedSurveyId;
+      }
+
+      console.warn("No survey details found in localStorage");
+      return null;
+    } catch (error) {
+      console.error("Error parsing survey details from localStorage:", error);
+      return null;
+    }
+  };
+
+  // Function to navigate to feedback report with surveyId
+  const navigateToFeedbackReport = () => {
+    const currentSurveyId = surveyId || getSurveyIdFromLocalStorage();
+
+    // Use a default participant ID for navigation
+    const defaultParticipantId = "68d57cc1a414267980de9646";
+
+    if (currentSurveyId) {
+      const url = `/feedback-report?participantId=${defaultParticipantId}&surveyId=${currentSurveyId}`;
+      console.log("Navigating to:", url);
+      navigate(url);
+    } else {
+      console.error("No surveyId available for navigation");
+      alert("Survey ID not found. Please ensure survey details are loaded.");
+    }
+  };
+
+  // Load surveyId on component mount
+  useEffect(() => {
+    const loadedSurveyId = getSurveyIdFromLocalStorage();
+    setSurveyId(loadedSurveyId);
+  }, []);
 
   const handleDownloadPDF = () => {
-    alert("Download PDF functionality coming soon!");
+    // Navigate to feedback report page using stored participantId and surveyId
+    navigateToFeedbackReport();
   };
 
   return (
@@ -124,8 +183,9 @@ export default function PreviewCurrentProject() {
             size="lg"
             className="flex items-center gap-2 px-6 py-3 text-lg accent-[#A10000]"
             onClick={handleDownloadPDF}
+            disabled={!surveyId}
           >
-            Download PDF
+            {!surveyId ? "Survey ID Required" : "Download PDF"}
             <span role="img" aria-label="download">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -16,15 +16,130 @@ import {
 } from "../components/ui/alert-dialog";
 
 const getProjects = async (companyId: string) => {
-  const response = await apiGet(`/project/company/${companyId}`);
-  if (response && Array.isArray(response)) {
-    return response;
+  try {
+    const response = await apiGet(`/project/company/${companyId}`);
+    if (response && Array.isArray(response)) {
+      // Store project details in local storage
+      localStorage.setItem("ProjectDetails", JSON.stringify(response));
+      console.log("Project details saved to localStorage:", response);
+      return response;
+    }
+    throw new Error("Invalid response from API");
+  } catch (error) {
+    console.error("Error fetching project details:", error);
+    throw error;
   }
-  throw new Error("Invalid response from API");
+};
+
+// Specific function to fetch project details for the specified company
+const getSpecificCompanyProjects = async () => {
+  try {
+    const specificCompanyId = "68d57c57a414267980de9645";
+    const response = await apiGet(`/project/company/${specificCompanyId}`);
+    if (response && Array.isArray(response)) {
+      // Store project details in local storage with a specific key
+      localStorage.setItem(
+        "SpecificCompanyProjectDetails",
+        JSON.stringify(response)
+      );
+      console.log(
+        "Specific company project details saved to localStorage:",
+        response
+      );
+      return response;
+    }
+    throw new Error("Invalid response from API");
+  } catch (error) {
+    console.error("Error fetching specific company project details:", error);
+    throw error;
+  }
 };
 
 const deleteProject = async (projectId: string) => {
   return await apiDelete(`/project/${projectId}`);
+};
+
+// Function to fetch survey details for a specific project
+const getSurveyDetails = async (projectId: string) => {
+  try {
+    console.log("Fetching survey details for project ID:", projectId);
+    const response = await apiGet(`/project/${projectId}/survey`);
+    console.log("Raw survey response:", response);
+
+    if (response) {
+      // Store survey details in local storage
+      localStorage.setItem("SurveyDetails", JSON.stringify(response));
+      console.log("Survey details saved to localStorage:", response);
+      return response;
+    }
+
+    console.warn("Invalid survey response format:", response);
+    throw new Error("Invalid response from API - no survey data received");
+  } catch (error) {
+    console.error("Error fetching survey details:", error);
+    throw error;
+  }
+};
+
+// Function to get projectId from localStorage and fetch survey details
+const getSurveyDetailsFromLocalStorage = async () => {
+  try {
+    // First, try to get project details from localStorage
+    const projectDetailsData = localStorage.getItem("ProjectDetails");
+    if (!projectDetailsData) {
+      throw new Error("No project details found in localStorage");
+    }
+
+    const projectDetails = JSON.parse(projectDetailsData);
+    console.log("Project details from localStorage:", projectDetails);
+
+    // If it's an array, get the first project's ID, otherwise use the id directly
+    let projectId;
+    if (Array.isArray(projectDetails) && projectDetails.length > 0) {
+      projectId = projectDetails[0].id;
+    } else if (projectDetails.id) {
+      projectId = projectDetails.id;
+    } else {
+      throw new Error("No valid project ID found in localStorage");
+    }
+
+    console.log("Using project ID from localStorage:", projectId);
+    return await getSurveyDetails(projectId);
+  } catch (error) {
+    console.error(
+      "Error getting survey details from localStorage project:",
+      error
+    );
+    throw error;
+  }
+};
+
+// Function to fetch survey details for the specific project ID
+const getSpecificProjectSurveyDetails = async () => {
+  try {
+    const specificProjectId = "68d57cfea414267980de964a";
+    console.log(
+      "Fetching survey details for specific project ID:",
+      specificProjectId
+    );
+    const response = await apiGet(`/project/${specificProjectId}/survey`);
+    if (response) {
+      // Store survey details in local storage with a specific key
+      localStorage.setItem(
+        "SpecificProjectSurveyDetails",
+        JSON.stringify(response)
+      );
+      console.log(
+        "Specific project survey details saved to localStorage:",
+        response
+      );
+      return response;
+    }
+    throw new Error("Invalid response from API");
+  } catch (error) {
+    console.error("Error fetching specific project survey details:", error);
+    throw error;
+  }
 };
 
 const getCompanies = async (companyId: string) => {
@@ -83,13 +198,28 @@ export default function CurrentProjectsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the organization from the passed state, fallback to hardcoded ID if not available
-  const org = location.state?.org;
+  // Get company details from localStorage first, then fallback to navigation state
+  const getCompanyFromLocalStorage = () => {
+    try {
+      const companyData = localStorage.getItem("Company");
+      return companyData ? JSON.parse(companyData) : null;
+    } catch (error) {
+      console.error("Error parsing company data from localStorage:", error);
+      return null;
+    }
+  };
+
+  const localStorageCompany = getCompanyFromLocalStorage();
+  const org = localStorageCompany || location.state?.org;
   const companyId = org?.id;
 
   // Debug logging
+  console.log(
+    "CurrentProjectsPage - localStorage company:",
+    localStorageCompany
+  );
   console.log("CurrentProjectsPage - location.state:", location.state);
-  console.log("CurrentProjectsPage - org:", org);
+  console.log("CurrentProjectsPage - final org:", org);
   console.log("CurrentProjectsPage - companyId:", companyId);
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -103,10 +233,25 @@ export default function CurrentProjectsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [companyDataLoaded, setCompanyDataLoaded] = useState(false);
 
+  // Function to refresh company data from localStorage
+  const refreshCompanyFromLocalStorage = useCallback(() => {
+    const companyData = getCompanyFromLocalStorage();
+    console.log("Refreshed company data from localStorage:", companyData);
+    return companyData;
+  }, []);
+
   // Function to check and log localStorage data
   const checkLocalStorageData = useCallback(() => {
     const company = localStorage.getItem("Company");
     const participants = localStorage.getItem("Participants");
+    const projectDetails = localStorage.getItem("ProjectDetails");
+    const specificCompanyProjectDetails = localStorage.getItem(
+      "SpecificCompanyProjectDetails"
+    );
+    const surveyDetails = localStorage.getItem("SurveyDetails");
+    const specificProjectSurveyDetails = localStorage.getItem(
+      "SpecificProjectSurveyDetails"
+    );
 
     console.log("LocalStorage check:");
     console.log("- Company data:", company ? JSON.parse(company) : "Not found");
@@ -114,20 +259,125 @@ export default function CurrentProjectsPage() {
       "- Participants data:",
       participants ? JSON.parse(participants) : "Not found"
     );
+    console.log(
+      "- Project details:",
+      projectDetails ? JSON.parse(projectDetails) : "Not found"
+    );
+    console.log(
+      "- Specific company project details:",
+      specificCompanyProjectDetails
+        ? JSON.parse(specificCompanyProjectDetails)
+        : "Not found"
+    );
+    console.log(
+      "- Survey details:",
+      surveyDetails ? JSON.parse(surveyDetails) : "Not found"
+    );
+    console.log(
+      "- Specific project survey details:",
+      specificProjectSurveyDetails
+        ? JSON.parse(specificProjectSurveyDetails)
+        : "Not found"
+    );
 
     return {
       hasCompany: !!company,
       hasParticipants: !!participants,
+      hasProjectDetails: !!projectDetails,
+      hasSpecificCompanyProjectDetails: !!specificCompanyProjectDetails,
+      hasSurveyDetails: !!surveyDetails,
+      hasSpecificProjectSurveyDetails: !!specificProjectSurveyDetails,
       companyData: company ? JSON.parse(company) : null,
       participantsData: participants ? JSON.parse(participants) : null,
+      projectDetailsData: projectDetails ? JSON.parse(projectDetails) : null,
+      specificCompanyProjectDetailsData: specificCompanyProjectDetails
+        ? JSON.parse(specificCompanyProjectDetails)
+        : null,
+      surveyDetailsData: surveyDetails ? JSON.parse(surveyDetails) : null,
+      specificProjectSurveyDetailsData: specificProjectSurveyDetails
+        ? JSON.parse(specificProjectSurveyDetails)
+        : null,
     };
+  }, []);
+
+  // Function to fetch specific company project details
+  const fetchSpecificCompanyProjectDetails = useCallback(async () => {
+    try {
+      console.log(
+        "Fetching project details for specific company ID: 68d57c57a414267980de9645"
+      );
+      const data = await getSpecificCompanyProjects();
+      console.log("Specific company project details fetched and stored:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch specific company project details:", error);
+      throw error;
+    }
+  }, []);
+
+  // // Function to fetch survey details for any project
+  // const fetchSurveyDetails = useCallback(async (projectId: string) => {
+  //   try {
+  //     console.log("Fetching survey details for project ID:", projectId);
+  //     const data = await getSurveyDetails(projectId);
+  //     console.log("Survey details fetched and stored:", data);
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Failed to fetch survey details:", error);
+  //     throw error;
+  //   }
+  // }, []);
+
+  // Function to fetch survey details using projectId from localStorage
+  const fetchSurveyDetailsFromLocalStorage = useCallback(async () => {
+    try {
+      console.log("Fetching survey details using project ID from localStorage");
+      const data = await getSurveyDetailsFromLocalStorage();
+      console.log(
+        "Survey details fetched from localStorage project and stored:",
+        data
+      );
+      return data;
+    } catch (error) {
+      console.error(
+        "Failed to fetch survey details from localStorage project:",
+        error
+      );
+      throw error;
+    }
+  }, []);
+
+  // Function to fetch specific project survey details
+  const fetchSpecificProjectSurveyDetails = useCallback(async () => {
+    try {
+      console.log(
+        "Fetching survey details for specific project ID: 68d57cfea414267980de964a"
+      );
+      const data = await getSpecificProjectSurveyDetails();
+      console.log("Specific project survey details fetched and stored:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch specific project survey details:", error);
+      throw error;
+    }
   }, []);
 
   // Memoized function to fetch company and participant data only once
   const fetchCompanyData = useCallback(async () => {
-    if (!companyId) {
-      console.error("Cannot fetch company data: companyId is missing");
-      throw new Error("Company ID is required but not provided");
+    // Try to get companyId from localStorage first
+    let currentCompanyId = companyId;
+    if (!currentCompanyId) {
+      const localCompany = refreshCompanyFromLocalStorage();
+      currentCompanyId = localCompany?.id;
+    }
+
+    if (!currentCompanyId) {
+      console.error(
+        "Cannot fetch company data: companyId is missing from both navigation state and localStorage"
+      );
+      throw new Error(
+        "Company ID is required but not provided in navigation state or localStorage"
+      );
     }
 
     if (companyDataLoaded) {
@@ -138,7 +388,7 @@ export default function CurrentProjectsPage() {
     try {
       console.log(
         "Fetching company and participant details for ID:",
-        companyId
+        currentCompanyId
       );
 
       // Check if data already exists in localStorage
@@ -157,11 +407,11 @@ export default function CurrentProjectsPage() {
         "Starting parallel fetch of company and participants data..."
       );
       const [companyData, participantsData] = await Promise.all([
-        getCompanies(companyId).catch((error) => {
+        getCompanies(currentCompanyId).catch((error) => {
           console.error("Company fetch failed:", error);
           throw new Error(`Company fetch failed: ${error.message}`);
         }),
-        getParticipants(companyId).catch((error) => {
+        getParticipants(currentCompanyId).catch((error) => {
           console.error("Participants fetch failed:", error);
           throw new Error(`Participants fetch failed: ${error.message}`);
         }),
@@ -175,7 +425,12 @@ export default function CurrentProjectsPage() {
       console.error("Failed to fetch company details:", error);
       throw error;
     }
-  }, [companyId, companyDataLoaded]);
+  }, [
+    companyId,
+    companyDataLoaded,
+    refreshCompanyFromLocalStorage,
+    checkLocalStorageData,
+  ]);
 
   // Function to handle navigation to project creation
   const handleCreateProject = useCallback(async () => {
@@ -193,10 +448,19 @@ export default function CurrentProjectsPage() {
   }, [fetchCompanyData, navigate]);
 
   const fetchProjects = useCallback(async () => {
-    if (!companyId) {
-      console.error("Cannot fetch projects: companyId is missing");
+    // Try to get companyId from localStorage first
+    let currentCompanyId = companyId;
+    if (!currentCompanyId) {
+      const localCompany = refreshCompanyFromLocalStorage();
+      currentCompanyId = localCompany?.id;
+    }
+
+    if (!currentCompanyId) {
+      console.error(
+        "Cannot fetch projects: companyId is missing from both navigation state and localStorage"
+      );
       setError(
-        "Company ID is missing. Please navigate from the company selection page."
+        "Company ID is missing. Please navigate from the company selection page or ensure company data is stored in localStorage."
       );
       setLoading(false);
       return;
@@ -205,8 +469,8 @@ export default function CurrentProjectsPage() {
     setLoading(true);
     setError(null);
     try {
-      console.log("Fetching projects for companyId:", companyId);
-      const data = await getProjects(companyId);
+      console.log("Fetching projects for companyId:", currentCompanyId);
+      const data = await getProjects(currentCompanyId);
       console.log("Projects fetched:", data);
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -216,14 +480,14 @@ export default function CurrentProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, [companyId, refreshCompanyFromLocalStorage]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 
-  const navigateToViewParticipants = (projectId: string) => {
-    navigate(`/preview-participants`, { state: { projectId } });
+  const navigateToViewSurveys = async (projectId: string) => {
+    navigate(`/view-surveys`, { state: { projectId } });
   };
 
   const handleProjectSelect = (projectId: string, checked: boolean) => {
@@ -306,28 +570,6 @@ export default function CurrentProjectsPage() {
                 : "Project Dashboard"}
             </h2>
             <div className="flex gap-2">
-              {/* Debug button to test participant fetching */}
-              <Button
-                variant="next"
-                className="border border-blue-500 text-blue-500 bg-transparent px-4 py-2 rounded-lg"
-                onClick={async () => {
-                  console.log("=== DEBUG: Testing participant fetch ===");
-                  checkLocalStorageData();
-                  if (companyId) {
-                    try {
-                      await fetchCompanyData();
-                      console.log("=== DEBUG: Fetch completed ===");
-                      checkLocalStorageData();
-                    } catch (error) {
-                      console.error("=== DEBUG: Fetch failed ===", error);
-                    }
-                  } else {
-                    console.error("=== DEBUG: No companyId available ===");
-                  }
-                }}
-              >
-                Debug Data
-              </Button>
               <Button
                 variant="black"
                 className="text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
@@ -468,9 +710,9 @@ export default function CurrentProjectsPage() {
                       <Button
                         variant="next"
                         className="border border-[#ee3f40] text-[#ee3f40] bg-transparent  rounded-full cursor-pointer px-4 py-2"
-                        onClick={() => navigateToViewParticipants(project.id)}
+                        onClick={() => navigateToViewSurveys(project.id)}
                       >
-                        View Details
+                        View Surveys
                       </Button>
                       <Button
                         variant="next"

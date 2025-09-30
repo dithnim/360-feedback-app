@@ -126,8 +126,9 @@ export default function PreviewParticipants() {
   }, [location.state]);
 
   const onPreview = (participantId: string) => {
-    // Navigate to the existing report page with ?id=<surveyAnswerId>
-    navigate(`/feedback-report?id=${encodeURIComponent(participantId)}`);
+    navigate(
+      `/view-project?participantId=${encodeURIComponent(participantId)}`
+    );
   };
 
   // Skeleton component for loading state
