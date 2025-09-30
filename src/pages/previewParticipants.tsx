@@ -141,10 +141,13 @@ export default function PreviewParticipants() {
           <Skeleton className="h-5 w-5" />
         </div>
       </div>
-      
+
       {/* Participant list skeletons */}
       {[...Array(3)].map((_, index) => (
-        <div key={index} className="flex items-center justify-between py-5 gap-4">
+        <div
+          key={index}
+          className="flex items-center justify-between py-5 gap-4"
+        >
           {/* Avatar and name skeleton */}
           <div className="flex items-center gap-2">
             <Skeleton className="w-12 h-12 rounded-full" />
@@ -199,7 +202,11 @@ export default function PreviewParticipants() {
           <>
             {/* Header controls */}
             <div className="flex items-center gap-3 py-3 border-b">
-              <input type="checkbox" aria-label="select all" />
+              <input
+                type="checkbox"
+                className="form-checkbox h-4 w-4 accent-[#ee3e41]"
+                aria-label="select all"
+              />
               <span>Download All Reports</span>
               <button
                 type="button"
@@ -266,7 +273,11 @@ export default function PreviewParticipants() {
                     </Button>
 
                     {/* Select checkbox */}
-                    <input type="checkbox" aria-label={`select ${p.name}`} />
+                    <input
+                      type="checkbox"
+                      className="form-checkbox h-4 w-4 accent-[#ee3e41] ms-2"
+                      aria-label={`select ${p.name}`}
+                    />
                   </div>
                 </li>
               ))}
