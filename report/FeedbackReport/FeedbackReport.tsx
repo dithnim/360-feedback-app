@@ -16,8 +16,10 @@ import BarChart from "../shared/charts/BarChart/BarChart";
 import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore";
 import { openEndedFeedbackDataStore } from "../utils/data/store/openEndedFeedbackDataStore";
 
-import coverLogo from "../imgs/templates/Dash.png";
-import CompanyImage from "../imgs/templates/cover_1.png";
+const coverLogo = new URL("../imgs/templates/Dash.png", import.meta.url).href;
+const CompanyImage = new URL("../imgs/templates/cover_1.png", import.meta.url)
+  .href;
+import { apiGet } from "../../src/lib/apiService";
 
 // Types and interfaces
 interface EditState {
@@ -73,6 +75,66 @@ const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
 import LeadershipQuestionRow from "../../src/components/ui/LeadershipQuestionRow";
 
 const FeedbackReport: React.FC = () => {
+  // Fetch report data on initial load, using id from query string
+  const [reportData, setReportData] = useState<any | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const surveyId = params.get("id");
+        if (!surveyId) return;
+
+        const data = await apiGet<any>(
+          `/look/survey/answer/${surveyId}/report`,
+          { signal: controller.signal }
+        );
+        if (cancelled) return;
+        setReportData(data);
+
+        // Map competency summary notation { C1: { averageLikert, likertQuestions }, ... }
+        const candidateMaps = [
+          data?.summaryOfCompetencyRatings,
+          data?.competencySummary,
+          data?.competenciesSummary,
+          data,
+        ];
+        const compMap = candidateMaps.find(
+          (m: any) => m && typeof m === "object" && !Array.isArray(m)
+        );
+
+        if (compMap) {
+          const entries = Object.entries(compMap).filter(
+            ([, v]: any) => v && typeof v === "object" && "averageLikert" in v
+          ) as [
+            string,
+            { averageLikert?: number; likertQuestions?: string[] },
+          ][];
+
+          if (entries.length) {
+            const items = entries.map(([key, val]) => ({
+              category: key,
+              rating: Number(val.averageLikert ?? 0),
+              out_of: 5,
+              description: categoryDescriptions[key] || "",
+              charts: [],
+            }));
+            setSumOfComRating(items as any[]);
+          }
+        }
+      } catch (err: any) {
+        if (!cancelled && String(err?.message || err).match(/abort|cancel/i)) {
+          return;
+        }
+        console.error("Failed to load report data:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
   // State for new TOC entry
   const [newToc, setNewToc] = useState({ title: "", page: "" });
   const pdfSectionRef = useRef<HTMLDivElement>(null);

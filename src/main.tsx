@@ -35,6 +35,9 @@ const SurveyThankYou = lazy(() => import("./pages/SurveyThankYou"));
 const SurveyDemo = lazy(() => import("./pages/SurveyDemo"));
 import ErrorBoundary from "./components/ErrorBoundary";
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const PreviewParticipants = lazy(
+  () => import("./pages/previewParticipants.tsx")
+);
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -127,6 +130,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CreateTeam />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/preview-participants"
+        element={
+          <ProtectedRoute>
+            <PreviewParticipants />
           </ProtectedRoute>
         }
       />

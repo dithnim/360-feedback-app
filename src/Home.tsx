@@ -88,6 +88,13 @@ function Home() {
 
   //? Handler for viewing an organization
   const handleViewOrganization = (org: any) => {
+    // Persist the selected organization for later pages/refreshes
+    try {
+      // Optional: make it available under the common key used elsewhere
+      localStorage.setItem("Company", JSON.stringify(org));
+    } catch (e) {
+      console.warn("Failed to persist selected organization:", e);
+    }
     navigate("/current-projects", { state: { org } });
   };
 

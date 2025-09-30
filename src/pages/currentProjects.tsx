@@ -43,14 +43,21 @@ const getCompanies = async (companyId: string) => {
 };
 
 const getParticipants = async (companyId: string) => {
-  const response = await apiGet(`/user/company/${companyId}`);
   try {
+    console.log("Fetching participants for company ID:", companyId);
+    const response = await apiGet(`/company/user/company/${companyId}`);
+    console.log("Raw participants response:", response);
+
     if (response && Array.isArray(response)) {
       localStorage.setItem("Participants", JSON.stringify(response));
       console.log("Participants data saved to localStorage:", response);
       return response;
     }
-    throw new Error("Invalid response from API");
+
+    console.warn("Invalid participants response format:", response);
+    throw new Error(
+      "Invalid response from API - expected array but got: " + typeof response
+    );
   } catch (error) {
     console.error("Error fetching participants:", error);
     throw error;
@@ -80,6 +87,11 @@ export default function CurrentProjectsPage() {
   const org = location.state?.org;
   const companyId = org?.id;
 
+  // Debug logging
+  console.log("CurrentProjectsPage - location.state:", location.state);
+  console.log("CurrentProjectsPage - org:", org);
+  console.log("CurrentProjectsPage - companyId:", companyId);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,10 +103,36 @@ export default function CurrentProjectsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [companyDataLoaded, setCompanyDataLoaded] = useState(false);
 
+  // Function to check and log localStorage data
+  const checkLocalStorageData = useCallback(() => {
+    const company = localStorage.getItem("Company");
+    const participants = localStorage.getItem("Participants");
+
+    console.log("LocalStorage check:");
+    console.log("- Company data:", company ? JSON.parse(company) : "Not found");
+    console.log(
+      "- Participants data:",
+      participants ? JSON.parse(participants) : "Not found"
+    );
+
+    return {
+      hasCompany: !!company,
+      hasParticipants: !!participants,
+      companyData: company ? JSON.parse(company) : null,
+      participantsData: participants ? JSON.parse(participants) : null,
+    };
+  }, []);
+
   // Memoized function to fetch company and participant data only once
   const fetchCompanyData = useCallback(async () => {
-    if (!companyId || companyDataLoaded) {
-      return; // Skip if no companyId or data already loaded
+    if (!companyId) {
+      console.error("Cannot fetch company data: companyId is missing");
+      throw new Error("Company ID is required but not provided");
+    }
+
+    if (companyDataLoaded) {
+      console.log("Skipping fetchCompanyData - data already loaded");
+      return;
     }
 
     try {
@@ -104,10 +142,9 @@ export default function CurrentProjectsPage() {
       );
 
       // Check if data already exists in localStorage
-      const existingCompany = localStorage.getItem("Company");
-      const existingParticipants = localStorage.getItem("Participants");
+      const localStorageCheck = checkLocalStorageData();
 
-      if (existingCompany && existingParticipants) {
+      if (localStorageCheck.hasCompany && localStorageCheck.hasParticipants) {
         console.log(
           "Company and participant data already available in localStorage"
         );
@@ -116,11 +153,22 @@ export default function CurrentProjectsPage() {
       }
 
       // Fetch both company and participants data in parallel
+      console.log(
+        "Starting parallel fetch of company and participants data..."
+      );
       const [companyData, participantsData] = await Promise.all([
-        getCompanies(companyId),
-        getParticipants(companyId),
+        getCompanies(companyId).catch((error) => {
+          console.error("Company fetch failed:", error);
+          throw new Error(`Company fetch failed: ${error.message}`);
+        }),
+        getParticipants(companyId).catch((error) => {
+          console.error("Participants fetch failed:", error);
+          throw new Error(`Participants fetch failed: ${error.message}`);
+        }),
       ]);
 
+      console.log("Company data fetched:", companyData);
+      console.log("Participants data fetched:", participantsData);
       console.log("Company and participant details fetched successfully");
       setCompanyDataLoaded(true);
     } catch (error) {
@@ -145,12 +193,25 @@ export default function CurrentProjectsPage() {
   }, [fetchCompanyData, navigate]);
 
   const fetchProjects = useCallback(async () => {
+    if (!companyId) {
+      console.error("Cannot fetch projects: companyId is missing");
+      setError(
+        "Company ID is missing. Please navigate from the company selection page."
+      );
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
+      console.log("Fetching projects for companyId:", companyId);
       const data = await getProjects(companyId);
+      console.log("Projects fetched:", data);
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
+      console.error("Failed to fetch projects:", err);
+      setError("Failed to load projects. Please try again.");
       setProjects([]);
     } finally {
       setLoading(false);
@@ -161,8 +222,8 @@ export default function CurrentProjectsPage() {
     fetchProjects();
   }, [fetchProjects]);
 
-  const navigateToViewProject = (projectId: string) => {
-    navigate(`/view-project`, { state: { projectId } });
+  const navigateToViewParticipants = (projectId: string) => {
+    navigate(`/preview-participants`, { state: { projectId } });
   };
 
   const handleProjectSelect = (projectId: string, checked: boolean) => {
@@ -244,14 +305,38 @@ export default function CurrentProjectsPage() {
                 ? `${org.name} - Project Dashboard`
                 : "Project Dashboard"}
             </h2>
-            <Button
-              variant="black"
-              className="text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
-              onClick={handleCreateProject}
-            >
-              <i className="bx bx-plus text-xl"></i>
-              Create New Project
-            </Button>
+            <div className="flex gap-2">
+              {/* Debug button to test participant fetching */}
+              <Button
+                variant="next"
+                className="border border-blue-500 text-blue-500 bg-transparent px-4 py-2 rounded-lg"
+                onClick={async () => {
+                  console.log("=== DEBUG: Testing participant fetch ===");
+                  checkLocalStorageData();
+                  if (companyId) {
+                    try {
+                      await fetchCompanyData();
+                      console.log("=== DEBUG: Fetch completed ===");
+                      checkLocalStorageData();
+                    } catch (error) {
+                      console.error("=== DEBUG: Fetch failed ===", error);
+                    }
+                  } else {
+                    console.error("=== DEBUG: No companyId available ===");
+                  }
+                }}
+              >
+                Debug Data
+              </Button>
+              <Button
+                variant="black"
+                className="text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
+                onClick={handleCreateProject}
+              >
+                <i className="bx bx-plus text-xl"></i>
+                Create New Project
+              </Button>
+            </div>
           </div>
           <div className="mb-4">
             <h3 className="font-medium text-xl mb-2">Active Projects</h3>
@@ -383,7 +468,7 @@ export default function CurrentProjectsPage() {
                       <Button
                         variant="next"
                         className="border border-[#ee3f40] text-[#ee3f40] bg-transparent  rounded-full cursor-pointer px-4 py-2"
-                        onClick={() => navigateToViewProject(project.id)}
+                        onClick={() => navigateToViewParticipants(project.id)}
                       >
                         View Details
                       </Button>
