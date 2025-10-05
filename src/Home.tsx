@@ -100,6 +100,15 @@ function Home() {
 
   //? Handler for creating a new organization
   const handleCreateOrganization = () => {
+    localStorage.removeItem("Company");
+    localStorage.removeItem("CompanyUsers");
+    localStorage.removeItem("SurveyUsers");
+    localStorage.removeItem("CompanyFormData");
+    localStorage.removeItem("Participants");
+    localStorage.removeItem("ProjectDetails");
+    localStorage.removeItem("SurveyDetails");
+    localStorage.removeItem("surveyCreationData");
+    localStorage.removeItem("SavedQuestions");
     navigate("/project");
   };
 

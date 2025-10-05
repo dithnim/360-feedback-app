@@ -5,10 +5,6 @@ import { useNavigate } from "react-router-dom";
 const SurveyThankYou = () => {
   const navigate = useNavigate();
 
-  const handleGoHome = () => {
-    navigate("/login");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicNavbar title="Survey Complete" />
@@ -55,18 +51,14 @@ const SurveyThankYou = () => {
             </div>
 
             {/* Action Button */}
-            <Button
-              onClick={handleGoHome}
-              variant="success"
-              className="w-full py-3"
-            >
+            <Button variant="success" className="w-full py-3">
               Close Survey
             </Button>
 
             {/* Footer */}
             <p className="text-xs text-gray-500 mt-6">
               If you have any questions about this survey, please contact your
-              HR department.
+              HR department. You can close this window now.
             </p>
           </div>
         </div>
