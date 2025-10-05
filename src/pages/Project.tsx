@@ -1173,7 +1173,7 @@ const Project = () => {
             {userCreationError && (
               <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">
-                  <strong>Error:</strong> {userCreationError}
+                  Duplicate Emails Found..!
                 </p>
               </div>
             )}
@@ -2121,7 +2121,7 @@ const Project = () => {
             {userCreationError && (
               <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">
-                  <strong>Error:</strong> {userCreationError}
+                  Duplicate Emails Found..!
                 </p>
               </div>
             )}
