@@ -2029,64 +2029,7 @@ const Project = () => {
                 <Button
                   variant="next"
                   className="font-semibold text-xl flex items-center justify-center p-6"
-                  onClick={async () => {
-                    setIsSubmitting(true);
-
-                    // Create users before finishing if participants exist
-                    const participantsData = localStorage.getItem(
-                      LS_KEYS.surveyUsers
-                    );
-                    if (participantsData) {
-                      try {
-                        const participants = JSON.parse(participantsData);
-                        if (participants.length > 0) {
-                          const response =
-                            await createSurveyUsers(participants);
-
-                          if (response && Array.isArray(response)) {
-                            // Store the created survey users with their IDs in local storage
-                            const surveyUsersWithIds = response.map(
-                              (createdUser: any, index: number) => ({
-                                ...participants[index], // Original form data
-                                id:
-                                  createdUser.id ||
-                                  createdUser._id ||
-                                  `survey_fallback_${Date.now()}_${index}`, // API-generated ID
-                              })
-                            );
-
-                            // Store updated survey users with IDs back to localStorage
-                            localStorage.setItem(
-                              LS_KEYS.surveyUsers,
-                              JSON.stringify(surveyUsersWithIds)
-                            );
-
-                            console.log(
-                              "Created survey users with IDs:",
-                              surveyUsersWithIds
-                            );
-                          } else if (!response) {
-                            setIsSubmitting(false);
-                            return; // Don't proceed if user creation failed
-                          }
-                        }
-                        console.log(
-                          "Participants data found:",
-                          participantsData
-                        );
-                      } catch (error) {
-                        console.error("Error parsing participants:", error);
-                      }
-                    }
-
-                    // Clear all form data and localStorage after successful completion
-                    // localStorage.removeItem("Company");
-                    // localStorage.removeItem("CompanyFormData");
-                    // localStorage.removeItem("CompanyUsers");
-                    // localStorage.removeItem("SurveyUsers");
-                    // localStorage.removeItem("Project");
-                    // localStorage.removeItem("companyUsers");
-
+                  onClick={() => {
                     // Reset all form states
                     resetCompany();
                     resetProject();
@@ -2106,8 +2049,6 @@ const Project = () => {
                     setSearchTerm("");
                     setFilterDesignation("");
                     setGroupCounter(1);
-
-                    setIsSubmitting(false);
 
                     navigate("/create");
                   }}

@@ -119,15 +119,6 @@ function Home() {
     setDeleteLoading(true);
     try {
       await deleteOrganization(organizationToDelete.id);
-      try {
-        await deleteUserByCompanyId(organizationToDelete.id);
-      } catch (error: any) {
-        if (error.message && error.message.includes("404")) {
-          console.log("No users found for company");
-        } else {
-          console.warn("Failed to delete users for company:", error);
-        }
-      }
       setOrganizations((prev) =>
         prev.filter((o) => o.id !== organizationToDelete.id)
       );

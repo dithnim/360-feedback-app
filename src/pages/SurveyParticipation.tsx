@@ -7,138 +7,6 @@ import { useUser } from "../context/UserContext";
 // import { getSurveyByToken, submitSurveyResponse } from "../lib/apiService";
 // import type { Survey, SurveyResponse as APISurveyResponse } from "../lib/apiService";
 
-// Dummy survey data matching the design
-const dummySurveyData = {
-  id: "survey-123",
-  title: "360 Degree Feedback Survey",
-  employee: "Niro Yin",
-  competencies: [
-    {
-      id: 1,
-      name: "Communication",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo fugiat aut dolor voluptate velit eaque ex qui, ullam nec, potentiaque ex, pretium quis, elit.",
-      questions: [
-        {
-          id: 1,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-        {
-          id: 2,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-        {
-          id: 3,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Leadership",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo fugiat aut dolor voluptate velit eaque ex qui, ullam nec, potentiaque ex, pretium quis, elit.",
-      questions: [
-        {
-          id: 4,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-        {
-          id: 5,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-        {
-          id: 6,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: "Teamwork",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo fugiat aut dolor voluptate velit eaque ex qui, ullam nec, potentiaque ex, pretium quis, elit.",
-      questions: [
-        {
-          id: 7,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-        {
-          id: 8,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-        {
-          id: 9,
-          text: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam commodo?",
-          options: [
-            "Strongly Agree",
-            "Agree",
-            "Neutral",
-            "Strongly Disagree",
-            "Disagree",
-          ],
-        },
-      ],
-    },
-  ],
-};
-
 interface SurveyResponse {
   questionId: number;
   answer: string;
@@ -151,9 +19,7 @@ const SurveyParticipation = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [surveyData, setSurveyData] = useState<typeof dummySurveyData | null>(
-    null
-  );
+  const [surveyData, setSurveyData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,8 +39,6 @@ const SurveyParticipation = () => {
         setError(
           error instanceof Error ? error.message : "Failed to load survey"
         );
-        // Fall back to dummy data if API fails
-        setSurveyData(dummySurveyData);
       } finally {
         setIsLoading(false);
       }
@@ -242,9 +106,8 @@ const SurveyParticipation = () => {
       );
       return transformedData;
     } catch (error) {
-      console.error("Error fetching survey questions:", error);
       throw new Error(
-        `Failed to fetch survey questions: ${error instanceof Error ? error.message : "Unknown error"}`
+        `The survey you are trying to access is not available..!`
       );
     }
   };
@@ -334,7 +197,7 @@ const SurveyParticipation = () => {
 
   const isCurrentStepComplete = () => {
     if (!currentCompetency) return false;
-    return currentCompetency.questions.every((q) =>
+    return currentCompetency.questions.every((q: any) =>
       responses.some((r) => r.questionId === q.id && r.answer)
     );
   };
@@ -480,7 +343,7 @@ const SurveyParticipation = () => {
         showProgress={true}
         currentStep={currentStep + 1}
         totalSteps={totalSteps}
-        employee={surveyData?.employee || "Survey Participant"}
+        employee={surveyData?.employee}
       />
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="">
@@ -537,39 +400,41 @@ const SurveyParticipation = () => {
 
                 {/* Questions */}
                 <div className="p-8 space-y-8">
-                  {currentCompetency.questions.map((question, index) => (
-                    <div key={question.id} className="space-y-4">
-                      <h4 className="font-semibold text-gray-800 text-xl leading-relaxed">
-                        {index + 1}. {question.text}
-                      </h4>
+                  {currentCompetency.questions.map(
+                    (question: any, index: number) => (
+                      <div key={question.id} className="space-y-4">
+                        <h4 className="font-semibold text-gray-800 text-xl leading-relaxed">
+                          {index + 1}. {question.text}
+                        </h4>
 
-                      <div className="grid grid-cols-5 gap-4 mb-8">
-                        {question.options.map((option) => (
-                          <label
-                            key={option}
-                            className="flex flex-col items-center space-y-2 cursor-pointer group"
-                          >
-                            <input
-                              type="radio"
-                              name={`question-${question.id}`}
-                              value={option}
-                              checked={getResponse(question.id) === option}
-                              onChange={(e) =>
-                                handleResponseChange(
-                                  question.id,
-                                  e.target.value
-                                )
-                              }
-                              className="w-5 h-5 text-green-700 border-2 border-gray-300 focus:ring-green-500 focus:ring-2"
-                            />
-                            <span className="text-mc font-medium text-gray-700 text-center group-hover:text-green-700 transition-colors">
-                              {option}
-                            </span>
-                          </label>
-                        ))}
+                        <div className="grid grid-cols-5 gap-4 mb-8">
+                          {question.options.map((option: string) => (
+                            <label
+                              key={option}
+                              className="flex flex-col items-center space-y-2 cursor-pointer group"
+                            >
+                              <input
+                                type="radio"
+                                name={`question-${question.id}`}
+                                value={option}
+                                checked={getResponse(question.id) === option}
+                                onChange={(e) =>
+                                  handleResponseChange(
+                                    question.id,
+                                    e.target.value
+                                  )
+                                }
+                                className="w-5 h-5 text-green-700 border-2 border-gray-300 focus:ring-green-500 focus:ring-2"
+                              />
+                              <span className="text-mc font-medium text-gray-700 text-center group-hover:text-green-700 transition-colors">
+                                {option}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
 
                 {/* Navigation */}
