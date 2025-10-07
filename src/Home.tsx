@@ -195,7 +195,7 @@ function Home() {
               </div>
             </div>
           ) : (
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8 overflow-y-auto mt-6 md:mt-10 h-[calc(100vh-300px)] md:h-[calc(100vh-370px)] ">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8 overflow-y-auto mt-6 md:mt-10 h-[calc(100vh-300px)] md:h-[calc(100vh-370px)] p-3">
               {organizations.map((org) => (
                 <Card
                   key={org.id}
