@@ -23,9 +23,17 @@ const SurveyParticipation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get survey token and userId from URL parameters
+  // Get survey token, userId, and appraiseeId from URL parameters
   const surveyToken = searchParams.get("token") || "demo-token";
   const userIdFromUrl = searchParams.get("userId");
+  const appraiseeIdFromUrl = searchParams.get("appraiseeId");
+
+  // Log URL parameters for debugging
+  console.log("Survey Participation URL Parameters:", {
+    surveyToken,
+    userIdFromUrl,
+    appraiseeIdFromUrl,
+  });
 
   useEffect(() => {
     const fetchSurveyData = async () => {
@@ -241,10 +249,24 @@ const SurveyParticipation = () => {
       );
     }
 
+    if (!appraiseeIdFromUrl) {
+      throw new Error(
+        "Appraisee ID is required to create answer sheet. Please ensure the appraiseeId is provided in the URL."
+      );
+    }
+
+    console.log("Creating answer sheet with:", {
+      surveyId: surveyToken,
+      projectId,
+      userId,
+      appraiseeId: appraiseeIdFromUrl,
+    });
+
     return apiClient.postPublic<{ id: string }>("/survey/answer/sheet", {
       surveyId: surveyToken,
       projectId,
       userId,
+      appraiseeId: appraiseeIdFromUrl,
     });
   };
 

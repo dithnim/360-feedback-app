@@ -5,8 +5,6 @@ import CompetencySection from "../components/CompetencySection";
 import { createQuestion, createSurveyAll } from "../lib/apiService";
 import { createCompetency } from "@/lib/surveyService";
 import { useNavigate } from "react-router-dom";
-import { sendBulkEmails } from "../lib/mailService";
-import type { BulkEmailRecipient } from "../lib/mailService";
 
 // Types
 type QuestionType =
@@ -402,88 +400,6 @@ const SurvayScratch = () => {
   }, [surveyName]);
 
   // Extract email recipients from localStorage
-  const getEmailRecipients = useCallback((): BulkEmailRecipient[] => {
-    try {
-      const surveyUsersData = JSON.parse(
-        localStorage.getItem("SurveyUsers") || "[]"
-      );
-      const createdUsers = JSON.parse(
-        localStorage.getItem("createdUsers") || "[]"
-      );
-      const companyUsers = JSON.parse(
-        localStorage.getItem("CompanyUsers") || "[]"
-      );
-
-      // Create a mapping of user IDs to user details
-      const userDetailsMap = new Map<string, any>();
-
-      // First try createdUsers (most reliable source)
-      createdUsers.forEach((user: any) => {
-        if (user.id || user._id || user.manageUserId) {
-          const userId = user.id || user._id || user.manageUserId;
-          userDetailsMap.set(userId, user);
-        }
-      });
-
-      // Fallback to companyUsers if createdUsers is empty
-      if (userDetailsMap.size === 0 && companyUsers.length > 0) {
-        companyUsers.forEach((user: any) => {
-          if (user.id) {
-            userDetailsMap.set(user.id, user);
-          }
-        });
-      }
-
-      const recipients: BulkEmailRecipient[] = [];
-
-      // Process Survey Users data to extract all participants
-      surveyUsersData.forEach((userGroup: any) => {
-        // Add appraisee
-        if (userGroup.appraisee) {
-          const userDetails = userDetailsMap.get(userGroup.appraisee.id);
-          if (userDetails && userDetails.email) {
-            const name =
-              userDetails.firstName && userDetails.lastName
-                ? `${userDetails.firstName} ${userDetails.lastName}`
-                : userDetails.username || userDetails.email.split("@")[0];
-
-            recipients.push({
-              [name]: userDetails.email,
-            });
-          }
-        }
-
-        // Add appraisers
-        if (userGroup.appraisers && Array.isArray(userGroup.appraisers)) {
-          userGroup.appraisers.forEach((appraiser: any) => {
-            const userDetails = userDetailsMap.get(appraiser.id);
-            if (userDetails && userDetails.email) {
-              const name =
-                userDetails.firstName && userDetails.lastName
-                  ? `${userDetails.firstName} ${userDetails.lastName}`
-                  : userDetails.username || userDetails.email.split("@")[0];
-
-              recipients.push({
-                [name]: userDetails.email,
-              });
-            }
-          });
-        }
-      });
-
-      // Remove duplicates based on email
-      const uniqueRecipients = recipients.filter((recipient, index, self) => {
-        const email = Object.values(recipient)[0];
-        return index === self.findIndex((r) => Object.values(r)[0] === email);
-      });
-
-      console.log("Email recipients extracted:", uniqueRecipients);
-      return uniqueRecipients;
-    } catch (error) {
-      console.error("Error extracting email recipients:", error);
-      return [];
-    }
-  }, []);
 
   const handleSaveClick = useCallback(async () => {
     try {
@@ -541,105 +457,6 @@ const SurvayScratch = () => {
       setIsSaving(false);
     }
   }, [surveyName, templatePreviews]);
-
-  const handleCreateSurveyData = useCallback(async () => {
-    try {
-      setIsSaving(true);
-      setSaveError(null);
-
-      if (!templatePreviews.length)
-        throw new Error("Add at least one competency.");
-      if (!surveyName.trim()) throw new Error("Enter a survey name.");
-
-      const surveyData = createSurveyFromLocalStorage();
-      if (!surveyData) throw new Error("Failed to create survey data.");
-
-      console.log("Sending Survey Data to API:", surveyData);
-      const response = await createSurveyAll(surveyData);
-      console.log("Survey creation response:", response);
-      localStorage.setItem("SurveyResponse", JSON.stringify(response));
-
-      // Extract survey ID from response.data field
-      const surveyId = response?.data;
-      console.log("Extracted survey ID from response.data:", surveyId);
-
-      if (!surveyId) {
-        console.error(
-          "Survey ID not found in response.data. Full response:",
-          response
-        );
-        throw new Error(
-          "Survey was created but survey ID could not be extracted for email notifications."
-        );
-      }
-
-      // Send emails to all participants
-      try {
-        const recipients = getEmailRecipients();
-        if (recipients.length > 0) {
-          console.log("Sending invitation emails to participants...");
-          console.log("Survey ID being passed to email service:", surveyId);
-          console.log("Recipients count:", recipients.length);
-
-          // Generate survey link (you may need to adjust this based on your routing)
-          const surveyLink = `${window.location.origin}/survey/participate`;
-          console.log("Base survey link:", surveyLink);
-
-          await sendBulkEmails(
-            recipients,
-            surveyData.survey.surveyName,
-            surveyData.users,
-            surveyLink,
-            surveyId
-          );
-          console.log("Invitation emails sent successfully!");
-
-          alert(
-            `🎉 Survey submitted successfully!\n\n` +
-              `Survey Name: ${surveyData.survey.surveyName}\n` +
-              `Project ID: ${surveyData.survey.projectId}\n` +
-              `Questions: ${surveyData.questions.length}\n` +
-              `Users: ${surveyData.users.length}\n` +
-              `Invitation emails sent to: ${recipients.length} participants\n\n` +
-              `The survey has been created and participants have been notified with personalized links containing user ID and token.`
-          );
-        } else {
-          console.warn(
-            "No email recipients found, skipping email notifications"
-          );
-          alert(
-            `🎉 Survey submitted successfully!\n\n` +
-              `Survey Name: ${surveyData.survey.surveyName}\n` +
-              `Project ID: ${surveyData.survey.projectId}\n` +
-              `Questions: ${surveyData.questions.length}\n` +
-              `Users: ${surveyData.users.length}\n\n` +
-              `⚠️ Note: No email addresses found for participants. Please notify them manually.`
-          );
-        }
-      } catch (emailError) {
-        console.error("Error sending invitation emails:", emailError);
-        // Still show success message for survey creation, but warn about email failure
-        alert(
-          `🎉 Survey submitted successfully!\n\n` +
-            `Survey Name: ${surveyData.survey.surveyName}\n` +
-            `Project ID: ${surveyData.survey.projectId}\n` +
-            `Questions: ${surveyData.questions.length}\n` +
-            `Users: ${surveyData.users.length}\n\n` +
-            `⚠️ Warning: Survey created but failed to send invitation emails. Please notify participants manually.`
-        );
-      }
-    } catch (error: any) {
-      setSaveError(error.message || "Failed to submit survey");
-      alert(`❌ Failed: ${error.message}`);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    createSurveyFromLocalStorage,
-    getEmailRecipients,
-    templatePreviews.length,
-    surveyName,
-  ]);
 
   // Preview Component
   const PreviewItem = ({

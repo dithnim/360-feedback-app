@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PageNav from "../components/ui/pageNav";
 import { createSurveyAll, createSurveyUserRecords } from "../lib/apiService";
 import { sendBulkEmails } from "../lib/mailService";
-import type { BulkEmailRecipient } from "../lib/mailService";
+import type { BulkEmailRecipient, SurveyUserDetails } from "../lib/mailService";
 
 interface SurveyData {
   survey: {
@@ -150,6 +150,7 @@ const SurveyPreview = () => {
       const recipientGroups: Array<{
         recipients: BulkEmailRecipient[];
         appraiseeInfo: { name: string; email: string; id: string };
+        appraiseeId: string;
       }> = [];
 
       // Process each user group separately
@@ -232,6 +233,7 @@ const SurveyPreview = () => {
           recipientGroups.push({
             recipients: groupRecipients,
             appraiseeInfo,
+            appraiseeId: userGroup.appraisee.id,
           });
           console.log(
             `User Group ${groupIndex + 1}: ${
@@ -381,6 +383,36 @@ const SurveyPreview = () => {
           );
           console.log("Survey ID being passed to email service:", surveyId);
 
+          // Collect all survey user details to pass to mailService
+          const surveyUserDetails: SurveyUserDetails = {
+            createdUsers: JSON.parse(
+              localStorage.getItem("createdUsers") || "[]"
+            ),
+            companyUsers: JSON.parse(
+              localStorage.getItem("CompanyUsers") || "[]"
+            ),
+            surveyUsersData: JSON.parse(
+              localStorage.getItem("SurveyUsers") || "[]"
+            ),
+            projectData: JSON.parse(localStorage.getItem("Project") || "{}"),
+          };
+
+          console.log("=== Survey User Details Being Sent to MailService ===");
+          console.log(
+            "createdUsers count:",
+            surveyUserDetails.createdUsers.length
+          );
+          console.log(
+            "companyUsers count:",
+            surveyUserDetails.companyUsers.length
+          );
+          console.log(
+            "surveyUsersData count:",
+            surveyUserDetails.surveyUsersData.length
+          );
+          console.log("projectData:", surveyUserDetails.projectData);
+          console.log("==================================================");
+
           // Generate base survey link
           const baseSurveyLink = `${window.location.origin}/survey/participate`;
           console.log("Base survey link:", baseSurveyLink);
@@ -392,13 +424,32 @@ const SurveyPreview = () => {
                 `Sending emails for Group ${groupIndex + 1}: ${group.appraiseeInfo.name}'s evaluation to ${group.recipients.length} participants`
               );
 
+              // Create filtered survey user details for this specific group
+              const groupSpecificSurveyUserDetails: SurveyUserDetails = {
+                createdUsers: surveyUserDetails.createdUsers,
+                companyUsers: surveyUserDetails.companyUsers,
+                // Filter surveyUsersData to only include the current group
+                surveyUsersData: surveyUserDetails.surveyUsersData.filter(
+                  (userGroup: any) =>
+                    userGroup.appraisee &&
+                    userGroup.appraisee.id === group.appraiseeId
+                ),
+                projectData: surveyUserDetails.projectData,
+              };
+
+              console.log(
+                `Group ${groupIndex + 1} - Filtered surveyUsersData count: ${groupSpecificSurveyUserDetails.surveyUsersData.length}`
+              );
+
               await sendBulkEmails(
                 group.recipients,
                 surveyData.survey.surveyName,
                 surveyData.users,
                 baseSurveyLink,
                 surveyId,
-                group.appraiseeInfo.name
+                group.appraiseeInfo.name,
+                group.appraiseeId,
+                groupSpecificSurveyUserDetails
               );
 
               totalEmailsSent += group.recipients.length;

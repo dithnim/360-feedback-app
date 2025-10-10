@@ -99,6 +99,16 @@ export interface SurveyCreationData {
   }[];
 }
 
+export interface TemplateCreationData {
+  survey: {
+    surveyName: string;
+    projectId: string;
+  };
+  questions: {
+    questionId: string;
+  }[];
+}
+
 export interface SurveyUserRecord {
   surveyId: string;
   userId: string;
@@ -366,6 +376,12 @@ export async function createSurveyAll(
   surveyData: SurveyCreationData
 ): Promise<any> {
   return apiClient.post("/project/survey/all", surveyData);
+}
+
+export async function createTemplateAll(
+  templateData: TemplateCreationData
+): Promise<any> {
+  return apiClient.post("/survey/template/survey/all", templateData);
 }
 
 export async function createSurveyUserRecords(

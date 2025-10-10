@@ -80,15 +80,37 @@ export const sendEmail = async (userData?: userData) => {
   }
 };
 
+export interface SurveyUserDetails {
+  createdUsers: any[];
+  companyUsers: any[];
+  surveyUsersData: any[];
+  projectData: any;
+}
+
 export const sendBulkEmails = async (
   recipients: BulkEmailRecipient[],
   surveyName: string,
   users: { userId: string; appraiser: boolean; role: string }[],
   baseSurveyLink?: string,
   surveyId?: string,
-  appraiseeeName?: string
+  appraiseeeName?: string,
+  appraiseeId?: string,
+  surveyUserDetails?: SurveyUserDetails
 ) => {
   try {
+    // Debug: Log survey user details if provided
+    if (surveyUserDetails) {
+      console.log("=== Survey User Details Debug ===");
+      console.log("createdUsers count:", surveyUserDetails.createdUsers.length);
+      console.log("companyUsers count:", surveyUserDetails.companyUsers.length);
+      console.log(
+        "surveyUsersData count:",
+        surveyUserDetails.surveyUsersData.length
+      );
+      console.log("projectData:", surveyUserDetails.projectData);
+      console.log("================================");
+    }
+
     // Generate deadline (e.g., 2 weeks from now)
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + 14);
@@ -98,29 +120,93 @@ export const sendBulkEmails = async (
       day: "numeric",
     });
 
+    console.log("recipients", recipients);
     // Send individual emails to each recipient with their personalized survey link
     const emailPromises = recipients.map(async (recipient) => {
       const recipientName = Object.keys(recipient)[0];
       const recipientEmail = Object.values(recipient)[0];
 
       // Find the user ID for this recipient by matching email
-      // We'll need to get user details from localStorage to match email to userId
-      const createdUsers = JSON.parse(
-        localStorage.getItem("createdUsers") || "[]"
-      );
-      const companyUsers = JSON.parse(
-        localStorage.getItem("CompanyUsers") || "[]"
-      );
+      let userId: string | null = null;
+      let userDetail: any = null;
+      let recipientAppraiseeId = appraiseeId; // Default to the passed appraiseeId
 
-      let userId = null;
+      if (surveyUserDetails) {
+        // Use the provided survey user details
+        const { createdUsers, companyUsers, surveyUsersData } =
+          surveyUserDetails;
 
-      // Try to find user ID by matching email
-      const userDetail =
-        createdUsers.find((user: any) => user.email === recipientEmail) ||
-        companyUsers.find((user: any) => user.email === recipientEmail);
+        // Try to find user ID by matching email
+        userDetail =
+          createdUsers.find((user: any) => user.email === recipientEmail) ||
+          companyUsers.find((user: any) => user.email === recipientEmail);
 
-      if (userDetail) {
-        userId = userDetail.id || userDetail._id || userDetail.manageUserId;
+        if (userDetail) {
+          userId = userDetail.id || userDetail._id || userDetail.manageUserId;
+        }
+
+        // Find the correct appraiseeId for this recipient based on their user group
+        if (surveyUsersData && Array.isArray(surveyUsersData)) {
+          console.log(
+            `Looking for ${recipientName} (userId: ${userId}) in ${surveyUsersData.length} user groups`
+          );
+
+          for (const userGroup of surveyUsersData) {
+            // Check if this recipient is in this user group
+            let isInThisGroup = false;
+
+            // Check if recipient is the appraisee in this group
+            if (
+              userGroup.appraisee &&
+              userDetail &&
+              userGroup.appraisee.id === userId
+            ) {
+              isInThisGroup = true;
+              recipientAppraiseeId = userGroup.appraisee.id;
+              console.log(
+                `✅ ${recipientName} is the appraisee in group (${userGroup.appraisee.name || userGroup.appraisee.id}), using their own ID: ${recipientAppraiseeId}`
+              );
+              break;
+            }
+
+            // Check if recipient is one of the appraisers in this group
+            if (userGroup.appraisers && Array.isArray(userGroup.appraisers)) {
+              const isAppraiser = userGroup.appraisers.some(
+                (appraiser: any) => appraiser.id === userId
+              );
+              if (isAppraiser) {
+                isInThisGroup = true;
+                recipientAppraiseeId = userGroup.appraisee.id;
+                console.log(
+                  `✅ ${recipientName} is an appraiser for ${userGroup.appraisee.name || userGroup.appraisee.id}, using appraiseeId: ${recipientAppraiseeId}`
+                );
+                break;
+              }
+            }
+          }
+
+          if (recipientAppraiseeId === appraiseeId) {
+            console.log(
+              `⚠️  Using fallback appraiseeId: ${recipientAppraiseeId} (no specific group match found)`
+            );
+          }
+        }
+      } else {
+        // Fallback to localStorage if surveyUserDetails not provided
+        const createdUsers = JSON.parse(
+          localStorage.getItem("createdUsers") || "[]"
+        );
+        const companyUsers = JSON.parse(
+          localStorage.getItem("CompanyUsers") || "[]"
+        );
+
+        userDetail =
+          createdUsers.find((user: any) => user.email === recipientEmail) ||
+          companyUsers.find((user: any) => user.email === recipientEmail);
+
+        if (userDetail) {
+          userId = userDetail.id || userDetail._id || userDetail.manageUserId;
+        }
       }
 
       // If we can't find userId from user details, try to match from the users array
@@ -135,15 +221,61 @@ export const sendBulkEmails = async (
       if (surveyId) {
         personalizedSurveyLink += `&token=${surveyId}`;
       }
+      if (recipientAppraiseeId) {
+        personalizedSurveyLink += `&appraiseeId=${recipientAppraiseeId}`;
+      }
 
       console.log(
-        `Generated URL for ${recipientName}: ${personalizedSurveyLink}`
+        `Generated URL for ${recipientName}: ${personalizedSurveyLink} (userId: ${userId}, appraiseeId: ${recipientAppraiseeId})`
       );
+
+      // Get the appraisee name for this specific recipient
+      let appraiseeNameForEmail = appraiseeeName || "Your Colleague";
+      if (surveyUserDetails && recipientAppraiseeId) {
+        const { surveyUsersData } = surveyUserDetails;
+        if (surveyUsersData && Array.isArray(surveyUsersData)) {
+          for (const userGroup of surveyUsersData) {
+            if (
+              userGroup.appraisee &&
+              userGroup.appraisee.id === recipientAppraiseeId
+            ) {
+              // Get the full name from user details
+              const { createdUsers, companyUsers } = surveyUserDetails;
+              const appraiseeUserDetail =
+                createdUsers.find(
+                  (user: any) => user.id === userGroup.appraisee.id
+                ) ||
+                companyUsers.find(
+                  (user: any) => user.id === userGroup.appraisee.id
+                );
+
+              if (appraiseeUserDetail) {
+                if (
+                  appraiseeUserDetail.firstName &&
+                  appraiseeUserDetail.lastName
+                ) {
+                  appraiseeNameForEmail = `${appraiseeUserDetail.firstName} ${appraiseeUserDetail.lastName}`;
+                } else if (
+                  appraiseeUserDetail.name &&
+                  !appraiseeUserDetail.name.includes("@")
+                ) {
+                  appraiseeNameForEmail = appraiseeUserDetail.name;
+                } else if (userGroup.appraisee.name) {
+                  appraiseeNameForEmail = userGroup.appraisee.name;
+                }
+              } else if (userGroup.appraisee.name) {
+                appraiseeNameForEmail = userGroup.appraisee.name;
+              }
+              break;
+            }
+          }
+        }
+      }
 
       const individualEmailRequest = {
         to: recipientEmail,
         name: recipientName,
-        subject: `Share Your Feedback for ${appraiseeeName || "Your Colleague"}`,
+        subject: `Share Your Feedback for ${appraiseeNameForEmail}`,
         html: `<!DOCTYPE html>
 <html>
   <head>
@@ -161,7 +293,7 @@ export const sendBulkEmails = async (
         <td style="padding: 20px; color: #333333; font-size: 15px; line-height: 1.6;">
           <p>Hi <strong>${recipientName}</strong>,</p>
           <p>
-            You've been invited to give feedback for <strong>${appraiseeeName || "your colleague"}</strong> as part of a 360° feedback process. Your input will really help them understand their strengths and where they can grow.
+            You've been invited to give feedback for <strong>${appraiseeNameForEmail}</strong> as part of a 360° feedback process. Your input will really help them understand their strengths and where they can grow.
           </p>
           <p>
             The survey is quick (about 2-3 minutes) and your responses will stay confidential. Please complete it by <strong>${formattedDeadline}</strong> using the link below:
@@ -187,8 +319,9 @@ export const sendBulkEmails = async (
       };
 
       console.log(
-        `Sending personalized email to ${recipientName} (${recipientEmail}) with survey link: ${personalizedSurveyLink} (userId: ${userId}, token: ${surveyId || "not provided"})`
+        `Sending personalized email to ${recipientName} (${recipientEmail}) with survey link: ${personalizedSurveyLink} (userId: ${userId}, token: ${surveyId || "not provided"}, appraiseeId: ${recipientAppraiseeId})`
       );
+      console.log("Individual email request:", individualEmailRequest);
       return apiPost<any>("/email", individualEmailRequest);
     });
 
