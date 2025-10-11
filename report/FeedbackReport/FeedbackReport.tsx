@@ -1,8 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-// Heavy libraries are imported lazily to cut initial bundle size
-// import html2canvas from "html2canvas-pro";
-// import jsPDF from "jspdf";
-// import * as Papa from "papaparse";
 import "./FeedbackReport.scss";
 import DraggableComp from "../Draggable/DraggableComp";
 
@@ -83,15 +79,26 @@ const FeedbackReport: React.FC = () => {
     (async () => {
       try {
         const params = new URLSearchParams(window.location.search);
-        const surveyId = params.get("id");
-        if (!surveyId) return;
+        const surveyId = params.get("surveyId");
+        const appraiseeId = params.get("appraiseeId");
+
+        if (!surveyId || !appraiseeId) return;
 
         const data = await apiGet<any>(
-          `/look/survey/answer/${surveyId}/report`,
+          `/look/survey/answer/${surveyId}/report?appraiseeId=${appraiseeId}`,
           { signal: controller.signal }
         );
         if (cancelled) return;
         setReportData(data);
+        // keep an in-memory copy for fast access in the UI
+        setAnswerData(data);
+
+        // Store the API response data in localStorage as AnswerData
+        try {
+          localStorage.setItem("AnswerData", JSON.stringify(data));
+        } catch (e) {
+          console.error("Failed to persist AnswerData in localStorage", e);
+        }
 
         // Map competency summary notation { C1: { averageLikert, likertQuestions }, ... }
         const candidateMaps = [
@@ -117,7 +124,7 @@ const FeedbackReport: React.FC = () => {
               category: key,
               rating: Number(val.averageLikert ?? 0),
               out_of: 5,
-              description: categoryDescriptions[key] || "",
+              description: "",
               charts: [],
             }));
             setSumOfComRating(items as any[]);
@@ -153,6 +160,7 @@ const FeedbackReport: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [answerData, setAnswerData] = useState<any>(null);
 
   // Custom cover image state
   const [customCoverImage, setCustomCoverImage] = useState<string | null>(null);
@@ -567,6 +575,21 @@ const FeedbackReport: React.FC = () => {
     );
   }, [pieCharts]);
 
+  // Hydrate answerData from localStorage on mount (in case user refreshes or navigates directly)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("AnswerData");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          setAnswerData(parsed);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to read AnswerData from localStorage", e);
+    }
+  }, []);
+
   // Initialize component (lightweight)
   useEffect(() => {
     paginateRatings();
@@ -574,6 +597,141 @@ const FeedbackReport: React.FC = () => {
     paginateDevPlan();
     prepareChartData();
   }, [sumOfComRating, openEndedFeedback, developmentPlanContent]);
+
+  // When answerData changes, try to map it into UI state (respondent summary, header metadata)
+  useEffect(() => {
+    if (!answerData) return;
+
+    try {
+      // 1) User metadata
+      const maybeName =
+        answerData?.appraisee?.name ||
+        answerData?.user?.name ||
+        answerData?.appraiseeName ||
+        answerData?.name;
+      if (maybeName) setUserName(String(maybeName));
+
+      const maybeDate =
+        answerData?.generatedAt ||
+        answerData?.createdAt ||
+        answerData?.reportDate ||
+        null;
+      if (maybeDate)
+        setReportedDate(new Date(maybeDate).toISOString().slice(0, 10));
+
+      // 2) Respondent summary mapping with multiple fallbacks
+      let nextSummary = {
+        Self: { nominated: 0, completed: 0 },
+        Managers: { nominated: 0, completed: 0 },
+        Peers: { nominated: 0, completed: 0 },
+        "Direct Reports": { nominated: 0, completed: 0 },
+      } as Record<string, { nominated: number; completed: number }>;
+
+      // Common shapes we might receive
+      const candidateSummary =
+        answerData?.respondentSummary ||
+        answerData?.respondentsSummary ||
+        answerData?.respondents ||
+        null;
+
+      if (candidateSummary && typeof candidateSummary === "object") {
+        // Try by well-known keys first
+        const pick = (obj: any, keys: string[]) => {
+          for (const k of keys) {
+            if (obj?.[k]) return obj[k];
+          }
+          return null;
+        };
+
+        const self = pick(candidateSummary, ["self", "Self"]);
+        const manager = pick(candidateSummary, [
+          "manager",
+          "managers",
+          "Manager",
+          "Managers",
+        ]);
+        const peer = pick(candidateSummary, ["peer", "peers", "Peer", "Peers"]);
+        const dr = pick(candidateSummary, [
+          "directReport",
+          "directReports",
+          "DirectReport",
+          "DirectReports",
+        ]);
+
+        const toCounts = (x: any) => ({
+          nominated: Number(x?.nominated ?? x?.total ?? x?.count ?? 0),
+          completed: Number(
+            x?.completed ?? x?.done ?? x?.finished ?? x?.responded ?? 0
+          ),
+        });
+
+        if (self) nextSummary["Self"] = toCounts(self);
+        if (manager) nextSummary["Managers"] = toCounts(manager);
+        if (peer) nextSummary["Peers"] = toCounts(peer);
+        if (dr) nextSummary["Direct Reports"] = toCounts(dr);
+      } else if (Array.isArray(answerData?.responsesByRole)) {
+        // Shape: [{ role: 'Self'|'Manager'|'Peer'|'DirectReport', nominated, completed }, ...]
+        for (const row of answerData.responsesByRole) {
+          const roleLabel =
+            row.role === "DirectReport"
+              ? "Direct Reports"
+              : row.role === "Manager"
+                ? "Managers"
+                : row.role === "Peer"
+                  ? "Peers"
+                  : row.role === "Self"
+                    ? "Self"
+                    : String(row.role || "");
+          if (nextSummary[roleLabel]) {
+            nextSummary[roleLabel] = {
+              nominated: Number(row.nominated ?? row.total ?? 0),
+              completed: Number(row.completed ?? row.responded ?? 0),
+            };
+          }
+        }
+      } else if (Array.isArray(answerData?.responses)) {
+        // Last resort: infer from raw responses
+        // nominated = total responses of that role
+        // completed = responses where hasResponded/completed === true
+        const buckets: Record<
+          string,
+          { nominated: number; completed: number }
+        > = {
+          Self: { nominated: 0, completed: 0 },
+          Managers: { nominated: 0, completed: 0 },
+          Peers: { nominated: 0, completed: 0 },
+          "Direct Reports": { nominated: 0, completed: 0 },
+        };
+        for (const r of answerData.responses) {
+          const role =
+            r.role === "DirectReport"
+              ? "Direct Reports"
+              : r.role === "Manager"
+                ? "Managers"
+                : r.role === "Peer"
+                  ? "Peers"
+                  : r.role === "Self"
+                    ? "Self"
+                    : null;
+          if (!role) continue;
+          buckets[role].nominated += 1;
+          if (r.completed === true || r.hasResponded === true) {
+            buckets[role].completed += 1;
+          }
+        }
+        nextSummary = buckets;
+      }
+
+      setRespondentData([
+        { relationship: "Self", ...nextSummary["Self"] },
+        { relationship: "Managers", ...nextSummary["Managers"] },
+        { relationship: "Peers", ...nextSummary["Peers"] },
+        { relationship: "Direct Reports", ...nextSummary["Direct Reports"] },
+      ]);
+    } catch (e) {
+      console.error("Failed to map AnswerData into UI state", e);
+    }
+  }, [answerData]);
 
   // Defer heavy edit state setup until edit mode is enabled
   useEffect(() => {
@@ -794,8 +952,7 @@ const FeedbackReport: React.FC = () => {
       category: entry.CATEGORY,
       rating: entry.VALUE,
       out_of: 5,
-      description:
-        categoryDescriptions[entry.CATEGORY] || "No description available.",
+      description: "",
       charts: [
         {
           label: entry.QUESTION,
@@ -1453,38 +1610,30 @@ const FeedbackReport: React.FC = () => {
             </div> */}
             {/* Bar Chart */}
             <div className="flex-1 flex items-center justify-center min-h-[400px]">
-              <BarChart
-                height={700}
-                categories={[
-                  "Leaderhip",
-                  "Decision Making",
-                  "Drive for Results",
-                  "Communication",
-                  "Teamwork",
-                ]}
-                series={[
+              {(() => {
+                // Derive categories and series from computed competency summary (sumOfComRating)
+                const categories = sumOfComRating.map((c: any) => c.category);
+                // For now, show a single overall series using averageLikert mapped to rating
+                const overallValues = sumOfComRating.map((c: any) =>
+                  Number(c.rating ?? 0)
+                );
+                const series = [
                   {
-                    name: "Self",
-                    color: roleColors.Self,
-                    values: [3.0, 2.0, 4.5, 2.9, 2.5],
-                  },
-                  {
-                    name: "Manager",
-                    color: roleColors.Manager,
-                    values: [2.5, 3.5, 2, 3.5, 3.5],
-                  },
-                  {
-                    name: "Peers",
-                    color: roleColors.Peer,
-                    values: [4.3, 2.7, 3.0, 2.5, 2],
-                  },
-                  {
-                    name: "Direct Reports",
+                    name: "Overall Average",
                     color: roleColors.DirectReport,
-                    values: [1.6, 3.5, 4.5, 1.5, 2.5],
+                    values: overallValues,
                   },
-                ]}
-              />
+                ];
+
+                return (
+                  <BarChart
+                    height={700}
+                    categories={categories}
+                    series={series}
+                    max={5}
+                  />
+                );
+              })()}
             </div>
             <div className="w-full mt-auto">
               <Footer org="TalentBoozt" pageNo={6} isEditing={isEditMode} />

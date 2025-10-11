@@ -1,290 +1,282 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PageNav from "../components/ui/pageNav";
-import { Button } from "../components/ui/Button";
-import { Skeleton } from "../components/ui/skeleton";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { apiGet } from "../lib/apiService";
-import { HardDriveDownloadIcon } from "lucide-react";
+import { Button } from "../components/ui/Button";
+import { Bell } from "lucide-react";
 
-type Participant = {
-  id: string;
-  name: string;
+type SurveyUser = {
+  userId: string;
+  name?: string;
+  email?: string;
   designation?: string;
-  avatarUrl?: string;
+  role?: string;
+  appraiser: boolean;
+  hasResponded?: boolean;
 };
 
 export default function PreviewParticipants() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [surveyUsers, setSurveyUsers] = useState<SurveyUser[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Project/company title can be passed via location.state; fallback to localStorage Company
-  const companyName = useMemo(() => {
-    const fromState = (location.state as any)?.companyName;
+  // Get surveyId from location state or localStorage
+  const surveyId = useMemo(() => {
+    const fromState = (location.state as any)?.surveyId;
     if (fromState) return fromState;
+
     try {
-      const companyRaw = localStorage.getItem("Company");
-      const company = companyRaw ? JSON.parse(companyRaw) : null;
-      return company?.name || "";
+      // Try to get from localStorage
+      const selectedSurveyId = localStorage.getItem("SelectedSurveyId");
+      if (selectedSurveyId) return selectedSurveyId;
+
+      // Try to get from Project localStorage
+      const projectRaw = localStorage.getItem("Project");
+      const project = projectRaw ? JSON.parse(projectRaw) : null;
+      return project?.surveyId || project?.id || null;
     } catch {
-      return "";
+      return null;
     }
   }, [location.state]);
 
-  // Fetch participants from API using companyId from localStorage; fallback to state if provided
+  // Fetch survey details from API
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchParticipants() {
-      // If caller already provided participants via navigation state, use them
-      const provided = (location.state as any)?.participants as Participant[];
-      if (Array.isArray(provided) && provided.length) {
-        setParticipants(provided);
-        // Save provided participants to local storage
-        localStorage.setItem("Participants", JSON.stringify(provided));
+    async function fetchSurveyDetails() {
+      if (!surveyId) {
+        console.warn("No survey ID available to fetch survey details");
         return;
       }
 
       setLoading(true);
-      setError(null);
       try {
-        // Read companyId from localStorage -> key: "Company"
-        const companyRaw = localStorage.getItem("Company");
-        const company = companyRaw ? JSON.parse(companyRaw) : null;
-        const companyId: string | undefined = company?.id;
-
-        if (!companyId) {
-          // Try to load participants from local storage as fallback
-          try {
-            const savedParticipants = localStorage.getItem("Participants");
-            if (savedParticipants) {
-              const parsed = JSON.parse(savedParticipants) as Participant[];
-              if (Array.isArray(parsed)) {
-                setParticipants(parsed);
-                return;
-              }
-            }
-          } catch (e) {
-            console.warn("Failed to load participants from local storage:", e);
-          }
-
-          throw new Error(
-            "Company ID not found in localStorage. Please navigate from the company/projects page."
-          );
-        }
-
-        // Backend route per spec: /api/v1/company/user/company/:companyId
-        // BASE_URL already includes /api/v1, so we call the relative path below.
-        const res = await apiGet<any[]>(`/company/user/company/${companyId}`);
+        console.log(`Fetching survey details for survey ID: ${surveyId}`);
+        const response = await apiGet<any>(`/look/survey/${surveyId}`);
 
         if (!cancelled) {
-          const mapped: Participant[] = Array.isArray(res)
-            ? res.map((u: any) => ({
-                id: u.id ?? u.userId ?? "",
-                name: u.name ?? "",
-                designation: u.designation ?? "",
-              }))
-            : [];
-          setParticipants(mapped);
-          // Save participants to local storage
-          localStorage.setItem("Participants", JSON.stringify(mapped));
-        }
-      } catch (e: any) {
-        if (!cancelled) {
-          // Try to load participants from local storage as fallback
+          console.log("Survey details API response:", response);
+
+          // Save complete survey details to localStorage
           try {
-            const savedParticipants = localStorage.getItem("Participants");
-            if (savedParticipants) {
-              const parsed = JSON.parse(savedParticipants) as Participant[];
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setParticipants(parsed);
-                setError(null);
-                return;
-              }
-            }
+            localStorage.setItem("SurveyDetails", JSON.stringify(response));
+            console.log("Saved survey details to localStorage");
           } catch (storageError) {
             console.warn(
-              "Failed to load participants from local storage:",
+              "Failed to save survey details to localStorage:",
               storageError
             );
           }
 
-          setError(e?.message || "Failed to load participants");
-          setParticipants([]);
+          // Extract user details from the response
+          let users: SurveyUser[] = [];
+          if (Array.isArray(response) && response.length > 0) {
+            // Response is an array of survey objects
+            const surveyData = response[0];
+            if (
+              surveyData.userDetails &&
+              Array.isArray(surveyData.userDetails)
+            ) {
+              users = surveyData.userDetails.map((user: any) => ({
+                userId: user._id || user.id,
+                name: user.name,
+                email: user.email,
+                designation: user.designation,
+                role: user.role,
+                appraiser: user.appraiser,
+                hasResponded: user.hasResponded ?? false,
+              }));
+            }
+          } else if (
+            response.userDetails &&
+            Array.isArray(response.userDetails)
+          ) {
+            // Response is a single survey object
+            users = response.userDetails.map((user: any) => ({
+              userId: user._id || user.id,
+              name: user.name,
+              email: user.email,
+              designation: user.designation,
+              role: user.role,
+              appraiser: user.appraiser,
+              hasResponded: user.hasResponded ?? false,
+            }));
+          }
+
+          setSurveyUsers(users);
+          console.log("Extracted user details:", users);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          console.error("Error fetching survey details:", e);
+          // Try to load from localStorage as fallback
+          try {
+            const stored = localStorage.getItem("SurveyDetails");
+            if (stored) {
+              const surveyDetails = JSON.parse(stored);
+              let users: SurveyUser[] = [];
+
+              if (Array.isArray(surveyDetails) && surveyDetails.length > 0) {
+                const surveyData = surveyDetails[0];
+                if (
+                  surveyData.userDetails &&
+                  Array.isArray(surveyData.userDetails)
+                ) {
+                  users = surveyData.userDetails.map((user: any) => ({
+                    userId: user._id || user.id,
+                    name: user.name,
+                    email: user.email,
+                    designation: user.designation,
+                    role: user.role,
+                    appraiser: user.appraiser,
+                    hasResponded: user.hasResponded ?? false,
+                  }));
+                }
+              } else if (
+                surveyDetails.userDetails &&
+                Array.isArray(surveyDetails.userDetails)
+              ) {
+                users = surveyDetails.userDetails.map((user: any) => ({
+                  userId: user._id || user.id,
+                  name: user.name,
+                  email: user.email,
+                  designation: user.designation,
+                  role: user.role,
+                  appraiser: user.appraiser,
+                  hasResponded: user.hasResponded ?? false,
+                }));
+              }
+
+              setSurveyUsers(users);
+            }
+          } catch {
+            console.error("Failed to load from localStorage");
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    fetchParticipants();
+    fetchSurveyDetails();
     return () => {
       cancelled = true;
     };
-  }, [location.state]);
+  }, [surveyId]);
 
-  const onPreview = (participantId: string) => {
-    navigate(
-      `/view-project?participantId=${encodeURIComponent(participantId)}`
-    );
+  const handleViewReport = (userId: string) => {
+    console.log("View report for user:", userId);
+    // TODO: Navigate to report view page
+    navigate(`/view-project?participantId=${encodeURIComponent(userId)}`);
   };
 
-  // Skeleton component for loading state
-  const ParticipantSkeleton = () => (
-    <div className="space-y-4">
-      {/* Header controls skeleton */}
-      <div className="flex items-center gap-3 py-3 border-b">
-        <Skeleton className="h-4 w-4" />
-        <Skeleton className="h-4 w-32" />
-        <div className="ml-auto">
-          <Skeleton className="h-5 w-5" />
-        </div>
-      </div>
+  const handleSendNotification = (user: SurveyUser) => {
+    console.log("Send notification to:", user);
+    // TODO: Implement email notification API call
+    alert(`Sending notification to ${user.email || user.name || "user"}...`);
+  };
 
-      {/* Participant list skeletons */}
-      {[...Array(3)].map((_, index) => (
-        <div
-          key={index}
-          className="flex items-center justify-between py-5 gap-4"
-        >
-          {/* Avatar and name skeleton */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="w-12 h-12 rounded-full" />
-            <Skeleton className="h-5 w-32" />
-          </div>
-
-          {/* Designation skeleton */}
-          <div className="flex justify-between min-w-0">
-            <Skeleton className="h-4 w-24" />
-          </div>
-
-          {/* Button and checkbox skeleton */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-28 rounded-full" />
-            <Skeleton className="h-4 w-4" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const handleNext = () => {
+    console.log("Next button clicked");
+    navigate("/project-participants");
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <PageNav position="Current Projects" title="Current Projects" />
+    <div className="flex h-screen">
+      <div className="flex-1 flex flex-col">
+        <PageNav position="HR Manager" title="All Users" />
 
-      <div className="container mx-auto px-6 py-8">
-        {companyName ? (
-          <h1 className="text-2xl font-semibold mb-6">{companyName}</h1>
-        ) : (
-          <h1 className="text-2xl font-semibold mb-6">Participants</h1>
-        )}
-
-        <div className="mb-4">
-          <h2 className="text-lg font-medium">Participants</h2>
-        </div>
-
-        {/* Participants list */}
-        {loading ? (
-          <ParticipantSkeleton />
-        ) : error || participants.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h3 className="text-xl font-medium text-gray-600 mb-2">
-                No Participants
-              </h3>
-              <p className="text-gray-500">
-                There are no participants available for this project.
-              </p>
-            </div>
+        <main className="flex-1 p-8 bg-gray-50">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-semibold text-gray-800">
+              Participants
+            </h2>
+            <Button
+              variant="next"
+              className="bg-[#ee3f40] hover:bg-red-600 text-white font-semibold px-8 py-3 rounded-lg"
+              onClick={handleNext}
+            >
+              Next
+            </Button>
           </div>
-        ) : (
-          <>
-            {/* Header controls */}
-            <div className="flex items-center gap-3 py-3 border-b">
-              <input
-                type="checkbox"
-                className="form-checkbox h-4 w-4 accent-[#ee3e41]"
-                aria-label="select all"
-              />
-              <span>Download All Reports</span>
-              <button
-                type="button"
-                className="ml-auto text-red-600 hover:text-red-700"
-                title="Download"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path d="M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L11 12.586V4a1 1 0 011-1z" />
-                  <path d="M5 19a2 2 0 002 2h10a2 2 0 002-2v-3a1 1 0 112 0v3a4 4 0 01-4 4H7a4 4 0 01-4-4v-3a1 1 0 112 0v3z" />
-                </svg>
-              </button>
+
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 text-sm">
+              <div>Participant Name</div>
+              <div>Email Address</div>
+              <div>Designation</div>
+              <div>Appraisee/Appraiser</div>
+              <div>Role</div>
+              <div></div>
             </div>
 
-            <ul className="divide-y">
-              {participants.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between py-5 gap-4"
-                >
-                  {/* Avatar */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-                      {p.avatarUrl ? (
-                        // eslint-disable-next-line jsx-a11y/img-redundant-alt
-                        <img
-                          src={p.avatarUrl}
-                          alt={`${p.name} avatar`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="#fff"
-                          className="w-6 h-6"
-                        >
-                          <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM2 20a10 10 0 1120 0v1H2v-1z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="font-medium">{p.name}</div>
-                  </div>
+            {/* Table Body */}
+            {loading ? (
+              <div className="px-6 py-12 text-center text-gray-500">
+                Loading participants...
+              </div>
+            ) : surveyUsers.length === 0 ? (
+              <div className="px-6 py-12 text-center text-gray-500">
+                No participants found
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {surveyUsers.map((user, index) => {
+                  const hasResponded = user.hasResponded ?? false;
+                  const rowBgColor = hasResponded
+                    ? "bg-white hover:bg-gray-50"
+                    : "bg-red-50 hover:bg-red-100";
 
-                  {/* Name and role */}
-                  <div className="flex justify-between min-w-0">
-                    <div className="text-sm text-gray-500 truncate text-center">
-                      {p.designation || ""}
-                    </div>
-                  </div>
-
-                  {/* Preview button */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="edit"
-                      className="!bg-white !text-red-600 !border !border-red-500 hover:!bg-red-50 rounded-full"
-                      onClick={() => onPreview(p.id)}
+                  return (
+                    <div
+                      key={user.userId || index}
+                      className={`grid grid-cols-6 gap-4 px-6 py-4 items-center transition-colors ${rowBgColor}`}
                     >
-                      Preview Report
-                    </Button>
-
-                    {/* Select checkbox */}
-                    <input
-                      type="checkbox"
-                      className="form-checkbox h-4 w-4 accent-[#ee3e41] ms-2"
-                      aria-label={`select ${p.name}`}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+                      <div className="font-medium text-gray-800">
+                        {user.name || "Placeholder Name"}
+                      </div>
+                      <div className="text-gray-600 text-sm">
+                        {user.email || "email@example.com"}
+                      </div>
+                      <div className="text-gray-600 text-sm">
+                        {user.designation || "HR Manager"}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800">
+                          {user.appraiser ? "Appraiser" : "Appraisee"}
+                        </span>
+                      </div>
+                      <div className="text-gray-600 text-sm">
+                        {user.role || "Manager"}
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        {hasResponded ? (
+                          <Button
+                            variant="next"
+                            className="border border-[#ee3f40] text-[#ee3f40] bg-transparent hover:bg-red-50 rounded-full px-4 py-2 text-sm"
+                            onClick={() => handleViewReport(user.userId)}
+                          >
+                            View Report
+                          </Button>
+                        ) : (
+                          <button
+                            onClick={() => handleSendNotification(user)}
+                            className="text-[#ee3f40] hover:text-red-600 transition-colors p-2"
+                            title="Send notification"
+                          >
+                            <Bell className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

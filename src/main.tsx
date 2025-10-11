@@ -39,6 +39,9 @@ const PreviewParticipants = lazy(
   () => import("./pages/previewParticipants.tsx")
 );
 const ViewSurveys = lazy(() => import("./pages/viewSurveys.tsx"));
+const ProjectParticipants = lazy(
+  () => import("./pages/ProjectParticipants.tsx")
+);
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -147,6 +150,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PreviewParticipants />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/project-participants"
+        element={
+          <ProtectedRoute>
+            <ProjectParticipants />
           </ProtectedRoute>
         }
       />

@@ -66,58 +66,87 @@ export default function PreviewCurrentProject() {
   const [surveyId, setSurveyId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Function to get surveyId from localStorage
-  const getSurveyIdFromLocalStorage = () => {
+  // Function to get surveyId and appraisee ID from localStorage
+  const getSurveyDataFromLocalStorage = () => {
     try {
       const surveyDetailsData = localStorage.getItem("SurveyDetails");
       if (surveyDetailsData) {
         const surveyDetails = JSON.parse(surveyDetailsData);
         console.log("Survey details from localStorage:", surveyDetails);
 
-        // Extract surveyId from the survey details
-        // Handle different possible data structures
         let extractedSurveyId = null;
+        let extractedAppraiseeId = null;
 
         if (Array.isArray(surveyDetails) && surveyDetails.length > 0) {
-          extractedSurveyId = surveyDetails[0].id || surveyDetails[0].surveyId;
-        } else if (surveyDetails.id) {
-          extractedSurveyId = surveyDetails.id;
-        } else if (surveyDetails.surveyId) {
-          extractedSurveyId = surveyDetails.surveyId;
+          const survey = surveyDetails[0];
+          extractedSurveyId = survey.id || survey.surveyId;
+
+          // Get the first user with appraiser: false (appraisee)
+          if (survey.userDetails && Array.isArray(survey.userDetails)) {
+            const appraisee = survey.userDetails.find(
+              (user: any) => user.appraiser === false
+            );
+            if (appraisee) {
+              extractedAppraiseeId = appraisee._id || appraisee.id;
+            }
+          }
+        } else if (surveyDetails.id || surveyDetails.surveyId) {
+          extractedSurveyId = surveyDetails.id || surveyDetails.surveyId;
+
+          // Get appraisee from userDetails
+          if (
+            surveyDetails.userDetails &&
+            Array.isArray(surveyDetails.userDetails)
+          ) {
+            const appraisee = surveyDetails.userDetails.find(
+              (user: any) => user.appraiser === false
+            );
+            if (appraisee) {
+              extractedAppraiseeId = appraisee._id || appraisee.id;
+            }
+          }
         }
 
         console.log("Extracted surveyId:", extractedSurveyId);
-        return extractedSurveyId;
+        console.log("Extracted appraiseeId:", extractedAppraiseeId);
+        return {
+          surveyId: extractedSurveyId,
+          appraiseeId: extractedAppraiseeId,
+        };
       }
 
       console.warn("No survey details found in localStorage");
-      return null;
+      return { surveyId: null, appraiseeId: null };
     } catch (error) {
       console.error("Error parsing survey details from localStorage:", error);
-      return null;
+      return { surveyId: null, appraiseeId: null };
     }
   };
 
-  // Function to navigate to feedback report with surveyId
+  // Function to navigate to feedback report with appraisee ID
   const navigateToFeedbackReport = () => {
-    const currentSurveyId = surveyId || getSurveyIdFromLocalStorage();
+    const { surveyId: currentSurveyId, appraiseeId } =
+      getSurveyDataFromLocalStorage();
 
-    // Use a default participant ID for navigation
-    const defaultParticipantId = "68d57cc1a414267980de9646";
-
-    if (currentSurveyId) {
-      const url = `/feedback-report?participantId=${defaultParticipantId}&surveyId=${currentSurveyId}`;
+    if (currentSurveyId && appraiseeId) {
+      const url = `/feedback-report?surveyId=${currentSurveyId}&appraiseeId=${appraiseeId}`;
       console.log("Navigating to:", url);
+      console.log("Survey ID:", currentSurveyId);
+      console.log("Appraisee ID:", appraiseeId);
       navigate(url);
     } else {
-      console.error("No surveyId available for navigation");
-      alert("Survey ID not found. Please ensure survey details are loaded.");
+      console.error("Survey ID or Appraisee ID not found");
+      console.log("Current Survey ID:", currentSurveyId);
+      console.log("Current Appraisee ID:", appraiseeId);
+      alert(
+        "Required data not found. Please ensure survey details are loaded."
+      );
     }
   };
 
   // Load surveyId on component mount
   useEffect(() => {
-    const loadedSurveyId = getSurveyIdFromLocalStorage();
+    const { surveyId: loadedSurveyId } = getSurveyDataFromLocalStorage();
     setSurveyId(loadedSurveyId);
   }, []);
 
