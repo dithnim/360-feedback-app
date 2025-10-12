@@ -61,6 +61,13 @@ const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
 const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
 import LeadershipQuestionRow from "../../src/components/ui/LeadershipQuestionRow";
 import DetailedFeedback from "@/components/reports/DetailedFeedback";
+import OpenEndedFeedbackSection, {
+  dummyOpenEndedFeedbackData,
+} from "@/components/reports/OpenEndedFeedbackSection";
+import BlindSpotsSection, {
+  dummyBlindSpotsData,
+} from "@/components/reports/BlindSpotsSection";
+import ReportPageWrapper from "@/components/reports/ReportPageWrapper";
 
 const FeedbackReport: React.FC = () => {
   // Fetch report data on initial load, using id from query string
@@ -1085,8 +1092,13 @@ const FeedbackReport: React.FC = () => {
     },
   ];
 
+  enum Role {
+    Self = "Self",
+    Manager = "Manager",
+    DirectReport = "Direct Report",
+    Peers = "Peers",
+  }
   
-  useEffect(() => {}, []);
   return (
     <div className="content-wrapper">
       {/* Progress Overley */}
@@ -1742,444 +1754,171 @@ const FeedbackReport: React.FC = () => {
           </ReportHeader>
         </div>
 
-        {/* Strengths Section (Pie Chart) */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Strengths">
-            <div className="border-b pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="text-base">
-                The diagram below highlights key strengths for each competency,
-                based on high ratings and positive feedback from respondents.
-              </p>
-            </div>
-            <div className="flex flex-col items-center justify-center flex-1 w-full">
-              {/* Pie Chart and Annotations */}
-              <div className="relative flex items-center justify-center w-full h-full">
-                <div className="w-full h-full flex items-center justify-center">
-                  {/* //?Piechart 1 */}
-                  <PieChart
-                    data={pieCharts.strengths}
-                    isEditMode={isEditMode}
-                    title="Strengths for Each Competency"
-                    onUpdateData={(args) =>
-                      handlePieChartUpdate("strengths", args)
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mt-8">
-              <p className="text-base">
-                These strengths indicate areas of excellence that can be
-                leveraged to enhance leadership effectiveness and team
-                performance.
-              </p>
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={7} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
+        {/* ------------------- Strengths Section (Pie Chart) ------------------ */}
+        <ReportPageWrapper
+          title="Strengths"
+          description="The diagram below highlights key strengths for each competency, based on high ratings and positive feedback from respondents."
+          organizationName="TalentBoozt"
+          pageNumber={7}
+          isEditing={isEditMode}
+        >
+          <BlindSpotsSection
+            {...dummyBlindSpotsData}
+            onUpdateData={(args) => handlePieChartUpdate("strengths", args)}
+            chartData={pieCharts.strengths}
+          />
+        </ReportPageWrapper>
 
-        {/* Areas of Improvement Section */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Areas of Improvement">
-            <div className="border-b pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="text-base">
-                The diagram below highlights key development areas based on
-                feedback from respondents. These areas represent opportunities
-                for further growth and enhancement.
-              </p>
-            </div>
-            <div className="flex flex-col items-center justify-center flex-1 w-full h-full">
-              {/* Areas of Improvement Chart and Annotations */}
-              <div className="relative flex items-center justify-center w-full h-full">
-                <div className="w-full h-full flex items-center justify-center">
-                  {/* //?Piechart 2 */}
-                  <PieChart
-                    data={pieCharts.improvements}
-                    isEditMode={isEditMode}
-                    title="Areas of improvement for Each Competency"
-                    onUpdateData={(args) =>
-                      handlePieChartUpdate("improvements", args)
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mt-8">
-              <p className="text-base">
-                By addressing these areas, the individual can further enhance
-                leadership effectiveness and team collaboration.
-              </p>
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={8} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
+        {/* ----------------- Areas of Improvement Section ---------------- */}
+        <ReportPageWrapper
+          title="Areas of Improvement"
+          description="The diagram below highlights key development areas based on feedback from respondents. These areas represent opportunities for further growth and enhancement."
+          organizationName="TalentBoozt"
+          pageNumber={8}
+          isEditing={isEditMode}
+        >
+          <BlindSpotsSection
+            {...dummyBlindSpotsData}
+            onUpdateData={(args) => handlePieChartUpdate("improvements", args)}
+            chartData={pieCharts.improvements}
+          />
+        </ReportPageWrapper>
 
-        {/* Hidden Strengths Section */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Hidden Strengths">
-            <div className="border-b pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="text-base">
-                The following diagram highlights competencies where the
-                individual may underestimate their own abilities, as identified
-                through feedback from others.
-              </p>
-            </div>
-            <div className="flex flex-col items-center justify-center flex-1 w-full h-full">
-              {/* Hidden Strengths Chart and Annotations */}
-              <div className="relative flex items-center justify-center w-full h-full">
-                {/* //?Piechart 3 */}
-                <PieChart
-                  data={pieCharts.hiddenStrengths}
-                  isEditMode={isEditMode}
-                  title="Hidden Strengths for Each Competency"
-                  onUpdateData={(args) =>
-                    handlePieChartUpdate("hiddenStrengths", args)
-                  }
-                />
-              </div>
-            </div>
-            <div className="mt-8">
-              <p className="text-base">
-                These hidden strengths can be leveraged for greater impact by
-                recognizing and intentionally utilizing them in leadership and
-                teamwork efforts.
-              </p>
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={9} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
+        {/*--------------------- Hidden Strengths Section  -------------------------------*/}
+        <ReportPageWrapper
+          title="Hidden Strengths"
+          description="The following diagram highlights competencies where the individual may underestimate their own abilities, as identified through feedback from others."
+          organizationName="TalentBoozt"
+          pageNumber={9}
+          isEditing={isEditMode}
+        >
+          <BlindSpotsSection
+            {...dummyBlindSpotsData}
+            onUpdateData={(args) =>
+              handlePieChartUpdate("hiddenStrengths", args)
+            }
+            chartData={pieCharts.hiddenStrengths}
+          />
+        </ReportPageWrapper>
 
-        {/* Blind Spots Section */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Blind Spots">
-            <div className="border-b pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="text-base">
-                Blind spots occur when there is a misalignment between
-                self-perception and others' perceptions. The diagram below
-                outlines key blind spots identified for each competency:
-              </p>
-            </div>
-            <div className="flex flex-col items-center justify-center flex-1 w-full h-full">
-              {/* Blind Spots Chart and Annotations */}
-              <div
-                className="relative flex items-center justify-center w-full h-full"
-                style={{ minHeight: 400 }}
-              >
-                {/* //?Piechart 4 */}
-                <PieChart
-                  data={pieCharts.blindSpots}
-                  isEditMode={isEditMode}
-                  title="Blind Spots for Each Competency"
-                  onUpdateData={(args) =>
-                    handlePieChartUpdate("blindSpots", args)
-                  }
-                />
-              </div>
-            </div>
-            <div className="mt-8">
-              <p className="text-base">
-                Addressing these areas can help reduce performance misalignments
-                and improve team dynamics.
-              </p>
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={10} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
+        {/* ---------------------------Blind Spots Section ----------------------------*/}
+        <ReportPageWrapper
+          title="Blind Spots"
+          description="Blind spots occur when there is a misalignment between self-perception and others' perceptions. The diagram below outlines key blind spots identified for each competency:"
+          organizationName="TalentBoozt"
+          pageNumber={10}
+          isEditing={isEditMode}
+        >
+          <BlindSpotsSection
+            {...dummyBlindSpotsData}
+            chartData={pieCharts.blindSpots}
+            onUpdateData={(args) => handlePieChartUpdate("blindSpots", args)}
+          />
+        </ReportPageWrapper>
 
-        {/* Open Ended Feedback Section */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Open Ended Feedback">
-            <div className="border-b-2 border-blue-400 pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="text-base">
-                This section captures qualitative insights shared by respondents
-                in their own words. These comments provide valuable context to
-                the numerical ratings, offering specific examples, suggestions,
-                and observations that highlight strengths, opportunities for
-                growth, and overall perceptions of the individual's performance
-                and leadership impact.
-              </p>
-            </div>
-            <div className="mb-6">
-              <p className="font-semibold text-lg mb-4">
-                What are this individual's greatest strengths in their current
-                role?
-              </p>
-              <ul className="space-y-10">
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Blue user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#2563eb" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#2563eb" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    I believe I bring strategic thinking and consistency to my
-                    work, which helps the team stay focused.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Green user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#65a30d" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#65a30d" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    They consistently show initiative and take ownership of key
-                    deliverables without needing close supervision.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Yellow user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#eab308" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#eab308" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    Strong collaborator—always willing to support the team and
-                    jump in when help is needed.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Red user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#b91c1c" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#b91c1c" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    They provide clear direction and make time to coach and
-                    develop team members.
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={11} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
+        {/* -----------------------------  Open Ended Feedback Section --------------------------------*/}
 
-        {/* Open Ended Feedback Continued Section */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Open Ended Feedback (Continued)">
-            <div className="border-b pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="font-semibold text-lg mb-4">
-                In what areas could this individual improve or grow further?
-              </p>
-              <ul className="space-y-10">
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Light purple user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#bfa5c9" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#bfa5c9" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    I recognize I could be more intentional about cross-team
-                    collaboration.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Dark purple user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#6d28d9" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#6d28d9" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    I would encourage them to delegate more and trust others to
-                    take the lead at times.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Teal user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#38bdf8" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#38bdf8" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    They could involve others earlier in the decision-making
-                    process to increase buy-in.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Blue user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#2563eb" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#2563eb" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    Sometimes, communication can be too fast-paced—more clarity
-                    would help the team.
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div className="mb-6">
-              <p className="font-semibold text-lg mb-4">
-                What advice would you offer this individual to enhance their
-                leadership impact?
-              </p>
-              <ul className="space-y-10">
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Yellow user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#eab308" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#eab308" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    I should focus on creating space for feedback and reflection
-                    with the team.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Pink user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#f43f5e" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#f43f5e" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    Consider carving out more time for strategic thinking and
-                    longer-term visioning.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Orange user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#f97316" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#f97316" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    Your leadership could benefit from slowing down and
-                    listening more in high-stress moments.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="inline-block mt-1">
-                    {/* Gray user icon */}
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="6" r="4" fill="#52525b" />
-                      <path d="M4 20 A8 8 0 0 1 20 20" fill="#52525b" />
-                    </svg>
-                  </span>
-                  <span className="font-medium text-base">
-                    Lead more frequent check-ins to keep the team aligned and
-                    motivated.
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={12} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
+        <ReportPageWrapper
+          title="Open Ended Feedback"
+          description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
+          organizationName="TalentBoozt"
+          pageNumber={11}
+          isEditing={isEditMode}
+          borderColor="border-blue-400"
+        >
+          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
+        </ReportPageWrapper>
+        {/* ----------------------------- Open Ended Feedback Continued Section --------------------- */}
+        <ReportPageWrapper
+          title="Open Ended Feedback (Continued)"
+          description=""
+          organizationName="TalentBoozt"
+          pageNumber={11}
+          isEditing={isEditMode}
+          borderColor="border-blue-400"
+        >
+          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
+        </ReportPageWrapper>
+        {/* ----------------------------- Open Ended Feedback Continued Section --------------------- */}
+        <ReportPageWrapper
+          title="Open Ended Feedback (Continued)"
+          description=""
+          organizationName="TalentBoozt"
+          pageNumber={12}
+          isEditing={isEditMode}
+          borderColor="border-blue-400"
+        >
+          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
+
+          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
+        </ReportPageWrapper>
 
         {/*--------------------------- Dynamic Detailed Feedback Sections for Each Competency ----------------------------------- */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Detailed Feedback">
-            <div className="border-b pb-2 flex items-center mb-6"></div>
-            <div className="mb-6">
-              <p className="text-base">
-                This section provides a detailed breakdown of feedback for each
-                competency area as rated by different respondent groups. It
-                includes specific behavioral items assessed across competencies,
-                along with comparative ratings from the individual, manager,
-                peers, direct reports, and others. The purpose is to highlight
-                alignment, gaps, and opportunities for development.
-              </p>
-            </div>
-            {Object.entries(reportData|| {})
-              .filter(([key]) => key !== "appraiseeId")
-              .map(
-                (
-                  [competencyName, competencyData]: [string, any],
-                  index: number
-                ) => {
-                  // Calculate average rating across all rater groups
-                  const raterGroups = Object.keys(competencyData);
-                  const totalAverage =
-                    raterGroups.reduce((sum, raterGroup) => {
-                      return (
-                        sum + (competencyData[raterGroup]?.averageLikert || 0)
-                      );
-                    }, 0) / raterGroups.length;
+        <ReportPageWrapper
+          title="Detailed Feedback"
+          description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
+          organizationName="TalentBoozt"
+          pageNumber={11}
+          isEditing={isEditMode}
+          borderColor="border-blue-400"
+        >
+          {Object.entries(reportData || {})
+            .filter(([key]) => key !== "appraiseeId")
+            .map(
+              (
+                [competencyName, competencyData]: [string, any],
+                index: number
+              ) => {
+                // Calculate average rating across all rater groups
+                const raterGroups = Object.keys(competencyData);
+                const totalAverage =
+                  raterGroups.reduce((sum, raterGroup) => {
+                    return (
+                      sum + (competencyData[raterGroup]?.averageLikert || 0)
+                    );
+                  }, 0) / raterGroups.length;
 
-                  // Transform data into questions format
-                  const questions =
-                    competencyData.Self?.likertQuestions?.map(
-                      (selfQuestion: any, qIndex: number) => {
-                        const ratings = raterGroups.map((raterGroup) => ({
-                          rater:
-                            raterGroup === "Self"
-                              ? "Self"
-                              : raterGroup === "Subordinate"
-                                ? "Direct Reports"
-                                : raterGroup,
-                          rating:
-                            competencyData[raterGroup]?.likertQuestions?.[
-                              qIndex
-                            ]?.value || 0,
-                          color: roleColors[raterGroup] || "#0000ff",
-                        }));
+                // Transform data into questions format
+                const questions =
+                  competencyData.Self?.likertQuestions?.map(
+                    (selfQuestion: any, qIndex: number) => {
+                      const ratings = raterGroups.map((raterGroup) => ({
+                        rater:
+                          raterGroup === "Self"
+                            ? "Self"
+                            : raterGroup === "Subordinate"
+                              ? "Direct Reports"
+                              : raterGroup,
+                        rating:
+                          competencyData[raterGroup]?.likertQuestions?.[qIndex]
+                            ?.value || 0,
+                        color: roleColors[raterGroup] || "#0000ff",
+                      }));
 
-                        return {
-                          question: selfQuestion.question,
-                          ratings: ratings,
-                        };
-                      }
-                    ) || [];
+                      return {
+                        question: selfQuestion.question,
+                        ratings: ratings,
+                      };
+                    }
+                  ) || [];
 
-                  return (
-                    <DetailedFeedback
-                      key={competencyName}
-                      competency={competencyName}
-                      averageRating={Number(totalAverage.toFixed(1))}
-                      questions={questions}
-                      isEditMode={isEditMode}
-                      org="TalentBoozt"
-                      pageNo={13 + index}
-                      onQuestionsChange={() => {
-                        console.log(`Questions changed for ${competencyName}`);
-                      }}
-                    />
-                  );
-                }
-              )}
-          </ReportHeader>
-        </div>
+                return (
+                  <DetailedFeedback
+                    key={competencyName}
+                    competency={competencyName}
+                    averageRating={Number(totalAverage.toFixed(1))}
+                    questions={questions}
+                    isEditMode={isEditMode}
+                    org="TalentBoozt"
+                    pageNo={13 + index}
+                    onQuestionsChange={() => {
+                      console.log(`Questions changed for ${competencyName}`);
+                    }}
+                  />
+                );
+              }
+            )}
+        </ReportPageWrapper>
       </div>
     </div>
   );

@@ -96,6 +96,7 @@ export interface SurveyCreationData {
     userId: string;
     appraiser: boolean;
     role: string;
+    group: string;
   }[];
 }
 
@@ -114,6 +115,7 @@ export interface SurveyUserRecord {
   userId: string;
   appraiser: boolean;
   role: string;
+  group: string;
 }
 
 export interface QuestionData {

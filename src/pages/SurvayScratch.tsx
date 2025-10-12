@@ -28,7 +28,7 @@ type TemplatePreview = {
 interface SurveyData {
   survey: { surveyName: string; projectId: string };
   questions: { questionId: string }[];
-  users: { userId: string; appraiser: boolean; role: string }[];
+  users: { userId: string; appraiser: boolean; role: string; group: string }[];
 }
 
 // Constants
@@ -326,6 +326,9 @@ const SurvayScratch = () => {
       const users: SurveyData["users"] = [];
 
       surveyUsersData.forEach((group: any) => {
+        // Get the group ID from the user group
+        const groupId = group.id || "";
+
         if (group.appraisee) {
           // Use backend-generated ID from mapping, fallback to stored ID
           const backendUserId =
@@ -338,6 +341,7 @@ const SurvayScratch = () => {
                 group.appraisee.role ||
                 group.appraisee.designation ||
                 "Employee",
+              group: groupId,
             });
           } else {
             console.warn(
@@ -357,6 +361,7 @@ const SurvayScratch = () => {
                 userId: backendUserId,
                 appraiser: true,
                 role: appraiser.role || appraiser.designation || "Appraiser",
+                group: groupId,
               });
             } else {
               console.warn(

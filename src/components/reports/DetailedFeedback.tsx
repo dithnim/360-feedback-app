@@ -119,9 +119,7 @@ export default function DetailedFeedback(props: DetailedFeedbackProps) {
                 ))}
               </tbody>
             </table>
-            <div className="w-full mt-auto">
-              <Footer org={props.org} pageNo={props.pageNo} isEditing={props.isEditMode} />
-            </div>
+            
        
     </>
   )

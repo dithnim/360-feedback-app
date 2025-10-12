@@ -203,9 +203,10 @@ export default function PreviewParticipants() {
 
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Table Header */}
-            <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 text-sm">
+            <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 text-sm">
               <div>Participant Name</div>
               <div>Email Address</div>
+              <div>User ID</div>
               <div>Designation</div>
               <div>Appraisee/Appraiser</div>
               <div>Role</div>
@@ -232,13 +233,16 @@ export default function PreviewParticipants() {
                   return (
                     <div
                       key={user.userId || index}
-                      className={`grid grid-cols-6 gap-4 px-6 py-4 items-center transition-colors ${rowBgColor}`}
+                      className={`grid grid-cols-7 gap-4 px-6 py-4 items-center transition-colors ${rowBgColor}`}
                     >
                       <div className="font-medium text-gray-800">
                         {user.name || "Placeholder Name"}
                       </div>
                       <div className="text-gray-600 text-sm">
                         {user.email || "email@example.com"}
+                      </div>
+                      <div className="text-gray-600 text-xs break-all">
+                        {user.userId}
                       </div>
                       <div className="text-gray-600 text-sm">
                         {user.designation || "HR Manager"}

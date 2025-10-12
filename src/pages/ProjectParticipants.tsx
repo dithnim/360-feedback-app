@@ -116,8 +116,13 @@ export default function ProjectParticipants() {
   };
 
   const handlePreviewReport = (appraiseeId: string) => {
-    console.log("Preview report for:", appraiseeId);
-    navigate(`/view-project?participantId=${encodeURIComponent(appraiseeId)}`);
+    console.log("Preview report for appraisee:", appraiseeId);
+
+    // Store the appraisee ID in localStorage for the report component to use
+    localStorage.setItem("selectedAppraiseeId", appraiseeId);
+
+    // Navigate to the report page with the appraisee ID as a query parameter
+    navigate(`/view-project?appraiseeId=${encodeURIComponent(appraiseeId)}`);
   };
 
   const handleDownloadAllReports = () => {
@@ -200,6 +205,9 @@ export default function ProjectParticipants() {
                         </div>
                         <div className="text-sm text-gray-600">
                           {group.appraisee.designation}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 break-all">
+                          ID: {group.appraisee.id}
                         </div>
                       </div>
 

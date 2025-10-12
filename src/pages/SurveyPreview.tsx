@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageNav from "../components/ui/pageNav";
-import { createSurveyAll, createSurveyUserRecords } from "../lib/apiService";
+import { createSurveyAll } from "../lib/apiService";
 import { sendBulkEmails } from "../lib/mailService";
 import type { BulkEmailRecipient, SurveyUserDetails } from "../lib/mailService";
 
@@ -17,6 +17,7 @@ interface SurveyData {
     userId: string;
     appraiser: boolean;
     role: string;
+    group: string;
   }[];
 }
 
@@ -67,8 +68,18 @@ const SurveyPreview = () => {
 
       const users: SurveyData["users"] = [];
 
-      // Process Survey Users data
-      surveyUsersData.forEach((userGroup: any) => {
+      // Process Survey Users data - categorize by groupId
+      surveyUsersData.forEach((userGroup: any, groupIndex: number) => {
+        // Generate a unique group ID if not present
+        // Use the existing ID, or create one based on appraisee ID, or use index
+        const groupId =
+          userGroup.id ||
+          (userGroup.appraisee
+            ? `group-${userGroup.appraisee.id}`
+            : `group-${groupIndex}`);
+
+        console.log(`Processing Group ${groupIndex + 1} with ID: ${groupId}`);
+
         // Add appraisee (the person being evaluated)
         if (userGroup.appraisee) {
           users.push({
@@ -78,7 +89,11 @@ const SurveyPreview = () => {
               userGroup.appraisee.role ||
               userGroup.appraisee.designation ||
               "Employee",
+            group: groupId,
           });
+          console.log(
+            `  - Added appraisee: ${userGroup.appraisee.id} to group ${groupId}`
+          );
         }
 
         // Add appraisers (the people doing the evaluation)
@@ -88,16 +103,29 @@ const SurveyPreview = () => {
               userId: appraiser.id,
               appraiser: true,
               role: appraiser.role || appraiser.designation || "Appraiser",
+              group: groupId,
             });
+            console.log(
+              `  - Added appraiser: ${appraiser.id} to group ${groupId}`
+            );
           });
         }
       });
 
-      // Remove duplicates based on userId
-      const uniqueUsers = users.filter(
-        (user, index, self) =>
-          index === self.findIndex((u) => u.userId === user.userId)
-      );
+      // Don't remove duplicates - keep all user-group associations
+      // Users can be in multiple groups (e.g., appraising different people)
+      console.log(`Total user-group associations created: ${users.length}`);
+
+      // Group users by groupId for verification
+      const groupedUsers = users.reduce((acc: any, user) => {
+        if (!acc[user.group]) {
+          acc[user.group] = [];
+        }
+        acc[user.group].push(user.userId);
+        return acc;
+      }, {});
+
+      console.log("Users grouped by groupId:", groupedUsers);
 
       return {
         survey: {
@@ -105,7 +133,7 @@ const SurveyPreview = () => {
           projectId: projectData.id,
         },
         questions,
-        users: uniqueUsers,
+        users: users, // Keep all associations, including duplicates across groups
       };
     } catch (error) {
       console.error("Error creating survey from localStorage:", error);
@@ -279,7 +307,6 @@ const SurveyPreview = () => {
       "Project",
       "SurveyResponse",
       "SurveyUsers",
-      "SurveyUsersResponse",
       "loglevel",
       "savedQuestions",
       "surveyCreationData",
@@ -343,34 +370,6 @@ const SurveyPreview = () => {
         );
         throw new Error(
           "Survey was created but survey ID could not be extracted for email notifications."
-        );
-      }
-
-      // Create Survey Users after successful survey creation
-      try {
-        // Transform surveyData.users to match MongoDB document structure
-        const surveyUserRecords = surveyData.users.map((user) => ({
-          surveyId: surveyId, // Use the survey ID from response
-          userId: user.userId,
-          appraiser: user.appraiser,
-          role: user.role,
-        }));
-
-        console.log("Creating Survey Users with records:", surveyUserRecords);
-        const surveyUsersResponse =
-          await createSurveyUserRecords(surveyUserRecords);
-        console.log("Survey Users creation response:", surveyUsersResponse);
-
-        // Store the Survey Users response
-        localStorage.setItem(
-          "SurveyUsersResponse",
-          JSON.stringify(surveyUsersResponse)
-        );
-      } catch (surveyUsersError) {
-        console.error("Error creating Survey Users:", surveyUsersError);
-        // Don't throw error here - continue with email sending even if Survey Users creation fails
-        console.warn(
-          "Survey created successfully but Survey Users creation failed"
         );
       }
 

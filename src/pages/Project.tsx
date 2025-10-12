@@ -223,9 +223,30 @@ const Project = () => {
     );
 
     if (existingGroups.length > 0) {
-      setUserGroups(existingGroups);
+      // Ensure all groups have valid IDs - generate if missing
+      const groupsWithIds = existingGroups.map((group) => {
+        if (!group.id || typeof group.id !== "string") {
+          const timestamp = Date.now();
+          const random = Math.random().toString(36).substring(2, 11);
+          const random2 = Math.random().toString(36).substring(2, 11);
+          return {
+            ...group,
+            id: `group_${timestamp}_${random}_${random2}`,
+          };
+        }
+        return group;
+      });
+
+      setUserGroups(groupsWithIds);
+      // Save back to localStorage if any IDs were generated
+      if (groupsWithIds.some((g, i) => g.id !== existingGroups[i]?.id)) {
+        localStorage.setItem(
+          LS_KEYS.surveyUsers,
+          JSON.stringify(groupsWithIds)
+        );
+      }
       // Group counter is just for tracking, no need to set from existing groups since we use generated IDs
-      setGroupCounter(existingGroups.length + 1);
+      setGroupCounter(groupsWithIds.length + 1);
     }
   }, [pageCase]);
 
@@ -301,7 +322,10 @@ const Project = () => {
 
   // Helper function to generate unique group ID
   const generateGroupId = useCallback(() => {
-    return `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 11);
+    const random2 = Math.random().toString(36).substring(2, 11);
+    return `group_${timestamp}_${random}_${random2}`;
   }, []);
 
   const handleRoleChange = useCallback((id: number, newRole: string) => {

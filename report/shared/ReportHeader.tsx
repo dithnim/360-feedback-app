@@ -25,7 +25,7 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({
             <rect width="23" height="25" fill="#EE3E41" />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold">{title}</h2>
+        <h2 className="text-xl font-semibold report-header-title">{title}</h2>
       </div>
       <div className="h-svg-r">
         <svg
