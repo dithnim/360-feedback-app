@@ -60,14 +60,14 @@ const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
 
 const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
 import LeadershipQuestionRow from "../../src/components/ui/LeadershipQuestionRow";
-import DetailedFeedback from "@/components/reports/DetailedFeedback";
+import DetailedFeedback from "../../src/components/reports/DetailedFeedback";
 import OpenEndedFeedbackSection, {
   dummyOpenEndedFeedbackData,
-} from "@/components/reports/OpenEndedFeedbackSection";
+} from "../../src/components/reports/OpenEndedFeedbackSection";
 import BlindSpotsSection, {
   dummyBlindSpotsData,
-} from "@/components/reports/BlindSpotsSection";
-import ReportPageWrapper from "@/components/reports/ReportPageWrapper";
+} from "../../src/components/reports/BlindSpotsSection";
+import ReportPageWrapper from "../../src/components/reports/ReportPageWrapper";
 
 const FeedbackReport: React.FC = () => {
   // Fetch report data on initial load, using id from query string
@@ -1098,7 +1098,31 @@ const FeedbackReport: React.FC = () => {
     DirectReport = "Direct Report",
     Peers = "Peers",
   }
-  
+
+  // Helper function to get all ratings for a question across all roles
+  const getRatingsForQuestion = (
+    competencyData: any,
+    questionIndex: number
+  ) => {
+    const allRoles = [
+      { key: "Self", display: "Self", color: roleColors.Self },
+      { key: "Manager", display: "Manager", color: roleColors.Manager },
+      { key: "Peers", display: "Peers", color: roleColors.Peer },
+      {
+        key: "Subordinate",
+        display: "Direct Reports",
+        color: roleColors.DirectReport,
+      },
+    ];
+
+    return allRoles.map((role) => ({
+      rater: role.display,
+      rating:
+        competencyData[role.key]?.likertQuestions?.[questionIndex]?.value || 0,
+      color: role.color,
+    }));
+  };
+
   return (
     <div className="content-wrapper">
       {/* Progress Overley */}
@@ -1764,7 +1788,11 @@ const FeedbackReport: React.FC = () => {
         >
           <BlindSpotsSection
             {...dummyBlindSpotsData}
-            onUpdateData={(args) => handlePieChartUpdate("strengths", args)}
+            onUpdateData={(args: {
+              index: number;
+              field: string;
+              value: any;
+            }) => handlePieChartUpdate("strengths", args)}
             chartData={pieCharts.strengths}
           />
         </ReportPageWrapper>
@@ -1779,7 +1807,11 @@ const FeedbackReport: React.FC = () => {
         >
           <BlindSpotsSection
             {...dummyBlindSpotsData}
-            onUpdateData={(args) => handlePieChartUpdate("improvements", args)}
+            onUpdateData={(args: {
+              index: number;
+              field: string;
+              value: any;
+            }) => handlePieChartUpdate("improvements", args)}
             chartData={pieCharts.improvements}
           />
         </ReportPageWrapper>
@@ -1794,9 +1826,11 @@ const FeedbackReport: React.FC = () => {
         >
           <BlindSpotsSection
             {...dummyBlindSpotsData}
-            onUpdateData={(args) =>
-              handlePieChartUpdate("hiddenStrengths", args)
-            }
+            onUpdateData={(args: {
+              index: number;
+              field: string;
+              value: any;
+            }) => handlePieChartUpdate("hiddenStrengths", args)}
             chartData={pieCharts.hiddenStrengths}
           />
         </ReportPageWrapper>
@@ -1812,7 +1846,11 @@ const FeedbackReport: React.FC = () => {
           <BlindSpotsSection
             {...dummyBlindSpotsData}
             chartData={pieCharts.blindSpots}
-            onUpdateData={(args) => handlePieChartUpdate("blindSpots", args)}
+            onUpdateData={(args: {
+              index: number;
+              field: string;
+              value: any;
+            }) => handlePieChartUpdate("blindSpots", args)}
           />
         </ReportPageWrapper>
 
@@ -1854,57 +1892,47 @@ const FeedbackReport: React.FC = () => {
         </ReportPageWrapper>
 
         {/*--------------------------- Dynamic Detailed Feedback Sections for Each Competency ----------------------------------- */}
-        <ReportPageWrapper
-          title="Detailed Feedback"
-          description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
-          organizationName="TalentBoozt"
-          pageNumber={11}
-          isEditing={isEditMode}
-          borderColor="border-blue-400"
-        >
-          {Object.entries(reportData || {})
-            .filter(([key]) => key !== "appraiseeId")
-            .map(
-              (
-                [competencyName, competencyData]: [string, any],
-                index: number
-              ) => {
-                // Calculate average rating across all rater groups
-                const raterGroups = Object.keys(competencyData);
-                const totalAverage =
-                  raterGroups.reduce((sum, raterGroup) => {
-                    return (
-                      sum + (competencyData[raterGroup]?.averageLikert || 0)
-                    );
-                  }, 0) / raterGroups.length;
+        {Object.entries(reportData || {})
+          .filter(([key]) => key !== "appraiseeId")
+          .map(
+            (
+              [competencyName, competencyData]: [string, any],
+              index: number
+            ) => {
+              // Calculate average rating across all rater groups
+              const allRoleKeys = ["Self", "Manager", "Peers", "Subordinate"];
+              const totalAverage =
+                allRoleKeys.reduce((sum, raterGroup) => {
+                  return sum + (competencyData[raterGroup]?.averageLikert || 0);
+                }, 0) / allRoleKeys.length;
 
-                // Transform data into questions format
-                const questions =
-                  competencyData.Self?.likertQuestions?.map(
-                    (selfQuestion: any, qIndex: number) => {
-                      const ratings = raterGroups.map((raterGroup) => ({
-                        rater:
-                          raterGroup === "Self"
-                            ? "Self"
-                            : raterGroup === "Subordinate"
-                              ? "Direct Reports"
-                              : raterGroup,
-                        rating:
-                          competencyData[raterGroup]?.likertQuestions?.[qIndex]
-                            ?.value || 0,
-                        color: roleColors[raterGroup] || "#0000ff",
-                      }));
+              // Get all questions from the first available role or Self
+              const allQuestions =
+                competencyData.Self?.likertQuestions ||
+                competencyData.Manager?.likertQuestions ||
+                competencyData.Peers?.likertQuestions ||
+                competencyData.Subordinate?.likertQuestions ||
+                [];
 
-                      return {
-                        question: selfQuestion.question,
-                        ratings: ratings,
-                      };
-                    }
-                  ) || [];
+              // Transform data into questions format
+              const questions = allQuestions.map(
+                (question: any, qIndex: number) => ({
+                  question: question.question,
+                  ratings: getRatingsForQuestion(competencyData, qIndex),
+                })
+              );
 
-                return (
+              return (
+                <ReportPageWrapper
+                  key={competencyName}
+                  title={`Detailed Feedback - ${competencyName}`}
+                  description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
+                  organizationName="TalentBoozt"
+                  pageNumber={13 + index}
+                  isEditing={isEditMode}
+                  borderColor="border-blue-400"
+                >
                   <DetailedFeedback
-                    key={competencyName}
                     competency={competencyName}
                     averageRating={Number(totalAverage.toFixed(1))}
                     questions={questions}
@@ -1915,10 +1943,10 @@ const FeedbackReport: React.FC = () => {
                       console.log(`Questions changed for ${competencyName}`);
                     }}
                   />
-                );
-              }
-            )}
-        </ReportPageWrapper>
+                </ReportPageWrapper>
+              );
+            }
+          )}
       </div>
     </div>
   );
