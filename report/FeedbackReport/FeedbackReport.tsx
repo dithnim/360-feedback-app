@@ -414,6 +414,11 @@ const FeedbackReport: React.FC = () => {
     },
   ]);
   // Refactored: Leadership questions as an array of objects
+  // State for dynamic competency questions
+  const [competencyQuestions, setCompetencyQuestions] = useState<
+    Record<string, any[]>
+  >({});
+
   const [leadershipQuestions, setLeadershipQuestions] = useState([
     {
       question: "Inspires others with a clear and compelling vision",
@@ -1935,12 +1940,15 @@ const FeedbackReport: React.FC = () => {
                   <DetailedFeedback
                     competency={competencyName}
                     averageRating={Number(totalAverage.toFixed(1))}
-                    questions={questions}
+                    questions={competencyQuestions[competencyName] || questions}
                     isEditMode={isEditMode}
                     org="TalentBoozt"
                     pageNo={13 + index}
-                    onQuestionsChange={() => {
-                      console.log(`Questions changed for ${competencyName}`);
+                    onQuestionsChange={(updatedQuestions) => {
+                      setCompetencyQuestions((prev) => ({
+                        ...prev,
+                        [competencyName]: updatedQuestions,
+                      }));
                     }}
                   />
                 </ReportPageWrapper>
