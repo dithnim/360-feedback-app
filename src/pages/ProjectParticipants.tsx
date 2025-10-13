@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import PageNav from "../components/ui/pageNav";
 import { useNavigate } from "react-router-dom";
 import { Download } from "lucide-react";
+import { Button } from "../components/ui/Button";
 
 type UserGroup = {
   groupId: string;
+  groupName: string;
   appraisee: {
     id: string;
     name: string;
@@ -50,42 +52,83 @@ export default function ProjectParticipants() {
         const surveyDetailsData = JSON.parse(surveyDetailsRaw);
         console.log("Parsed SurveyDetails data:", surveyDetailsData);
 
-        let userDetails: any[] = [];
+        let surveyData: any = null;
+        let userGroups: any[] = [];
 
-        // Extract userDetails from the survey details response
+        // Extract survey data from the response
         if (Array.isArray(surveyDetailsData) && surveyDetailsData.length > 0) {
           // Response is an array of survey objects
-          const surveyData = surveyDetailsData[0];
-          if (surveyData.userDetails && Array.isArray(surveyData.userDetails)) {
-            userDetails = surveyData.userDetails;
-          }
-        } else if (
-          surveyDetailsData.userDetails &&
-          Array.isArray(surveyDetailsData.userDetails)
-        ) {
+          surveyData = surveyDetailsData[0];
+        } else if (surveyDetailsData && typeof surveyDetailsData === "object") {
           // Response is a single survey object
-          userDetails = surveyDetailsData.userDetails;
+          surveyData = surveyDetailsData;
         }
 
-        console.log("Extracted user details:", userDetails);
+        // Process userDetails to create proper groups
+        if (
+          surveyData &&
+          surveyData.userDetails &&
+          Array.isArray(surveyData.userDetails)
+        ) {
+          const userDetails = surveyData.userDetails;
 
-        // Transform all users into display groups
-        if (userDetails.length > 0) {
-          const finalGroups: UserGroup[] = userDetails.map(
-            (user: any, index: number) => ({
-              groupId: `group-${index}`,
-              appraisee: {
-                id: user._id || user.id || `user-${index}`,
-                name: user.name || `User ${index + 1}`,
-                email: user.email || `user${index + 1}@example.com`,
-                designation: user.designation || user.role || "Employee",
-                role: user.role,
-              },
-              appraisers: [],
-            })
-          );
+          // Group users by their group field
+          const groupsMap = new Map<string, any[]>();
 
-          console.log("Displaying all users from survey details:", finalGroups);
+          userDetails.forEach((user: any) => {
+            const groupId = user.group;
+            if (!groupsMap.has(groupId)) {
+              groupsMap.set(groupId, []);
+            }
+            groupsMap.get(groupId)!.push(user);
+          });
+
+          console.log("Groups map:", groupsMap);
+
+          // Transform each group into the expected format
+          const finalGroups: UserGroup[] = [];
+          let groupIndex = 0;
+
+          groupsMap.forEach((users, groupId) => {
+            // Find the appraisee (user with appraiser: false)
+            const appraisee = users.find((user) => !user.appraiser);
+
+            // Find all appraisers (users with appraiser: true)
+            const appraisers = users.filter((user) => user.appraiser);
+
+            if (appraisee) {
+              finalGroups.push({
+                groupId: groupId,
+                groupName: `Group ${groupIndex + 1}`,
+                appraisee: {
+                  id:
+                    appraisee._id || appraisee.id || `appraisee-${groupIndex}`,
+                  name: appraisee.name || `Appraisee ${groupIndex + 1}`,
+                  email:
+                    appraisee.email || `appraisee${groupIndex + 1}@example.com`,
+                  designation: appraisee.role || "Employee",
+                  role: appraisee.role,
+                },
+                appraisers: appraisers.map(
+                  (appraiser: any, appraiserIndex: number) => ({
+                    id:
+                      appraiser._id ||
+                      appraiser.id ||
+                      `appraiser-${groupIndex}-${appraiserIndex}`,
+                    name: appraiser.name || `Appraiser ${appraiserIndex + 1}`,
+                    email:
+                      appraiser.email ||
+                      `appraiser${appraiserIndex + 1}@example.com`,
+                    designation: appraiser.role || "Employee",
+                    role: appraiser.role,
+                  })
+                ),
+              });
+              groupIndex++;
+            }
+          });
+
+          console.log("Final user groups for display:", finalGroups);
           setUserGroups(finalGroups);
         }
       }
@@ -115,10 +158,15 @@ export default function ProjectParticipants() {
     }
   };
 
-  const handlePreviewReport = (appraiseeId: string) => {
-    console.log("Preview report for appraisee:", appraiseeId);
+  const handlePreviewReport = (userId: string, appraiseeId: string) => {
+    console.log(
+      "Preview report for user:",
+      userId,
+      "in appraisee group:",
+      appraiseeId
+    );
 
-    // Store the appraisee ID in localStorage for the report component to use
+    // Always store the appraisee ID (not the clicked user's ID) for the report component to use
     localStorage.setItem("selectedAppraiseeId", appraiseeId);
 
     // Navigate to the report page with the appraisee ID as a query parameter
@@ -131,17 +179,40 @@ export default function ProjectParticipants() {
     alert("Downloading all reports...");
   };
 
+  const handlePrevious = () => {
+    console.log("Previous button clicked");
+    navigate("/preview-participants");
+  };
+
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
         <PageNav position="Current Projects" title="Current Projects" />
 
         <main className="flex-1 p-8 bg-gray-50 overflow-auto">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-semibold text-gray-800">
               {projectName}
             </h2>
+            <div className="flex gap-3">
+              <Button
+                variant="previous"
+                className="font-semibold text-md flex items-center justify-center px-6 py-5"
+                onClick={handlePrevious}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="next"
+                className="font-semibold text-md flex items-center justify-center px-6 py-5"
+                onClick={() => alert("Next step")}
+              >
+                Download All Reports
+              </Button>
+            </div>
+          </div>
 
+          <div>
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Participants
@@ -174,7 +245,7 @@ export default function ProjectParticipants() {
             </div>
 
             {/* Participants List */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {userGroups.length === 0 ? (
                 <div className="bg-white rounded-lg p-8 text-center text-gray-500">
                   No participants found
@@ -185,47 +256,116 @@ export default function ProjectParticipants() {
                     key={group.groupId}
                     className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center gap-4 px-6 py-4">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="#fff"
-                          className="w-6 h-6"
+                    {/* Group Header */}
+                    <div className="px-6 py-3 border-b border-gray-100">
+                      <h4 className="text-md font-medium text-gray-700">
+                        {group.groupName}
+                      </h4>
+                    </div>
+
+                    {/* Appraisee Section */}
+                    <div className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="#6b7280"
+                            className="w-6 h-6"
+                          >
+                            <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM2 20a10 10 0 1120 0v1H2v-1z" />
+                          </svg>
+                        </div>
+
+                        {/* Name and Designation */}
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-800 text-lg">
+                            {group.appraisee.name}
+                            <span className="ml-2 text-sm font-normal text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                              Appraisee
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {group.appraisee.designation}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {group.appraisee.email}
+                          </div>
+                        </div>
+
+                        {/* Preview Report Button */}
+                        <button
+                          onClick={() =>
+                            handlePreviewReport(
+                              group.appraisee.id,
+                              group.appraisee.id
+                            )
+                          }
+                          className="border border-[#ee3f40] text-[#ee3f40] hover:bg-red-50 px-6 py-2 rounded-full font-medium transition-colors"
                         >
-                          <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM2 20a10 10 0 1120 0v1H2v-1z" />
-                        </svg>
+                          Preview Report
+                        </button>
+
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={selectedReports.has(group.appraisee.id)}
+                          onChange={() =>
+                            handleToggleSelect(group.appraisee.id)
+                          }
+                          className="w-4 h-4 accent-[#ee3f40] cursor-pointer rounded"
+                        />
                       </div>
 
-                      {/* Name and Designation */}
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800 text-lg">
-                          {group.appraisee.name}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {group.appraisee.designation}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1 break-all">
-                          ID: {group.appraisee.id}
-                        </div>
-                      </div>
+                      {/* Appraisers Section */}
+                      {group.appraisers && group.appraisers.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <h5 className="text-sm font-medium text-gray-600 mb-3">
+                            Appraisers ({group.appraisers.length})
+                          </h5>
+                          <div className="flex flex-col justify-between ">
+                            {group.appraisers.map((appraiser, index) => (
+                              <div
+                                key={appraiser.id}
+                                className="flex items-center gap-3 px-3 py-5 bg-gray-50 rounded-lg w-full"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="#6b7280"
+                                    className="w-4 h-4"
+                                  >
+                                    <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM2 20a10 10 0 1120 0v1H2v-1z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-800 truncate">
+                                    {appraiser.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {appraiser.designation}
+                                  </div>
+                                </div>
 
-                      {/* Preview Report Button */}
-                      <button
-                        onClick={() => handlePreviewReport(group.appraisee.id)}
-                        className="border border-[#ee3f40] text-[#ee3f40] hover:bg-red-50 px-6 py-2 rounded-full font-medium transition-colors"
-                      >
-                        Preview Report
-                      </button>
-
-                      {/* Checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={selectedReports.has(group.appraisee.id)}
-                        onChange={() => handleToggleSelect(group.appraisee.id)}
-                        className="w-4 h-4 accent-[#ee3f40] cursor-pointer rounded"
-                      />
+                                {/* Preview Report Button for Appraiser */}
+                                <button
+                                  onClick={() =>
+                                    handlePreviewReport(
+                                      appraiser.id,
+                                      group.appraisee.id
+                                    )
+                                  }
+                                  className="border border-[#ee3f40] text-[#ee3f40] hover:bg-red-50 px-3 py-1 rounded-full font-medium transition-colors text-xs"
+                                >
+                                  Preview Report
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
