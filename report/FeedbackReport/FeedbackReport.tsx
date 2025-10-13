@@ -1111,8 +1111,8 @@ const FeedbackReport: React.FC = () => {
   ) => {
     const allRoles = [
       { key: "Self", display: "Self", color: roleColors.Self },
-      { key: "Manager", display: "Manager", color: roleColors.Manager },
-      { key: "Peers", display: "Peers", color: roleColors.Peer },
+      { key: "Boss", display: "Manager", color: roleColors.Manager },
+      { key: "Peer", display: "Peers", color: roleColors.Peer },
       {
         key: "Subordinate",
         display: "Direct Reports",
@@ -1905,7 +1905,7 @@ const FeedbackReport: React.FC = () => {
               index: number
             ) => {
               // Calculate average rating across all rater groups
-              const allRoleKeys = ["Self", "Manager", "Peers", "Subordinate"];
+              const allRoleKeys = ["Self", "Boss", "Peer", "Subordinate"];
               const totalAverage =
                 allRoleKeys.reduce((sum, raterGroup) => {
                   return sum + (competencyData[raterGroup]?.averageLikert || 0);
@@ -1914,8 +1914,8 @@ const FeedbackReport: React.FC = () => {
               // Get all questions from the first available role or Self
               const allQuestions =
                 competencyData.Self?.likertQuestions ||
-                competencyData.Manager?.likertQuestions ||
-                competencyData.Peers?.likertQuestions ||
+                competencyData.Boss?.likertQuestions ||
+                competencyData.Peer?.likertQuestions ||
                 competencyData.Subordinate?.likertQuestions ||
                 [];
 
