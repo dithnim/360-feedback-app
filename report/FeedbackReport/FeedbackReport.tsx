@@ -1939,6 +1939,141 @@ const FeedbackReport: React.FC = () => {
                   Below is a summary of competency ratings from different rater
                   groups
                 </p>
+
+                {/* Edit Mode Draggable Components */}
+                {isEditMode && (
+                  <div style={{ position: "relative", marginBottom: "1rem" }}>
+                    {page.map((item, index) => {
+                      const ratings = item.ratings
+                        ? item.ratings
+                        : item.charts?.map((chart: any) => ({
+                            rater: chart.label,
+                            rating: chart.value,
+                            color: chart.color,
+                          })) || [];
+
+                      return (
+                        <DraggableComp
+                          key={`edit-${index}`}
+                          title={`Edit: ${item.category}`}
+                        >
+                          <div className="p-4">
+                            <div className="drg-wrapper">
+                              <div className="flex flex-col mb-2">
+                                <label htmlFor={`edit-category-${index}`}>
+                                  Category:
+                                </label>
+                                <input
+                                  id={`edit-category-${index}`}
+                                  type="text"
+                                  className="border border-gray-300 rounded-md mb-2 px-1.5"
+                                  value={item.category}
+                                  onChange={(e) => {
+                                    const newPage = [...page];
+                                    newPage[index].category = e.target.value;
+                                    setPaginatedRatings((prev) => {
+                                      const newRatings = [...prev];
+                                      newRatings[pageIndex] = newPage;
+                                      return newRatings;
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="flex flex-col mb-2">
+                                <label htmlFor={`edit-rating-${index}`}>
+                                  Overall Rating:
+                                </label>
+                                <input
+                                  id={`edit-rating-${index}`}
+                                  type="number"
+                                  step="0.01"
+                                  className="border border-gray-300 rounded-md mb-2 px-1.5"
+                                  value={item.rating}
+                                  onChange={(e) => {
+                                    const newPage = [...page];
+                                    newPage[index].rating =
+                                      parseFloat(e.target.value) || 0;
+                                    setPaginatedRatings((prev) => {
+                                      const newRatings = [...prev];
+                                      newRatings[pageIndex] = newPage;
+                                      return newRatings;
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="flex flex-col mb-2">
+                                <label htmlFor={`edit-description-${index}`}>
+                                  Description:
+                                </label>
+                                <textarea
+                                  id={`edit-description-${index}`}
+                                  className="border border-gray-300 rounded-md mb-2 px-1.5"
+                                  value={item.description}
+                                  onChange={(e) => {
+                                    const newPage = [...page];
+                                    newPage[index].description = e.target.value;
+                                    setPaginatedRatings((prev) => {
+                                      const newRatings = [...prev];
+                                      newRatings[pageIndex] = newPage;
+                                      return newRatings;
+                                    });
+                                  }}
+                                  rows={2}
+                                />
+                              </div>
+                              {ratings.map((r: any, rIndex: number) => (
+                                <div
+                                  className="flex items-center justify-between mb-2"
+                                  key={rIndex}
+                                >
+                                  <div className="me-4 flex flex-col">
+                                    <label>Rater:</label>
+                                    <input
+                                      type="text"
+                                      className="border border-gray-300 rounded-md w-32 px-1.5"
+                                      value={r.rater}
+                                      onChange={(e) => {
+                                        const newPage = [...page];
+                                        newPage[index].ratings[rIndex].rater =
+                                          e.target.value;
+                                        setPaginatedRatings((prev) => {
+                                          const newRatings = [...prev];
+                                          newRatings[pageIndex] = newPage;
+                                          return newRatings;
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="me-4 flex flex-col">
+                                    <label>Rating:</label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      max={5}
+                                      className="border border-gray-300 rounded-md w-32 px-1.5"
+                                      value={r.rating}
+                                      onChange={(e) => {
+                                        const newPage = [...page];
+                                        newPage[index].ratings[rIndex].rating =
+                                          parseFloat(e.target.value) || 0;
+                                        setPaginatedRatings((prev) => {
+                                          const newRatings = [...prev];
+                                          newRatings[pageIndex] = newPage;
+                                          return newRatings;
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </DraggableComp>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {page.map((item, index) => {
                   // Handle both data formats: new format has 'ratings', old has 'charts'
                   const ratings = item.ratings
@@ -1967,6 +2102,78 @@ const FeedbackReport: React.FC = () => {
             </div>
           </div>
         ))}
+
+        {/*--------------------------- Dynamic Detailed Feedback Sections for Each Competency ----------------------------------- */}
+        {Object.entries(reportData || {})
+          .filter(([key]) => key !== "appraiseeId")
+          .map(
+            (
+              [competencyName, competencyData]: [string, any],
+              index: number
+            ) => {
+              // Calculate average rating across all rater groups
+              const allRoleKeys = ["Self", "Boss", "Peer", "Subordinate"];
+              const totalAverage =
+                allRoleKeys.reduce((sum, raterGroup) => {
+                  return sum + (competencyData[raterGroup]?.averageLikert || 0);
+                }, 0) / allRoleKeys.length;
+
+              // Get all unique questions from all roles
+              const allQuestionsMap = new Map<string, any>();
+
+              // Collect questions from all roles
+              ["Self", "Boss", "Peer", "Subordinate"].forEach((roleKey) => {
+                const roleQuestions =
+                  competencyData[roleKey]?.likertQuestions || [];
+                roleQuestions.forEach((q: any) => {
+                  if (!allQuestionsMap.has(q.question)) {
+                    allQuestionsMap.set(q.question, q);
+                  }
+                });
+              });
+
+              // Convert to array and sort by question name
+              const allQuestions = Array.from(allQuestionsMap.values()).sort(
+                (a, b) => a.question.localeCompare(b.question)
+              );
+
+              // Transform data into questions format
+              const questions = allQuestions.map((question: any) => ({
+                question: question.question,
+                ratings: getRatingsForQuestion(
+                  competencyData,
+                  question.question
+                ),
+              }));
+
+              return (
+                <ReportPageWrapper
+                  key={competencyName}
+                  title={`Detailed Feedback - ${competencyName}`}
+                  description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
+                  organizationName="TalentBoozt"
+                  pageNumber={13 + index}
+                  isEditing={isEditMode}
+                  borderColor="border-blue-400"
+                >
+                  <DetailedFeedback
+                    competency={competencyName}
+                    averageRating={Number(totalAverage.toFixed(1))}
+                    questions={competencyQuestions[competencyName] || questions}
+                    isEditMode={isEditMode}
+                    org="TalentBoozt"
+                    pageNo={13 + index}
+                    onQuestionsChange={(updatedQuestions) => {
+                      setCompetencyQuestions((prev) => ({
+                        ...prev,
+                        [competencyName]: updatedQuestions,
+                      }));
+                    }}
+                  />
+                </ReportPageWrapper>
+              );
+            }
+          )}
 
         {/* ------------------- Strengths Section (Pie Chart) ------------------ */}
         <ReportPageWrapper
@@ -2080,78 +2287,6 @@ const FeedbackReport: React.FC = () => {
 
           <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
         </ReportPageWrapper>
-
-        {/*--------------------------- Dynamic Detailed Feedback Sections for Each Competency ----------------------------------- */}
-        {Object.entries(reportData || {})
-          .filter(([key]) => key !== "appraiseeId")
-          .map(
-            (
-              [competencyName, competencyData]: [string, any],
-              index: number
-            ) => {
-              // Calculate average rating across all rater groups
-              const allRoleKeys = ["Self", "Boss", "Peer", "Subordinate"];
-              const totalAverage =
-                allRoleKeys.reduce((sum, raterGroup) => {
-                  return sum + (competencyData[raterGroup]?.averageLikert || 0);
-                }, 0) / allRoleKeys.length;
-
-              // Get all unique questions from all roles
-              const allQuestionsMap = new Map<string, any>();
-
-              // Collect questions from all roles
-              ["Self", "Boss", "Peer", "Subordinate"].forEach((roleKey) => {
-                const roleQuestions =
-                  competencyData[roleKey]?.likertQuestions || [];
-                roleQuestions.forEach((q: any) => {
-                  if (!allQuestionsMap.has(q.question)) {
-                    allQuestionsMap.set(q.question, q);
-                  }
-                });
-              });
-
-              // Convert to array and sort by question name
-              const allQuestions = Array.from(allQuestionsMap.values()).sort(
-                (a, b) => a.question.localeCompare(b.question)
-              );
-
-              // Transform data into questions format
-              const questions = allQuestions.map((question: any) => ({
-                question: question.question,
-                ratings: getRatingsForQuestion(
-                  competencyData,
-                  question.question
-                ),
-              }));
-
-              return (
-                <ReportPageWrapper
-                  key={competencyName}
-                  title={`Detailed Feedback - ${competencyName}`}
-                  description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
-                  organizationName="TalentBoozt"
-                  pageNumber={13 + index}
-                  isEditing={isEditMode}
-                  borderColor="border-blue-400"
-                >
-                  <DetailedFeedback
-                    competency={competencyName}
-                    averageRating={Number(totalAverage.toFixed(1))}
-                    questions={competencyQuestions[competencyName] || questions}
-                    isEditMode={isEditMode}
-                    org="TalentBoozt"
-                    pageNo={13 + index}
-                    onQuestionsChange={(updatedQuestions) => {
-                      setCompetencyQuestions((prev) => ({
-                        ...prev,
-                        [competencyName]: updatedQuestions,
-                      }));
-                    }}
-                  />
-                </ReportPageWrapper>
-              );
-            }
-          )}
       </div>
     </div>
   );
