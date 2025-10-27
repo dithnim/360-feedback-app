@@ -1,0 +1,109 @@
+.competency-rating-section {
+  margin-bottom: 30px;
+
+  .competency-rating-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .competency-rating-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #4a4a4a;
+      margin: 0;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+        Arial, sans-serif;
+    }
+
+    .competency-rating-score {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+
+      .score-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #d72928;
+      }
+
+      .score-divider {
+        font-size: 16px;
+        color: #9e9e9e;
+        font-weight: 400;
+      }
+
+      .score-max {
+        font-size: 16px;
+        color: #9e9e9e;
+        font-weight: 400;
+      }
+    }
+  }
+
+  .competency-rating-description {
+    font-size: 13px;
+    color: #9e9e9e;
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif;
+    font-weight: 400;
+  }
+
+  .competency-rating-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .rating-bar-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .rater-label {
+        font-size: 14px;
+        font-weight: 400;
+        color: #4a4a4a;
+        min-width: 140px;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .rating-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+
+        .rating-bar-wrapper {
+          height: 8px;
+          width: 100%;
+          background-color: #e5e7eb;
+          border-radius: 4px;
+          overflow: hidden;
+
+          .rating-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+          }
+        }
+
+        .rating-value-number {
+          font-size: 14px;
+          font-weight: 600;
+          color: #4a4a4a;
+          min-width: 40px;
+          text-align: right;
+          font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "Helvetica Neue", Arial, sans-serif;
+        }
+      }
+    }
+  }
+}

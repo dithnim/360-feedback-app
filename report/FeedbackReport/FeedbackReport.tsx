@@ -7,6 +7,7 @@ import ReportHeader from "../shared/ReportHeader";
 
 import PieChart from "../shared/charts/PieChart/PieChart";
 import BarChart from "../shared/charts/BarChart/BarChart";
+import ComparisonLineChart from "../shared/charts/ComparisonLineChart/ComparisonLineChart";
 
 // Import data stores
 import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore";
@@ -68,6 +69,7 @@ import BlindSpotsSection, {
   dummyBlindSpotsData,
 } from "../../src/components/reports/BlindSpotsSection";
 import ReportPageWrapper from "../../src/components/reports/ReportPageWrapper";
+import CompetencyRatingSection from "../shared/elements/CompetencyRatingSection";
 
 const FeedbackReport: React.FC = () => {
   // Fetch report data on initial load, using id from query string
@@ -601,7 +603,7 @@ const FeedbackReport: React.FC = () => {
     paginateOpenEndedFeedbackRate();
     paginateDevPlan();
     prepareChartData();
-  }, [sumOfComRating, openEndedFeedback, developmentPlanContent]);
+  }, [reportData, sumOfComRating, openEndedFeedback, developmentPlanContent]);
 
   // When answerData changes, try to map it into UI state (respondent summary, header metadata)
   useEffect(() => {
@@ -765,11 +767,70 @@ const FeedbackReport: React.FC = () => {
     setIsEditMode(!isEditMode);
   };
 
+  // Helper function to process reportData into competency rating format
+  const processCompetencyRatings = () => {
+    if (!reportData) return [];
+
+    // Define role mappings
+    const roleMappings = [
+      { key: "Self", display: "Self", color: roleColors.Self },
+      { key: "Boss", display: "Manager", color: roleColors.Manager },
+      { key: "Peer", display: "Peers", color: roleColors.Peer },
+      {
+        key: "Subordinate",
+        display: "Direct Reports",
+        color: roleColors.DirectReport,
+      },
+    ];
+
+    // Process each competency from reportData
+    const processedRatings = Object.entries(reportData)
+      .filter(([key]) => key !== "appraiseeId")
+      .map(([competencyName, competencyData]: [string, any]) => {
+        // Calculate ratings for each role group
+        const ratings = roleMappings.map((role) => {
+          const roleData = competencyData[role.key];
+          const averageRating = roleData?.averageLikert || 0;
+          return {
+            rater: role.display,
+            rating: parseFloat(averageRating.toFixed(2)),
+            color: role.color,
+          };
+        });
+
+        // Calculate overall average
+        const totalAverage = parseFloat(
+          (
+            ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+          ).toFixed(2)
+        );
+
+        // Get description from competency data or use default
+        const description =
+          competencyData?.description ||
+          "Competency performance across different rater groups.";
+
+        return {
+          category: competencyName,
+          rating: totalAverage,
+          out_of: 5.0,
+          description: description,
+          ratings: ratings,
+        };
+      });
+
+    return processedRatings;
+  };
+
   // Pagination functions
   const paginateRatings = () => {
+    const processedData = processCompetencyRatings();
+    // Use processed data if available, otherwise fall back to sumOfComRating
+    const dataToPaginate =
+      processedData.length > 0 ? processedData : sumOfComRating;
     const pages: any[][] = [];
-    for (let i = 0; i < sumOfComRating.length; i += MAX_SOCR_BLOCKS_PER_PAGE) {
-      pages.push(sumOfComRating.slice(i, i + MAX_SOCR_BLOCKS_PER_PAGE));
+    for (let i = 0; i < dataToPaginate.length; i += MAX_SOCR_BLOCKS_PER_PAGE) {
+      pages.push(dataToPaginate.slice(i, i + MAX_SOCR_BLOCKS_PER_PAGE));
     }
     setPaginatedRatings(pages);
   };
@@ -1105,10 +1166,7 @@ const FeedbackReport: React.FC = () => {
   }
 
   // Helper function to get all ratings for a question across all roles
-  const getRatingsForQuestion = (
-    competencyData: any,
-    questionIndex: number
-  ) => {
+  const getRatingsForQuestion = (competencyData: any, questionText: string) => {
     const allRoles = [
       { key: "Self", display: "Self", color: roleColors.Self },
       { key: "Boss", display: "Manager", color: roleColors.Manager },
@@ -1120,12 +1178,19 @@ const FeedbackReport: React.FC = () => {
       },
     ];
 
-    return allRoles.map((role) => ({
-      rater: role.display,
-      rating:
-        competencyData[role.key]?.likertQuestions?.[questionIndex]?.value || 0,
-      color: role.color,
-    }));
+    return allRoles.map((role) => {
+      // Find the question in this role's likertQuestions
+      const roleData = competencyData[role.key];
+      const questionData = roleData?.likertQuestions?.find(
+        (q: any) => q.question === questionText
+      );
+
+      return {
+        rater: role.display,
+        rating: questionData?.value || 0,
+        color: role.color,
+      };
+    });
   };
 
   return (
@@ -1518,115 +1583,349 @@ const FeedbackReport: React.FC = () => {
         {/* Respondent Summary Section */}
         <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
           <ReportHeader title="Respondent Summary">
-            <div className="w-full flex flex-col items-center mt-8">
-              <table
-                className="w-full mt-10 text-center border-collapse respondent-summary-table"
-                style={{ minWidth: 500 }}
-              >
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    <th className="font-semibold">Relationship</th>
-                    <th className="font-semibold">Nominated</th>
-                    <th className="font-semibold">Completed</th>
-                    <th className="font-semibold">Completion Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isEditMode
-                    ? (() => {
-                        return respondentData.map((row: any, idx: number) => {
-                          let completionRate =
-                            row.nominated > 0
-                              ? Math.round(
-                                  (row.completed / row.nominated) * 100
-                                )
-                              : null;
-                          return (
-                            <tr key={row.relationship}>
-                              <td className="py-4 text-lg">
-                                {row.relationship}
-                              </td>
-                              <td className="px-2 py-4 text-lg">
-                                <input
-                                  type="text"
-                                  id="number-input"
-                                  aria-describedby="helper-text-explanation"
-                                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2 py-1"
-                                  required
-                                  value={row.nominated}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setRespondentData((prev: any[]) =>
-                                      prev.map((item: any, i: number) =>
-                                        i === idx
-                                          ? { ...item, nominated: value }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                />
-                              </td>
-                              <td className="px-2 py-4 text-lg">
-                                <input
-                                  type="text"
-                                  id="number-input"
-                                  aria-describedby="helper-text-explanation"
-                                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-2 py-1"
-                                  required
-                                  value={row.completed}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setRespondentData((prev: any[]) =>
-                                      prev.map((item: any, i: number) =>
-                                        i === idx
-                                          ? { ...item, completed: value }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                />
-                              </td>
-                              <td className="py-4 text-lg">
-                                {row.nominated > 0
-                                  ? `${completionRate}%`
-                                  : "0%"}
-                              </td>
-                            </tr>
-                          );
-                        });
-                      })()
-                    : (() => {
-                        return respondentData.map((row: any, _idx: number) => {
-                          let completionRate =
-                            row.nominated > 0
-                              ? Math.round(
-                                  (row.completed / row.nominated) * 100
-                                )
-                              : null;
-                          return (
-                            <tr key={row.relationship}>
-                              <td className="py-4 text-lg">
-                                {row.relationship}
-                              </td>
-                              <td className="py-4 text-lg">{row.nominated}</td>
-                              <td className="py-4 text-lg">{row.completed}</td>
-                              <td className="py-4 text-lg">
-                                {row.nominated > 0
-                                  ? `${completionRate}%`
-                                  : "0%"}
-                              </td>
-                            </tr>
-                          );
-                        });
-                      })()}
-                </tbody>
-              </table>
+            <div className="w-full flex flex-col gap-4 mt-6">
+              {respondentData.map((row: any, idx: number) => {
+                const completionRate =
+                  row.nominated > 0
+                    ? Math.round((row.completed / row.nominated) * 100)
+                    : 0;
+
+                // Map relationship to role colors
+                const getRoleColor = (relationship: string) => {
+                  const roleMap: Record<string, string> = {
+                    Self: roleColors.Self,
+                    Manager: roleColors.Manager,
+                    Managers: roleColors.Manager,
+                    Peers: roleColors.Peer,
+                    Peer: roleColors.Peer,
+                    "Direct Reports": roleColors.DirectReport,
+                    Subordinate: roleColors.DirectReport,
+                  };
+                  return roleMap[relationship] || "#6b7280";
+                };
+
+                const roleColor = getRoleColor(row.relationship);
+
+                return (
+                  <div
+                    key={row.relationship}
+                    className="respondent-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow transition-shadow"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-semibold text-gray-800">
+                        {row.relationship}
+                      </h3>
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-gray-900">
+                          {isEditMode ? (
+                            <>
+                              <input
+                                type="number"
+                                className="w-12 text-center border-b-2 focus:outline-none font-bold text-xl"
+                                style={{ borderColor: roleColor }}
+                                value={row.completed}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value) || 0;
+                                  setRespondentData((prev: any[]) =>
+                                    prev.map((item: any, i: number) =>
+                                      i === idx
+                                        ? { ...item, completed: value }
+                                        : item
+                                    )
+                                  );
+                                }}
+                              />{" "}
+                              /{" "}
+                              <input
+                                type="number"
+                                className="w-12 text-center border-b-2 focus:outline-none font-bold text-xl"
+                                style={{ borderColor: roleColor }}
+                                value={row.nominated}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value) || 0;
+                                  setRespondentData((prev: any[]) =>
+                                    prev.map((item: any, i: number) =>
+                                      i === idx
+                                        ? { ...item, nominated: value }
+                                        : item
+                                    )
+                                  );
+                                }}
+                              />
+                            </>
+                          ) : (
+                            <>
+                              {row.completed} / {row.nominated}
+                            </>
+                          )}
+                        </div>
+                        <div className="text-xs font-semibold text-gray-500">
+                          Respondents
+                        </div>
+                        <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                          {completionRate}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar with two segments */}
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-gray-600 mb-2">
+                        Completion Rate
+                      </div>
+                      <div className="relative w-full h-8 rounded-lg overflow-hidden flex">
+                        {/* Completed segment (darker) */}
+                        <div
+                          className="flex items-center justify-center font-bold text-sm text-white transition-all duration-500"
+                          style={{
+                            width: `${completionRate}%`,
+                            backgroundColor: roleColor,
+                          }}
+                        >
+                          {isEditMode && completionRate > 10 ? (
+                            <input
+                              type="number"
+                              className="w-full h-full text-center bg-transparent text-white font-bold text-lg focus:outline-none"
+                              value={row.completed}
+                              onChange={(e) => {
+                                const value = Number(e.target.value) || 0;
+                                setRespondentData((prev: any[]) =>
+                                  prev.map((item: any, i: number) =>
+                                    i === idx
+                                      ? { ...item, completed: value }
+                                      : item
+                                  )
+                                );
+                              }}
+                              style={{ minWidth: "20px" }}
+                            />
+                          ) : (
+                            completionRate > 10 && row.completed
+                          )}
+                        </div>
+
+                        {/* Uncompleted segment (lighter) */}
+                        <div
+                          className="flex items-center justify-center font-bold text-sm transition-all duration-500"
+                          style={{
+                            width: `${100 - completionRate}%`,
+                            backgroundColor: roleColor,
+                            opacity: 0.2,
+                          }}
+                        >
+                          {completionRate < 90 && (
+                            <span
+                              className="text-xs"
+                              style={{ color: roleColor }}
+                            >
+                              Pending
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        className="mt-1 text-xs font-medium"
+                        style={{ color: roleColor }}
+                      >
+                        COMPLETED
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div className="w-full mt-auto">
               <Footer org="TalentBoozt" pageNo={4} isEditing={isEditMode} />
             </div>
           </ReportHeader>
         </div>
+
+        {/* ------------------- Competency Comparison Overview Section ------------------ */}
+        {(() => {
+          // Prepare competency comparison data from reportData
+          if (!reportData) return null;
+
+          const competencies = Object.entries(reportData)
+            .filter(([key]) => key !== "appraiseeId")
+            .map(([key]) => key);
+
+          if (competencies.length === 0) return null;
+
+          const prepareComparisonData = (roleKey: string, label: string) => {
+            const selfValues: number[] = [];
+            const roleValues: number[] = [];
+
+            competencies.forEach((competencyName) => {
+              const competencyData = reportData[competencyName];
+              const selfAvg = competencyData?.Self?.averageLikert || 0;
+              const roleAvg = competencyData?.[roleKey]?.averageLikert || 0;
+
+              selfValues.push(selfAvg);
+              roleValues.push(roleAvg);
+            });
+
+            return {
+              categories: competencies.map((_, idx) => `${idx + 1}`),
+              competenciesNames: competencies,
+              series: [
+                {
+                  name: "Self",
+                  color: "#3b82f6",
+                  values: selfValues,
+                },
+                {
+                  name: label,
+                  color: "#ef4444",
+                  values: roleValues,
+                },
+              ],
+            };
+          };
+
+          const otherData = (() => {
+            const selfValues: number[] = [];
+            const otherValues: number[] = [];
+
+            competencies.forEach((competencyName) => {
+              const competencyData = reportData[competencyName];
+              const selfAvg = competencyData?.Self?.averageLikert || 0;
+              const overallAvg = competencyData?.overallAverageLikert || 0;
+
+              selfValues.push(selfAvg);
+              otherValues.push(overallAvg);
+            });
+
+            return {
+              categories: competencies.map((_, idx) => `${idx + 1}`),
+              competencyNames: competencies,
+              series: [
+                {
+                  name: "Self",
+                  color: "#3b82f6",
+                  values: selfValues,
+                },
+                {
+                  name: "Overall Avg",
+                  color: "#ef4444",
+                  values: otherValues,
+                },
+              ],
+            };
+          })();
+
+          return (
+            <>
+              {/* Page 1: Self vs Other, Self vs Manager */}
+              <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
+                <ReportHeader title="Competency Comparison Overview">
+                  <div className="flex flex-col gap-8 mt-6">
+                    {/* Self vs Other */}
+                    <div className="flex flex-col items-center gap-2">
+                      <h3 className="text-lg font-semibold">Self vs Other</h3>
+                      <ComparisonLineChart
+                        categories={otherData.categories}
+                        series={otherData.series}
+                        width={600}
+                        selfLabel="Self"
+                        otherLabel="Overall Avg"
+                        competencyNames={otherData.competencyNames}
+                      />
+                    </div>
+
+                    {/* Self vs Manager */}
+                    {(() => {
+                      const managerData = prepareComparisonData(
+                        "Boss",
+                        "Manager"
+                      );
+                      return (
+                        <div className="flex flex-col items-center gap-2">
+                          <h3 className="text-lg font-semibold">
+                            Self vs Manager
+                          </h3>
+                          <ComparisonLineChart
+                            categories={managerData.categories}
+                            series={managerData.series}
+                            width={600}
+                            selfLabel="Self"
+                            otherLabel="Manager"
+                            competencyNames={managerData.competenciesNames}
+                          />
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="w-full mt-auto">
+                    <Footer
+                      org="TalentBoozt"
+                      pageNo={7}
+                      isEditing={isEditMode}
+                    />
+                  </div>
+                </ReportHeader>
+              </div>
+
+              {/* Page 2: Self vs Subordinates, Self vs Peer */}
+              <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
+                <ReportHeader title="Competency Comparison Overview (Continued)">
+                  <div className="flex flex-col gap-8 mt-6">
+                    {/* Self vs Subordinates */}
+                    {(() => {
+                      const subordinateData = prepareComparisonData(
+                        "Subordinate",
+                        "Subordinates"
+                      );
+                      return (
+                        <div className="flex flex-col items-center gap-2">
+                          <h3 className="text-lg font-semibold">
+                            Self vs Subordinates
+                          </h3>
+                          <ComparisonLineChart
+                            categories={subordinateData.categories}
+                            series={subordinateData.series}
+                            width={600}
+                            selfLabel="Self"
+                            otherLabel="Subordinates"
+                            competencyNames={subordinateData.competenciesNames}
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Self vs Peer */}
+                    {(() => {
+                      const peerData = prepareComparisonData("Peer", "Peer");
+                      return (
+                        <div className="flex flex-col items-center gap-2">
+                          <h3 className="text-lg font-semibold">
+                            Self vs Peer
+                          </h3>
+                          <ComparisonLineChart
+                            categories={peerData.categories}
+                            series={peerData.series}
+                            width={600}
+                            selfLabel="Self"
+                            otherLabel="Peer"
+                            competencyNames={peerData.competenciesNames}
+                          />
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="w-full mt-auto">
+                    <Footer
+                      org="TalentBoozt"
+                      pageNo={8}
+                      isEditing={isEditMode}
+                    />
+                  </div>
+                </ReportHeader>
+              </div>
+            </>
+          );
+        })()}
 
         {/* Summary of Competency Ratings */}
         {paginatedRatings.map((page, pageIndex) => (
@@ -1640,67 +1939,27 @@ const FeedbackReport: React.FC = () => {
                   Below is a summary of competency ratings from different rater
                   groups
                 </p>
-                {page.map((item, index) => (
-                  <div key={index} className="competency-item ">
-                    <div className="competency-header">
-                      <h3 className="competency-title">{item.category}</h3>
-                      <div className="competency-rating">
-                        <span className="rating-value">
-                          {item.rating.toFixed(2)}
-                        </span>
-                        <span className="rating-max">/ {item.out_of}</span>
-                      </div>
-                    </div>
-                    <p className="competency-description text-left">
-                      {item.description}
-                    </p>
+                {page.map((item, index) => {
+                  // Handle both data formats: new format has 'ratings', old has 'charts'
+                  const ratings = item.ratings
+                    ? item.ratings
+                    : item.charts?.map((chart: any) => ({
+                        rater: chart.label,
+                        rating: chart.value,
+                        color: chart.color,
+                      })) || [];
 
-                    <div className="charts-container w-full ">
-                      {summaryOfRatings.map(
-                        (chart: any, chartIndex: number) => (
-                          <div
-                            key={chartIndex}
-                            className="chart-item w-full px-4"
-                          >
-                            <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                              <td className="py-4 align-top w-1/3">
-                                <div className="flex flex-col gap-2 pe-20">
-                                  {chart.ratings.map((r: any, idx: number) => (
-                                    <span key={idx}>{r.rater}</span>
-                                  ))}
-                                </div>
-                              </td>
-                              <td className="py-4 align-top w-1/3">
-                                <div className="flex flex-col gap-2">
-                                  {chart.ratings.map((r: any, idx: number) => (
-                                    <div
-                                      className="flex items-center gap-2"
-                                      key={idx}
-                                    >
-                                      <div className="h-2 w-full rounded bg-gray-200">
-                                        <div
-                                          className="h-2 rounded-full"
-                                          style={{
-                                            width: `${(Math.max(0, r.rating) / 5) * 100}%`,
-                                            maxWidth: "100%",
-                                            backgroundColor: r.color,
-                                          }}
-                                        ></div>
-                                      </div>
-                                      <span className="text-sm font-semibold">
-                                        {isNaN(Number(r.rating)) ? 0 : r.rating}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </td>
-                            </tr>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  return (
+                    <CompetencyRatingSection
+                      key={index}
+                      category={item.category}
+                      rating={item.rating}
+                      outOf={item.out_of}
+                      description={item.description}
+                      ratings={ratings}
+                    />
+                  );
+                })}
               </div>
             </ReportHeader>
             <div className="w-full mt-auto">
@@ -1709,86 +1968,12 @@ const FeedbackReport: React.FC = () => {
           </div>
         ))}
 
-        {/* Bar Chart for Competency Ratings Section */}
-        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
-          <ReportHeader title="Bar Chart for Competency Ratings">
-            {/* Legend */}
-            {/* <div className="flex flex-row gap-8 mt-6 mb-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block w-4 h-4 rounded"
-                  style={{ background: "#e573b4" }}
-                ></span>
-                <span className="text-sm">Self</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block w-4 h-4 rounded"
-                  style={{ background: "#8e2c57" }}
-                ></span>
-                <span className="text-sm">Manager</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block w-4 h-4 rounded"
-                  style={{ background: "#f08080" }}
-                ></span>
-                <span className="text-sm">Peers</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block w-4 h-4 rounded"
-                  style={{ background: "#ffe066" }}
-                ></span>
-                <span className="text-sm">Direct Reports</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block w-4 h-4 rounded"
-                  style={{ background: "#fff9c4", border: "1px solid #e5e7eb" }}
-                ></span>
-                <span className="text-sm">Overall Average</span>
-              </div>
-            </div> */}
-            {/* Bar Chart */}
-            <div className="flex-1 flex items-center justify-center min-h-[400px]">
-              {(() => {
-                // Derive categories and series from computed competency summary (sumOfComRating)
-                const categories = sumOfComRating.map((c: any) => c.category);
-                // For now, show a single overall series using averageLikert mapped to rating
-                const overallValues = sumOfComRating.map((c: any) =>
-                  Number(c.rating ?? 0)
-                );
-                const series = [
-                  {
-                    name: "Overall Average",
-                    color: roleColors.DirectReport,
-                    values: overallValues,
-                  },
-                ];
-
-                return (
-                  <BarChart
-                    height={700}
-                    categories={categories}
-                    series={series}
-                    max={5}
-                  />
-                );
-              })()}
-            </div>
-            <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={6} isEditing={isEditMode} />
-            </div>
-          </ReportHeader>
-        </div>
-
         {/* ------------------- Strengths Section (Pie Chart) ------------------ */}
         <ReportPageWrapper
           title="Strengths"
           description="The diagram below highlights key strengths for each competency, based on high ratings and positive feedback from respondents."
           organizationName="TalentBoozt"
-          pageNumber={7}
+          pageNumber={9}
           isEditing={isEditMode}
         >
           <BlindSpotsSection
@@ -1807,7 +1992,7 @@ const FeedbackReport: React.FC = () => {
           title="Areas of Improvement"
           description="The diagram below highlights key development areas based on feedback from respondents. These areas represent opportunities for further growth and enhancement."
           organizationName="TalentBoozt"
-          pageNumber={8}
+          pageNumber={10}
           isEditing={isEditMode}
         >
           <BlindSpotsSection
@@ -1826,7 +2011,7 @@ const FeedbackReport: React.FC = () => {
           title="Hidden Strengths"
           description="The following diagram highlights competencies where the individual may underestimate their own abilities, as identified through feedback from others."
           organizationName="TalentBoozt"
-          pageNumber={9}
+          pageNumber={11}
           isEditing={isEditMode}
         >
           <BlindSpotsSection
@@ -1845,7 +2030,7 @@ const FeedbackReport: React.FC = () => {
           title="Blind Spots"
           description="Blind spots occur when there is a misalignment between self-perception and others' perceptions. The diagram below outlines key blind spots identified for each competency:"
           organizationName="TalentBoozt"
-          pageNumber={10}
+          pageNumber={12}
           isEditing={isEditMode}
         >
           <BlindSpotsSection
@@ -1911,21 +2096,33 @@ const FeedbackReport: React.FC = () => {
                   return sum + (competencyData[raterGroup]?.averageLikert || 0);
                 }, 0) / allRoleKeys.length;
 
-              // Get all questions from the first available role or Self
-              const allQuestions =
-                competencyData.Self?.likertQuestions ||
-                competencyData.Boss?.likertQuestions ||
-                competencyData.Peer?.likertQuestions ||
-                competencyData.Subordinate?.likertQuestions ||
-                [];
+              // Get all unique questions from all roles
+              const allQuestionsMap = new Map<string, any>();
+
+              // Collect questions from all roles
+              ["Self", "Boss", "Peer", "Subordinate"].forEach((roleKey) => {
+                const roleQuestions =
+                  competencyData[roleKey]?.likertQuestions || [];
+                roleQuestions.forEach((q: any) => {
+                  if (!allQuestionsMap.has(q.question)) {
+                    allQuestionsMap.set(q.question, q);
+                  }
+                });
+              });
+
+              // Convert to array and sort by question name
+              const allQuestions = Array.from(allQuestionsMap.values()).sort(
+                (a, b) => a.question.localeCompare(b.question)
+              );
 
               // Transform data into questions format
-              const questions = allQuestions.map(
-                (question: any, qIndex: number) => ({
-                  question: question.question,
-                  ratings: getRatingsForQuestion(competencyData, qIndex),
-                })
-              );
+              const questions = allQuestions.map((question: any) => ({
+                question: question.question,
+                ratings: getRatingsForQuestion(
+                  competencyData,
+                  question.question
+                ),
+              }));
 
               return (
                 <ReportPageWrapper

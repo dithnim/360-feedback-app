@@ -585,6 +585,33 @@
     }
   }
 
+  // Respondent Card Styles
+  .respondent-card {
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    // Input styles in edit mode
+    input[type="number"] {
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
+    // Progress bar animation
+    .rounded-full {
+      transition:
+        width 0.5s ease,
+        background-color 0.3s ease;
+    }
+  }
+
   // Responsive design
   @media screen and (max-width: 768px) {
     .pdf-page {
