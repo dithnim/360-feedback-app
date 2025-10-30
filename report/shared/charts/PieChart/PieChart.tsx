@@ -70,12 +70,7 @@ interface PieChartProps {
   radius?: number;
   isEditMode?: boolean;
   pageId?: string;
-  onUpdateData?: (data: {
-    dataindex: number;
-    index: number;
-    field: string;
-    value: any;
-  }) => void;
+  onUpdateData?: (data: { index: number; field: string; value: any }) => void;
 }
 
 // Helper to wrap SVG text
@@ -156,7 +151,7 @@ const PieChart: React.FC<PieChartProps> = ({
     const value =
       field === "value" ? parseFloat(event.target.value) : event.target.value;
     if (onUpdateData) {
-      onUpdateData({ dataindex: datasetIndex, index, field, value });
+      onUpdateData({ index, field, value });
     }
   };
 
@@ -169,61 +164,68 @@ const PieChart: React.FC<PieChartProps> = ({
             {/* Edit mode controls */}
 
             {isEditMode && (
-              <div style={{ position: "relative" }}>
-                <DraggableComp title={slice.category || "N/A"}>
-                  <div className="p-4">
-                    <div className="drg-wrapper text-sm">
-                      <div className="flex flex-col mb-2 font-medium text-gray-700">
-                        <label htmlFor="label">Label:</label>
-                        <input
-                          type="text"
-                          value={slice.category}
-                          onChange={(e) =>
-                            onValueChange(slice.index!, "category", e)
-                          }
-                          placeholder="Competency name"
-                        />
-                      </div>
-                      <div className="flex flex-col mb-2 font-medium text-gray-700">
-                        <label htmlFor="label">Value:</label>
-                        <input
-                          type="text"
-                          value={slice.value}
-                          step="0.01"
-                          min="0"
-                          max="5"
-                          onChange={(e) =>
-                            onValueChange(slice.index!, "value", e)
-                          }
-                          placeholder="Rating value"
-                        />
-                      </div>
-                      <div className="flex flex-col mb-2 font-medium text-gray-700">
-                        <label htmlFor="label">Description:</label>
-                        <textarea
-                          value={slice.question}
-                          onChange={(e) =>
-                            onValueChange(slice.index!, "question", e)
-                          }
-                          placeholder="Competency description"
-                          rows={3}
-                        ></textarea>
-                      </div>
-                      <div className="flex flex-col mb-2 font-medium text-gray-700">
-                        <label htmlFor="label">Color:</label>
-                        <input
-                          type="color"
-                          className="w-full"
-                          value={slice.color}
-                          onChange={(e) =>
-                            onValueChange(slice.index!, "color", e)
-                          }
-                        />
-                      </div>
+              <DraggableComp
+                title={slice.category || "N/A"}
+                initialPosition={{
+                  x: slice.circleX ? slice.circleX + 200 : 200 + i * 50,
+                  y: slice.circleY ? slice.circleY + 100 : 100 + i * 50,
+                }}
+              >
+                <div className="p-4">
+                  <div className="drg-wrapper text-sm">
+                    <div className="flex flex-col mb-2 font-medium text-gray-700">
+                      <label htmlFor="label">Label:</label>
+                      <input
+                        type="text"
+                        className="border border-gray-300 rounded px-2 py-1"
+                        value={slice.category}
+                        onChange={(e) =>
+                          onValueChange(slice.index!, "category", e)
+                        }
+                        placeholder="Competency name"
+                      />
+                    </div>
+                    <div className="flex flex-col mb-2 font-medium text-gray-700">
+                      <label htmlFor="label">Value:</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="5"
+                        className="border border-gray-300 rounded px-2 py-1"
+                        value={slice.value}
+                        onChange={(e) =>
+                          onValueChange(slice.index!, "value", e)
+                        }
+                        placeholder="Rating value"
+                      />
+                    </div>
+                    <div className="flex flex-col mb-2 font-medium text-gray-700">
+                      <label htmlFor="label">Description:</label>
+                      <textarea
+                        className="border border-gray-300 rounded px-2 py-1"
+                        value={slice.question}
+                        onChange={(e) =>
+                          onValueChange(slice.index!, "question", e)
+                        }
+                        placeholder="Competency description"
+                        rows={3}
+                      ></textarea>
+                    </div>
+                    <div className="flex flex-col mb-2 font-medium text-gray-700">
+                      <label htmlFor="label">Color:</label>
+                      <input
+                        type="color"
+                        className="w-full h-8 border border-gray-300 rounded"
+                        value={slice.color}
+                        onChange={(e) =>
+                          onValueChange(slice.index!, "color", e)
+                        }
+                      />
                     </div>
                   </div>
-                </DraggableComp>
-              </div>
+                </div>
+              </DraggableComp>
             )}
           </React.Fragment>
         ))}

@@ -65,9 +65,10 @@ import DetailedFeedback from "../../src/components/reports/DetailedFeedback";
 import OpenEndedFeedbackSection, {
   dummyOpenEndedFeedbackData,
 } from "../../src/components/reports/OpenEndedFeedbackSection";
-import BlindSpotsSection, {
-  dummyBlindSpotsData,
-} from "../../src/components/reports/BlindSpotsSection";
+import AreasOfImprovementChart from "../../src/components/reports/AreasOfImprovementChart";
+import PerceptionGapChart, {
+  transformToPerceptionGapFormat,
+} from "../../src/components/reports/PerceptionGapChart";
 import ReportPageWrapper from "../../src/components/reports/ReportPageWrapper";
 import CompetencyRatingSection from "../shared/elements/CompetencyRatingSection";
 
@@ -311,6 +312,185 @@ const FeedbackReport: React.FC = () => {
       },
     ],
   });
+
+  // Generate strengths from backend data (highest overall ratings)
+  const generateStrengthsFromBackend = (data: any) => {
+    if (!data) return [];
+
+    const competencies = Object.entries(data)
+      .filter(([key]) => key !== "appraiseeId")
+      .map(([competencyName, competencyData]: [string, any]) => {
+        const roleKeys = ["Self", "Boss", "Peer", "Subordinate"];
+        const averages = roleKeys
+          .map((key) => competencyData[key]?.averageLikert || 0)
+          .filter((avg) => avg > 0);
+
+        const overallAverage =
+          averages.length > 0
+            ? averages.reduce((sum, val) => sum + val, 0) / averages.length
+            : 0;
+
+        const description =
+          competencyData?.description ||
+          `Shows strong performance in ${competencyName.toLowerCase()} with consistent high ratings across multiple evaluators.`;
+
+        return {
+          id: competencyName.toLowerCase().replace(/\s+/g, "-"),
+          title: competencyName,
+          rating: parseFloat(overallAverage.toFixed(2)),
+          description,
+          isHighlighted: false,
+        };
+      })
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 4);
+
+    return competencies;
+  };
+
+  // Generate areas of improvement from backend data (lowest overall ratings)
+  const generateImprovementsFromBackend = (data: any) => {
+    if (!data) return [];
+
+    const competencies = Object.entries(data)
+      .filter(([key]) => key !== "appraiseeId")
+      .map(([competencyName, competencyData]: [string, any]) => {
+        const roleKeys = ["Self", "Boss", "Peer", "Subordinate"];
+        const averages = roleKeys
+          .map((key) => competencyData[key]?.averageLikert || 0)
+          .filter((avg) => avg > 0);
+
+        const overallAverage =
+          averages.length > 0
+            ? averages.reduce((sum, val) => sum + val, 0) / averages.length
+            : 0;
+
+        const description =
+          competencyData?.improvementDescription ||
+          competencyData?.description ||
+          `Opportunity to enhance ${competencyName.toLowerCase()} skills through focused development and practice.`;
+
+        return {
+          id: competencyName.toLowerCase().replace(/\s+/g, "-"),
+          title: competencyName,
+          rating: parseFloat(overallAverage.toFixed(2)),
+          description,
+          isHighlighted: false,
+        };
+      })
+      .sort((a, b) => a.rating - b.rating)
+      .slice(0, 4);
+
+    return competencies;
+  };
+
+  // Generate hidden strengths (self scores low, others score high)
+  const generateHiddenStrengthsFromBackend = (data: any) => {
+    if (!data) return [];
+
+    const allCompetencies = Object.entries(data)
+      .filter(([key]) => key !== "appraiseeId")
+      .map(([competencyName, competencyData]: [string, any]) => {
+        const selfRating = competencyData?.Self?.averageLikert || 0;
+        const otherRoleKeys = ["Boss", "Peer", "Subordinate"];
+        const otherAverages = otherRoleKeys
+          .map((key) => competencyData[key]?.averageLikert || 0)
+          .filter((avg) => avg > 0);
+
+        const othersAverage =
+          otherAverages.length > 0
+            ? otherAverages.reduce((sum, val) => sum + val, 0) /
+              otherAverages.length
+            : 0;
+
+        const difference = othersAverage - selfRating;
+
+        const description =
+          competencyData?.hiddenStrengthDescription ||
+          competencyData?.description ||
+          `Others recognize stronger capabilities in ${competencyName.toLowerCase()} than self-perception indicates. This represents an untapped strength.`;
+
+        return {
+          id: competencyName.toLowerCase().replace(/\s+/g, "-"),
+          title: competencyName,
+          rating: parseFloat(othersAverage.toFixed(2)),
+          selfRating: parseFloat(selfRating.toFixed(2)),
+          othersRating: parseFloat(othersAverage.toFixed(2)),
+          othersAverage: parseFloat(othersAverage.toFixed(2)),
+          difference: parseFloat(difference.toFixed(2)),
+          description,
+          isHighlighted: false,
+        };
+      });
+
+    // Filter for hidden strengths: others rate higher AND others' rating is above average
+    const hiddenStrengths = allCompetencies
+      .filter((item) => {
+        // Must have positive difference (others rate higher than self)
+        const hasPositiveDifference = item.difference > 0;
+        // Others' rating should be relatively high (>= 3.5 out of 5, or above median)
+        const othersRateHigh = item.othersAverage >= 3.5;
+        // Self rating should be lower than others
+        const selfRateLow = item.selfRating < item.othersAverage;
+
+        return hasPositiveDifference && othersRateHigh && selfRateLow;
+      })
+      .sort((a, b) => b.difference - a.difference)
+      .slice(0, 4);
+
+    return hiddenStrengths;
+  };
+
+  // Generate blind spots (self rates >= 1.0 higher than others)
+  const generateBlindSpotsFromBackend = (data: any) => {
+    if (!data) return [];
+
+    const blindSpots = Object.entries(data)
+      .filter(([key]) => key !== "appraiseeId")
+      .map(([competencyName, competencyData]: [string, any]) => {
+        const selfRating = competencyData?.Self?.averageLikert || 0;
+        const otherRoleKeys = ["Boss", "Peer", "Subordinate"];
+        const otherAverages = otherRoleKeys
+          .map((key) => competencyData[key]?.averageLikert || 0)
+          .filter((avg) => avg > 0);
+
+        const othersAverage =
+          otherAverages.length > 0
+            ? otherAverages.reduce((sum, val) => sum + val, 0) /
+              otherAverages.length
+            : 0;
+
+        const difference = selfRating - othersAverage;
+
+        const description =
+          competencyData?.blindSpotDescription ||
+          competencyData?.description ||
+          `Self-perception in ${competencyName.toLowerCase()} is higher than others' observations. This gap suggests an opportunity for increased self-awareness.`;
+
+        return {
+          id: competencyName.toLowerCase().replace(/\s+/g, "-"),
+          title: competencyName,
+          rating: parseFloat(selfRating.toFixed(2)),
+          selfRating: parseFloat(selfRating.toFixed(2)),
+          othersRating: parseFloat(othersAverage.toFixed(2)),
+          othersAverage: parseFloat(othersAverage.toFixed(2)),
+          difference: parseFloat(difference.toFixed(2)),
+          description,
+          isHighlighted: false,
+        };
+      })
+      .filter((item) => item.difference >= 1.0)
+      .sort((a, b) => b.difference - a.difference)
+      .slice(0, 4);
+
+    return blindSpots;
+  };
+
+  // States for all sections - initialize with empty arrays
+  const [improvementAreas, setImprovementAreas] = useState<any[]>([]);
+  const [strengthsData, setStrengthsData] = useState<any[]>([]);
+  const [hiddenStrengthsData, setHiddenStrengthsData] = useState<any[]>([]);
+  const [blindSpotsData, setBlindSpotsData] = useState<any[]>([]);
 
   const [userName, setUserName] = useState("John Doe");
   const [reportedDate, setReportedDate] = useState("2025-01-01");
@@ -574,6 +754,62 @@ const FeedbackReport: React.FC = () => {
     );
   };
 
+  const handleImprovementAreasUpdate = ({
+    index,
+    field,
+    value,
+  }: {
+    index: number;
+    field: string;
+    value: any;
+  }) => {
+    setImprovementAreas((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleStrengthsUpdate = ({
+    index,
+    field,
+    value,
+  }: {
+    index: number;
+    field: string;
+    value: any;
+  }) => {
+    setStrengthsData((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleHiddenStrengthsUpdate = ({
+    index,
+    field,
+    value,
+  }: {
+    index: number;
+    field: string;
+    value: any;
+  }) => {
+    setHiddenStrengthsData((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleBlindSpotsUpdate = ({
+    index,
+    field,
+    value,
+  }: {
+    index: number;
+    field: string;
+    value: any;
+  }) => {
+    setBlindSpotsData((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
   // Persist chart1 to localStorage on change
   useEffect(() => {
     localStorage.setItem(
@@ -604,6 +840,31 @@ const FeedbackReport: React.FC = () => {
     paginateDevPlan();
     prepareChartData();
   }, [reportData, sumOfComRating, openEndedFeedback, developmentPlanContent]);
+
+  // Update all sections from backend data when reportData changes
+  useEffect(() => {
+    if (reportData) {
+      const newStrengths = generateStrengthsFromBackend(reportData);
+      if (newStrengths.length > 0) {
+        setStrengthsData(newStrengths);
+      }
+
+      const newImprovements = generateImprovementsFromBackend(reportData);
+      if (newImprovements.length > 0) {
+        setImprovementAreas(newImprovements);
+      }
+
+      const newHiddenStrengths = generateHiddenStrengthsFromBackend(reportData);
+      if (newHiddenStrengths.length > 0) {
+        setHiddenStrengthsData(newHiddenStrengths);
+      }
+
+      const newBlindSpots = generateBlindSpotsFromBackend(reportData);
+      if (newBlindSpots.length > 0) {
+        setBlindSpotsData(newBlindSpots);
+      }
+    }
+  }, [reportData]);
 
   // When answerData changes, try to map it into UI state (respondent summary, header metadata)
   useEffect(() => {
@@ -1299,99 +1560,117 @@ const FeedbackReport: React.FC = () => {
       <div ref={pdfSectionRef}>
         <div className="pdf-page text-left">
           {/* Cover Page */}
-          <div className="header__lg">
-            <img src={coverLogo} alt="Logo" className="logo" />
-          </div>
-          <h1 className="title">360-Degree Feedback Report</h1>
-          <p className="para__light">Confidential Report</p>
-
-          <div className="cover-container">
-            {customCoverImage ? (
-              <div className="custom-cover-image">
-                <img
-                  src={customCoverImage}
-                  alt="Custom Cover"
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    maxHeight: "400px",
-                    objectFit: "contain",
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="cover-image">
-                <div className="t-up-row">
-                  {Array.from({ length: 13 }).map((_, i) => (
-                    <div key={i} className="svg-wrapper">
-                      <svg
-                        className={i % 2 === 0 ? "svg-down" : "svg-up"}
-                        viewBox="0 0 100 100"
-                        preserveAspectRatio="none"
-                      >
-                        <polygon
-                          points={
-                            i % 2 === 0
-                              ? "0,0 100,0 50,100"
-                              : "50,0 100,100 0,100"
-                          }
-                        />
-                      </svg>
-                    </div>
-                  ))}
-                </div>
-                <img src={CompanyImage} alt="Cover" />
-                <div className="t-down-row">
-                  {Array.from({ length: 14 }).map((_, i) => (
-                    <div key={i} className="svg-wrapper">
-                      <svg
-                        className={i % 2 === 0 ? "svg-up" : "svg-down"}
-                        viewBox="0 0 100 100"
-                        preserveAspectRatio="none"
-                      >
-                        <polygon
-                          points={
-                            i % 2 === 0
-                              ? "0,0 100,0 50,100"
-                              : "50,0 100,100 0,100"
-                          }
-                        />
-                      </svg>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {!isEditMode ? (
-            <p className="para" style={{ marginBottom: "15mm" }}>
-              {userName} | {new Date(reportedDate).toLocaleDateString()}
-            </p>
-          ) : (
-            <div className="banner-name-tag">
-              <input
-                type="text"
-                placeholder="User Name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-              />
-              <input
-                type="date"
-                placeholder="Date"
-                value={reportedDate}
-                onChange={(e) => setReportedDate(e.target.value)}
+          {customCoverImage ? (
+            /* Custom Cover Page - Complete Replacement */
+            <div
+              className="custom-cover-page"
+              style={{
+                width: "100%",
+                height: "100vh",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
+              <img
+                src={customCoverImage}
+                alt="Custom Cover"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  zIndex: 1,
+                }}
               />
             </div>
-          )}
+          ) : (
+            /* Default Cover Page */
+            <>
+              <div className="header__lg">
+                <img src={coverLogo} alt="Logo" className="logo" />
+              </div>
+              <h1 className="title">360-Degree Feedback Report</h1>
+              <p className="para__light">Confidential Report</p>
 
-          <p className="para__sm">
-            This report is confidential and should not be distributed without
-            permission.
-          </p>
-          <p className="para__dark">
-            DAASH Consultancy & Training Online Assessments © 2025
-          </p>
+              <div className="cover-container">
+                <div className="cover-image">
+                  <div className="t-up-row">
+                    {Array.from({ length: 13 }).map((_, i) => (
+                      <div key={i} className="svg-wrapper">
+                        <svg
+                          className={i % 2 === 0 ? "svg-down" : "svg-up"}
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                        >
+                          <polygon
+                            points={
+                              i % 2 === 0
+                                ? "0,0 100,0 50,100"
+                                : "50,0 100,100 0,100"
+                            }
+                          />
+                        </svg>
+                      </div>
+                    ))}
+                  </div>
+                  <img src={CompanyImage} alt="Cover" />
+                  <div className="t-down-row">
+                    {Array.from({ length: 14 }).map((_, i) => (
+                      <div key={i} className="svg-wrapper">
+                        <svg
+                          className={i % 2 === 0 ? "svg-up" : "svg-down"}
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                        >
+                          <polygon
+                            points={
+                              i % 2 === 0
+                                ? "0,0 100,0 50,100"
+                                : "50,0 100,100 0,100"
+                            }
+                          />
+                        </svg>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {!isEditMode ? (
+                <p className="para" style={{ marginBottom: "15mm" }}>
+                  {userName} | {new Date(reportedDate).toLocaleDateString()}
+                </p>
+              ) : (
+                <div className="banner-name-tag">
+                  <input
+                    type="text"
+                    placeholder="User Name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                  />
+                  <input
+                    type="date"
+                    placeholder="Date"
+                    value={reportedDate}
+                    onChange={(e) => setReportedDate(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <p className="para__sm">
+                This report is confidential and should not be distributed
+                without permission.
+              </p>
+              <p className="para__dark">
+                DAASH Consultancy & Training Online Assessments © 2025
+              </p>
+            </>
+          )}
         </div>
 
         {/* Table of Contents */}
@@ -2175,7 +2454,7 @@ const FeedbackReport: React.FC = () => {
             }
           )}
 
-        {/* ------------------- Strengths Section (Pie Chart) ------------------ */}
+        {/* ------------------- Strengths Section ------------------ */}
         <ReportPageWrapper
           title="Strengths"
           description="The diagram below highlights key strengths for each competency, based on high ratings and positive feedback from respondents."
@@ -2183,14 +2462,12 @@ const FeedbackReport: React.FC = () => {
           pageNumber={9}
           isEditing={isEditMode}
         >
-          <BlindSpotsSection
-            {...dummyBlindSpotsData}
-            onUpdateData={(args: {
-              index: number;
-              field: string;
-              value: any;
-            }) => handlePieChartUpdate("strengths", args)}
-            chartData={pieCharts.strengths}
+          <AreasOfImprovementChart
+            data={strengthsData}
+            userName={userName}
+            isEditMode={isEditMode}
+            onUpdateData={handleStrengthsUpdate}
+            color="#1f8380"
           />
         </ReportPageWrapper>
 
@@ -2202,14 +2479,12 @@ const FeedbackReport: React.FC = () => {
           pageNumber={10}
           isEditing={isEditMode}
         >
-          <BlindSpotsSection
-            {...dummyBlindSpotsData}
-            onUpdateData={(args: {
-              index: number;
-              field: string;
-              value: any;
-            }) => handlePieChartUpdate("improvements", args)}
-            chartData={pieCharts.improvements}
+          <AreasOfImprovementChart
+            data={improvementAreas}
+            userName={userName}
+            isEditMode={isEditMode}
+            onUpdateData={handleImprovementAreasUpdate}
+            color="#d72928"
           />
         </ReportPageWrapper>
 
@@ -2221,14 +2496,13 @@ const FeedbackReport: React.FC = () => {
           pageNumber={11}
           isEditing={isEditMode}
         >
-          <BlindSpotsSection
-            {...dummyBlindSpotsData}
-            onUpdateData={(args: {
-              index: number;
-              field: string;
-              value: any;
-            }) => handlePieChartUpdate("hiddenStrengths", args)}
-            chartData={pieCharts.hiddenStrengths}
+          <PerceptionGapChart
+            data={transformToPerceptionGapFormat(hiddenStrengthsData)}
+            title="Hidden Strengths Overall"
+            isEditMode={isEditMode}
+            onUpdateData={handleHiddenStrengthsUpdate}
+            selfColor="#4ade80"
+            othersColor="#fb923c"
           />
         </ReportPageWrapper>
 
@@ -2240,14 +2514,13 @@ const FeedbackReport: React.FC = () => {
           pageNumber={12}
           isEditing={isEditMode}
         >
-          <BlindSpotsSection
-            {...dummyBlindSpotsData}
-            chartData={pieCharts.blindSpots}
-            onUpdateData={(args: {
-              index: number;
-              field: string;
-              value: any;
-            }) => handlePieChartUpdate("blindSpots", args)}
+          <PerceptionGapChart
+            data={transformToPerceptionGapFormat(blindSpotsData)}
+            title="Blind Spots Overall"
+            isEditMode={isEditMode}
+            onUpdateData={handleBlindSpotsUpdate}
+            selfColor="#4ade80"
+            othersColor="#fb923c"
           />
         </ReportPageWrapper>
 
