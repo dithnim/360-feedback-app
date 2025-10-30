@@ -5,13 +5,10 @@ import DraggableComp from "../Draggable/DraggableComp";
 import Footer from "../footer/Footer";
 import ReportHeader from "../shared/ReportHeader";
 
-import PieChart from "../shared/charts/PieChart/PieChart";
-import BarChart from "../shared/charts/BarChart/BarChart";
 import ComparisonLineChart from "../shared/charts/ComparisonLineChart/ComparisonLineChart";
 
 // Import data stores
 import { sumOfComRateDataStore } from "../utils/data/store/sumOfComRateDataStore";
-import { openEndedFeedbackDataStore } from "../utils/data/store/openEndedFeedbackDataStore";
 
 const coverLogo = new URL("../imgs/templates/Dash.png", import.meta.url).href;
 const CompanyImage = new URL("../imgs/templates/cover_1.png", import.meta.url)
@@ -56,15 +53,12 @@ const USER_NAME_LOCAL_STORAGE_KEY = "feedback_user_name";
 const REPORTED_DATE_LOCAL_STORAGE_KEY = "feedback_reported_date";
 const DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY = "feedback_dev_plan_content";
 const TOC_LOCAL_STORAGE_KEY = "feedback_report_toc";
-const NEW_TOC_LOCAL_STORAGE_KEY = "feedback_report_new_toc";
 const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
 
 const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
 import LeadershipQuestionRow from "../../src/components/ui/LeadershipQuestionRow";
 import DetailedFeedback from "../../src/components/reports/DetailedFeedback";
-import OpenEndedFeedbackSection, {
-  dummyOpenEndedFeedbackData,
-} from "../../src/components/reports/OpenEndedFeedbackSection";
+import OpenEndedFeedbackSection from "../../src/components/reports/OpenEndedFeedbackSection";
 import AreasOfImprovementChart from "../../src/components/reports/AreasOfImprovementChart";
 import PerceptionGapChart, {
   transformToPerceptionGapFormat,
@@ -168,149 +162,16 @@ const FeedbackReport: React.FC = () => {
   const [customCoverImage, setCustomCoverImage] = useState<string | null>(null);
 
   //!Piechart states
-  const [pieCharts, setPieCharts] = useState({
-    strengths: [
-      {
-        category: "Leadership",
-        value: 4.05,
-        color: "#4b4ac8",
-        question:
-          "Leads by example, inspires confidence, motivates team members",
-      },
-      {
-        category: "Decision Making",
-        value: 4.05,
-        color: "#367973",
-        question:
-          "Analyzes information effectively, makes timely and sound decisions",
-      },
-      {
-        category: "Drive for Results",
-        value: 4.18,
-        color: "#1b6331",
-        question:
-          "Sets clear goals, takes ownership, consistently meets objectives",
-      },
-      {
-        category: "Communication",
-        value: 4.28,
-        color: "#bc8001",
-        question:
-          "Clear and concise messaging, active listening, persuasive skills",
-      },
-      {
-        category: "Teamwork",
-        value: 4.3,
-        color: "#ee3f40",
-        question:
-          "Collaborates well with peers, fosters a positive team environment, open to feedback",
-      },
-    ],
-    improvements: [
-      {
-        category: "Leadership",
-        value: 4.05,
-        color: "#f5501d",
-        question:
-          "Enhancing delegation skills, providing more constructive feedback",
-      },
-      {
-        category: "Decision Making",
-        value: 4.05,
-        color: "#246e48",
-        question:
-          "Balancing speed with accuracy, involving others in decision-making",
-      },
-      {
-        category: "Drive for Results",
-        value: 4.18,
-        color: "#00a6ed",
-        question:
-          "Setting clearer priorities, improving time management for high-impact tasks",
-      },
-      {
-        category: "Communication",
-        value: 4.28,
-        color: "#7eb900",
-        question:
-          "Engaging in more active listening, ensuring clarity in complex discussions",
-      },
-      {
-        category: "Teamwork",
-        value: 4.3,
-        color: "#0d2d64",
-        question:
-          "Strengthening conflict resolution skills, fostering cross-functional collaboration",
-      },
-    ],
-    hiddenStrengths: [
-      {
-        category: "Leadership",
-        value: 4.05,
-        color: "#56b8fe",
-        question: "Confidence in handling uncertaint",
-      },
-      {
-        category: "Decision Making",
-        value: 4.05,
-        color: "#241250",
-        question: "Ability to motivate the team towards success",
-      },
-      {
-        category: "Drive for Results",
-        value: 4.18,
-        color: "#b4879f",
-        question: "Persuasive speaking and influence skills",
-      },
-      {
-        category: "Communication",
-        value: 4.28,
-        color: "#ff6f59",
-        question: "Facilitates collaboration across departments",
-      },
-      {
-        category: "Teamwork",
-        value: 4.3,
-        color: "#2076af",
-        question: "Strong ability to mentor and develop others",
-      },
-    ],
-    blindSpots: [
-      {
-        category: "Leadership",
-        value: 4.05,
-        color: "#380036",
-        question:
-          "Perceives decisiveness; others note limited collaboration in decisions",
-      },
-      {
-        category: "Decision Making",
-        value: 4.05,
-        color: "#77a6b6",
-        question:
-          "Believes goals are consistently met; others see delays in execution",
-      },
-      {
-        category: "Drive for Results",
-        value: 4.18,
-        color: "#4f7199",
-        question:
-          "Sees self as clear communicator; feedback indicates message clarity issues",
-      },
-      {
-        category: "Communication",
-        value: 4.28,
-        color: "#69395d",
-        question:
-          "Views self as collaborative; some perceive lack of responsiveness or shared input",
-      },
-      {
-        category: "Teamwork",
-        value: 4.3,
-        color: "#b38c96",
-        question: "Overestimates team motivation and empowerment skills",
-      },
-    ],
+  const [pieCharts, setPieCharts] = useState<{
+    strengths: ChartItem[];
+    improvements: ChartItem[];
+    hiddenStrengths: ChartItem[];
+    blindSpots: ChartItem[];
+  }>({
+    strengths: [],
+    improvements: [],
+    hiddenStrengths: [],
+    blindSpots: [],
   });
 
   // Generate strengths from backend data (highest overall ratings)
@@ -384,106 +245,76 @@ const FeedbackReport: React.FC = () => {
     return competencies;
   };
 
-  // Generate hidden strengths (self scores low, others score high)
-  const generateHiddenStrengthsFromBackend = (data: any) => {
-    if (!data) return [];
-
-    const allCompetencies = Object.entries(data)
+  // Helper: get all competencies with self/others difference
+  const getCompetencyDifferences = (data: any) => {
+    return Object.entries(data)
       .filter(([key]) => key !== "appraiseeId")
       .map(([competencyName, competencyData]: [string, any]) => {
-        const selfRating = competencyData?.Self?.averageLikert || 0;
-        const otherRoleKeys = ["Boss", "Peer", "Subordinate"];
-        const otherAverages = otherRoleKeys
-          .map((key) => competencyData[key]?.averageLikert || 0)
-          .filter((avg) => avg > 0);
-
+        const selfRating = competencyData["Self"]?.averageLikert || 0;
+        const otherRoleKeys = [
+          "Boss",
+          "Peer",
+          "Subordinate",
+          "Manager",
+          "DirectReport",
+          "Direct Report",
+        ];
+        const otherAverages: number[] = otherRoleKeys
+          .map((roleKey) => competencyData[roleKey]?.averageLikert)
+          .filter((val) => typeof val === "number" && !isNaN(val));
         const othersAverage =
           otherAverages.length > 0
-            ? otherAverages.reduce((sum, val) => sum + val, 0) /
-              otherAverages.length
+            ? otherAverages.reduce((s, v) => s + v, 0) / otherAverages.length
             : 0;
-
-        const difference = othersAverage - selfRating;
-
-        const description =
-          competencyData?.hiddenStrengthDescription ||
-          competencyData?.description ||
-          `Others recognize stronger capabilities in ${competencyName.toLowerCase()} than self-perception indicates. This represents an untapped strength.`;
-
+        const difference = selfRating - othersAverage;
         return {
-          id: competencyName.toLowerCase().replace(/\s+/g, "-"),
+          key: competencyName.toLowerCase().replace(/\s+/g, "-"),
           title: competencyName,
-          rating: parseFloat(othersAverage.toFixed(2)),
           selfRating: parseFloat(selfRating.toFixed(2)),
           othersRating: parseFloat(othersAverage.toFixed(2)),
           othersAverage: parseFloat(othersAverage.toFixed(2)),
           difference: parseFloat(difference.toFixed(2)),
-          description,
-          isHighlighted: false,
+          description: competencyData?.description || "",
         };
       });
-
-    // Filter for hidden strengths: others rate higher AND others' rating is above average
-    const hiddenStrengths = allCompetencies
-      .filter((item) => {
-        // Must have positive difference (others rate higher than self)
-        const hasPositiveDifference = item.difference > 0;
-        // Others' rating should be relatively high (>= 3.5 out of 5, or above median)
-        const othersRateHigh = item.othersAverage >= 3.5;
-        // Self rating should be lower than others
-        const selfRateLow = item.selfRating < item.othersAverage;
-
-        return hasPositiveDifference && othersRateHigh && selfRateLow;
-      })
-      .sort((a, b) => b.difference - a.difference)
-      .slice(0, 4);
-
-    return hiddenStrengths;
   };
 
-  // Generate blind spots (self rates >= 1.0 higher than others)
-  const generateBlindSpotsFromBackend = (data: any) => {
-    if (!data) return [];
-
-    const blindSpots = Object.entries(data)
-      .filter(([key]) => key !== "appraiseeId")
-      .map(([competencyName, competencyData]: [string, any]) => {
-        const selfRating = competencyData?.Self?.averageLikert || 0;
-        const otherRoleKeys = ["Boss", "Peer", "Subordinate"];
-        const otherAverages = otherRoleKeys
-          .map((key) => competencyData[key]?.averageLikert || 0)
-          .filter((avg) => avg > 0);
-
-        const othersAverage =
-          otherAverages.length > 0
-            ? otherAverages.reduce((sum, val) => sum + val, 0) /
-              otherAverages.length
-            : 0;
-
-        const difference = selfRating - othersAverage;
-
-        const description =
-          competencyData?.blindSpotDescription ||
-          competencyData?.description ||
-          `Self-perception in ${competencyName.toLowerCase()} is higher than others' observations. This gap suggests an opportunity for increased self-awareness.`;
-
-        return {
-          id: competencyName.toLowerCase().replace(/\s+/g, "-"),
-          title: competencyName,
-          rating: parseFloat(selfRating.toFixed(2)),
-          selfRating: parseFloat(selfRating.toFixed(2)),
-          othersRating: parseFloat(othersAverage.toFixed(2)),
-          othersAverage: parseFloat(othersAverage.toFixed(2)),
-          difference: parseFloat(difference.toFixed(2)),
-          description,
-          isHighlighted: false,
-        };
-      })
-      .filter((item) => item.difference >= 1.0)
+  // Generate blind spots — exclude competencies present in hidden strengths
+  const generateBlindSpotsFromBackend = (
+    data: any,
+    hiddenStrengthsKeys: Set<string> = new Set()
+  ) => {
+    const allDiffs = getCompetencyDifferences(data);
+    // Only include where self - others >= 1 and not present in hiddenStrengths
+    return allDiffs
+      .filter((d) => d.difference >= 1 && !hiddenStrengthsKeys.has(d.key))
+      .map((d) => ({
+        ...d,
+        id: d.key,
+        description: `Blind spot: Self overall rating is higher than others for ${d.title}.`,
+        isHighlighted: false,
+      }))
       .sort((a, b) => b.difference - a.difference)
-      .slice(0, 4);
+      .slice(0, 8);
+  };
 
-    return blindSpots;
+  // Generate hidden strengths — exclude competencies present in blind spots
+  const generateHiddenStrengthsFromBackend = (
+    data: any,
+    blindSpotsKeys: Set<string> = new Set()
+  ) => {
+    const allDiffs = getCompetencyDifferences(data);
+    // Only include where others - self >= 1 and not present in blindSpots
+    return allDiffs
+      .filter((d) => d.difference <= -1 && !blindSpotsKeys.has(d.key))
+      .map((d) => ({
+        ...d,
+        id: d.key,
+        description: `Hidden strength: Others' overall rating is higher than self for ${d.title}.`,
+        isHighlighted: false,
+      }))
+      .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference))
+      .slice(0, 8);
   };
 
   // States for all sections - initialize with empty arrays
@@ -545,7 +376,7 @@ const FeedbackReport: React.FC = () => {
     sumOfComRateDataStore
   );
   const [paginatedRatings, setPaginatedRatings] = useState<any[][]>([]);
-  const [openEndedFeedback] = useState<any[]>(openEndedFeedbackDataStore);
+  const [openEndedFeedback, setOpenEndedFeedback] = useState<any[]>([]);
   const [_paginatedOpenEndedFeedback, setPaginatedOpenEndedFeedback] = useState<
     any[]
   >([]);
@@ -600,139 +431,6 @@ const FeedbackReport: React.FC = () => {
   const [competencyQuestions, setCompetencyQuestions] = useState<
     Record<string, any[]>
   >({});
-
-  const [leadershipQuestions, setLeadershipQuestions] = useState([
-    {
-      question: "Inspires others with a clear and compelling vision",
-      ratings: [
-        { rater: "Self", rating: 5.0, color: roleColors.Self },
-        { rater: "Manager", rating: 4.5, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.9,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Leads by example and models core values",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Comes up with innovative solutions to work-related problems",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Executes decisions aligned with business strategy",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Focuses on outcomes and meets deadlines",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Demonstrates ownership of tasks and goals",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Clearly articulates ideas",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Listens and responds empathetically",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Supports and encourages team collaboration.",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-    {
-      question: "Values team contributions and acknowledges efforts of others.",
-      ratings: [
-        { rater: "Self", rating: 3, color: roleColors.Self },
-        { rater: "Manager", rating: 4, color: roleColors.Manager },
-        { rater: "Peers", rating: 4.2, color: roleColors.Peer },
-        {
-          rater: "Direct Reports",
-          rating: 3.5,
-          color: roleColors.DirectReport,
-        },
-      ],
-    },
-  ]);
 
   const handlePieChartUpdate = (
     chartKey: "strengths" | "improvements" | "hiddenStrengths" | "blindSpots",
@@ -844,6 +542,23 @@ const FeedbackReport: React.FC = () => {
   // Update all sections from backend data when reportData changes
   useEffect(() => {
     if (reportData) {
+      // Compute blind spots and hidden strengths with mutual exclusion
+      // Generate hidden strengths first (so blind spots take priority if a comp is both)
+      const tempHiddenStrengths =
+        generateHiddenStrengthsFromBackend(reportData);
+      const hiddenKeys = new Set(tempHiddenStrengths.map((d) => d.key));
+      const tempBlindSpots = generateBlindSpotsFromBackend(
+        reportData,
+        hiddenKeys
+      );
+      const blindKeys = new Set(tempBlindSpots.map((d) => d.key));
+      // Re-filter hidden strengths to remove any overlaps
+      const hiddenStrengths = tempHiddenStrengths.filter(
+        (d) => !blindKeys.has(d.key)
+      );
+      setHiddenStrengthsData(hiddenStrengths);
+      setBlindSpotsData(tempBlindSpots);
+
       const newStrengths = generateStrengthsFromBackend(reportData);
       if (newStrengths.length > 0) {
         setStrengthsData(newStrengths);
@@ -852,16 +567,6 @@ const FeedbackReport: React.FC = () => {
       const newImprovements = generateImprovementsFromBackend(reportData);
       if (newImprovements.length > 0) {
         setImprovementAreas(newImprovements);
-      }
-
-      const newHiddenStrengths = generateHiddenStrengthsFromBackend(reportData);
-      if (newHiddenStrengths.length > 0) {
-        setHiddenStrengthsData(newHiddenStrengths);
-      }
-
-      const newBlindSpots = generateBlindSpotsFromBackend(reportData);
-      if (newBlindSpots.length > 0) {
-        setBlindSpotsData(newBlindSpots);
       }
     }
   }, [reportData]);
@@ -1346,9 +1051,6 @@ const FeedbackReport: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(TOC_LOCAL_STORAGE_KEY, JSON.stringify(TOC));
   }, [TOC]);
-  useEffect(() => {
-    localStorage.setItem(NEW_TOC_LOCAL_STORAGE_KEY, JSON.stringify(newToc));
-  }, [newToc]);
 
   // Auto-generate TOC from sections
   useEffect(() => {
@@ -1392,13 +1094,6 @@ const FeedbackReport: React.FC = () => {
 
     generateAutoTOC();
   }, [sumOfComRating, paginatedRatings]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY,
-      JSON.stringify(leadershipQuestions)
-    );
-  }, [leadershipQuestions]);
 
   const questionsData = [
     {
@@ -1453,6 +1148,12 @@ const FeedbackReport: React.FC = () => {
       };
     });
   };
+
+  // Insert debugging logs just before return
+  // (place after all state/logic, before component return)
+  console.log("DEBUG: blindSpotsData", blindSpotsData);
+  console.log("DEBUG: hiddenStrengthsData", hiddenStrengthsData);
+  console.log("DEBUG: reportData", reportData);
 
   return (
     <div className="content-wrapper">
@@ -2462,6 +2163,76 @@ const FeedbackReport: React.FC = () => {
           pageNumber={9}
           isEditing={isEditMode}
         >
+          {isEditMode && (
+            <div style={{ position: "relative", marginBottom: "1rem" }}>
+              {strengthsData.map((item, index) => (
+                <DraggableComp
+                  key={`strength-${index}`}
+                  title={`Edit Strength: ${item.title || index + 1}`}
+                >
+                  <div className="p-4">
+                    <div className="drg-wrapper">
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-strength-title-${index}`}>
+                          Title:
+                        </label>
+                        <input
+                          id={`edit-strength-title-${index}`}
+                          type="text"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.title}
+                          onChange={(e) =>
+                            handleStrengthsUpdate({
+                              index,
+                              field: "title",
+                              value: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-strength-rating-${index}`}>
+                          Rating:
+                        </label>
+                        <input
+                          id={`edit-strength-rating-${index}`}
+                          type="number"
+                          step="0.1"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.rating}
+                          onChange={(e) =>
+                            handleStrengthsUpdate({
+                              index,
+                              field: "rating",
+                              value: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-strength-desc-${index}`}>
+                          Description:
+                        </label>
+                        <textarea
+                          id={`edit-strength-desc-${index}`}
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.description}
+                          onChange={(e) =>
+                            handleStrengthsUpdate({
+                              index,
+                              field: "description",
+                              value: e.target.value,
+                            })
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DraggableComp>
+              ))}
+            </div>
+          )}
           <AreasOfImprovementChart
             data={strengthsData}
             userName={userName}
@@ -2479,6 +2250,76 @@ const FeedbackReport: React.FC = () => {
           pageNumber={10}
           isEditing={isEditMode}
         >
+          {isEditMode && (
+            <div style={{ position: "relative", marginBottom: "1rem" }}>
+              {improvementAreas.map((item, index) => (
+                <DraggableComp
+                  key={`improvement-${index}`}
+                  title={`Edit Improvement: ${item.title || index + 1}`}
+                >
+                  <div className="p-4">
+                    <div className="drg-wrapper">
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-improvement-title-${index}`}>
+                          Title:
+                        </label>
+                        <input
+                          id={`edit-improvement-title-${index}`}
+                          type="text"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.title}
+                          onChange={(e) =>
+                            handleImprovementAreasUpdate({
+                              index,
+                              field: "title",
+                              value: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-improvement-rating-${index}`}>
+                          Rating:
+                        </label>
+                        <input
+                          id={`edit-improvement-rating-${index}`}
+                          type="number"
+                          step="0.1"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.rating}
+                          onChange={(e) =>
+                            handleImprovementAreasUpdate({
+                              index,
+                              field: "rating",
+                              value: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-improvement-desc-${index}`}>
+                          Description:
+                        </label>
+                        <textarea
+                          id={`edit-improvement-desc-${index}`}
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.description}
+                          onChange={(e) =>
+                            handleImprovementAreasUpdate({
+                              index,
+                              field: "description",
+                              value: e.target.value,
+                            })
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DraggableComp>
+              ))}
+            </div>
+          )}
           <AreasOfImprovementChart
             data={improvementAreas}
             userName={userName}
@@ -2496,6 +2337,99 @@ const FeedbackReport: React.FC = () => {
           pageNumber={11}
           isEditing={isEditMode}
         >
+          {isEditMode && (
+            <div style={{ position: "relative", marginBottom: "1rem" }}>
+              {hiddenStrengthsData.map((item, index) => (
+                <DraggableComp
+                  key={`hidden-strength-${index}`}
+                  title={`Edit Hidden Strength: ${item.title || index + 1}`}
+                >
+                  <div className="p-4">
+                    <div className="drg-wrapper">
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-hidden-strength-title-${index}`}>
+                          Title:
+                        </label>
+                        <input
+                          id={`edit-hidden-strength-title-${index}`}
+                          type="text"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.title}
+                          onChange={(e) =>
+                            handleHiddenStrengthsUpdate({
+                              index,
+                              field: "title",
+                              value: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label
+                          htmlFor={`edit-hidden-strength-self-rating-${index}`}
+                        >
+                          Self Rating:
+                        </label>
+                        <input
+                          id={`edit-hidden-strength-self-rating-${index}`}
+                          type="number"
+                          step="0.1"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.selfRating}
+                          onChange={(e) =>
+                            handleHiddenStrengthsUpdate({
+                              index,
+                              field: "selfRating",
+                              value: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label
+                          htmlFor={`edit-hidden-strength-others-rating-${index}`}
+                        >
+                          Others Rating:
+                        </label>
+                        <input
+                          id={`edit-hidden-strength-others-rating-${index}`}
+                          type="number"
+                          step="0.1"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.othersRating}
+                          onChange={(e) =>
+                            handleHiddenStrengthsUpdate({
+                              index,
+                              field: "othersRating",
+                              value: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-hidden-strength-desc-${index}`}>
+                          Description:
+                        </label>
+                        <textarea
+                          id={`edit-hidden-strength-desc-${index}`}
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.description}
+                          onChange={(e) =>
+                            handleHiddenStrengthsUpdate({
+                              index,
+                              field: "description",
+                              value: e.target.value,
+                            })
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DraggableComp>
+              ))}
+            </div>
+          )}
           <PerceptionGapChart
             data={transformToPerceptionGapFormat(hiddenStrengthsData)}
             title="Hidden Strengths Overall"
@@ -2514,6 +2448,97 @@ const FeedbackReport: React.FC = () => {
           pageNumber={12}
           isEditing={isEditMode}
         >
+          {isEditMode && (
+            <div style={{ position: "relative", marginBottom: "1rem" }}>
+              {blindSpotsData.map((item, index) => (
+                <DraggableComp
+                  key={`blind-spot-${index}`}
+                  title={`Edit Blind Spot: ${item.title || index + 1}`}
+                >
+                  <div className="p-4">
+                    <div className="drg-wrapper">
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-blind-spot-title-${index}`}>
+                          Title:
+                        </label>
+                        <input
+                          id={`edit-blind-spot-title-${index}`}
+                          type="text"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.title}
+                          onChange={(e) =>
+                            handleBlindSpotsUpdate({
+                              index,
+                              field: "title",
+                              value: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-blind-spot-self-rating-${index}`}>
+                          Self Rating:
+                        </label>
+                        <input
+                          id={`edit-blind-spot-self-rating-${index}`}
+                          type="number"
+                          step="0.1"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.selfRating}
+                          onChange={(e) =>
+                            handleBlindSpotsUpdate({
+                              index,
+                              field: "selfRating",
+                              value: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label
+                          htmlFor={`edit-blind-spot-others-rating-${index}`}
+                        >
+                          Others Rating:
+                        </label>
+                        <input
+                          id={`edit-blind-spot-others-rating-${index}`}
+                          type="number"
+                          step="0.1"
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.othersRating}
+                          onChange={(e) =>
+                            handleBlindSpotsUpdate({
+                              index,
+                              field: "othersRating",
+                              value: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col mb-2">
+                        <label htmlFor={`edit-blind-spot-desc-${index}`}>
+                          Description:
+                        </label>
+                        <textarea
+                          id={`edit-blind-spot-desc-${index}`}
+                          className="border border-gray-300 rounded-md mb-2 px-1.5"
+                          value={item.description}
+                          onChange={(e) =>
+                            handleBlindSpotsUpdate({
+                              index,
+                              field: "description",
+                              value: e.target.value,
+                            })
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DraggableComp>
+              ))}
+            </div>
+          )}
           <PerceptionGapChart
             data={transformToPerceptionGapFormat(blindSpotsData)}
             title="Blind Spots Overall"
@@ -2525,41 +2550,42 @@ const FeedbackReport: React.FC = () => {
         </ReportPageWrapper>
 
         {/* -----------------------------  Open Ended Feedback Section --------------------------------*/}
-
-        <ReportPageWrapper
-          title="Open Ended Feedback"
-          description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
-          organizationName="TalentBoozt"
-          pageNumber={11}
-          isEditing={isEditMode}
-          borderColor="border-blue-400"
-        >
-          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
-        </ReportPageWrapper>
-        {/* ----------------------------- Open Ended Feedback Continued Section --------------------- */}
-        <ReportPageWrapper
-          title="Open Ended Feedback (Continued)"
-          description=""
-          organizationName="TalentBoozt"
-          pageNumber={11}
-          isEditing={isEditMode}
-          borderColor="border-blue-400"
-        >
-          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
-        </ReportPageWrapper>
-        {/* ----------------------------- Open Ended Feedback Continued Section --------------------- */}
-        <ReportPageWrapper
-          title="Open Ended Feedback (Continued)"
-          description=""
-          organizationName="TalentBoozt"
-          pageNumber={12}
-          isEditing={isEditMode}
-          borderColor="border-blue-400"
-        >
-          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
-
-          <OpenEndedFeedbackSection {...dummyOpenEndedFeedbackData} />
-        </ReportPageWrapper>
+        {openEndedFeedback.length > 0 &&
+          openEndedFeedback.map((entry: any, idx: number) => (
+            <ReportPageWrapper
+              key={`open-ended-feedback-${idx}`}
+              title={
+                idx === 0
+                  ? "Open Ended Feedback"
+                  : `Open Ended Feedback (Continued)`
+              }
+              description={
+                idx === 0
+                  ? `This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact.`
+                  : ""
+              }
+              organizationName="TalentBoozt"
+              pageNumber={11 + idx}
+              isEditing={isEditMode}
+              borderColor="border-blue-400"
+            >
+              <OpenEndedFeedbackSection
+                question={entry.question || ""}
+                feedbackItems={
+                  Array.isArray(entry.feedbacks)
+                    ? entry.feedbacks.map((f: string, i: number) => ({
+                        id: `feedback-${i}`,
+                        iconColor: "#2563eb",
+                        feedbackText: f,
+                      }))
+                    : []
+                }
+                organizationName="TalentBoozt"
+                pageNumber={11 + idx}
+                isEditing={isEditMode}
+              />
+            </ReportPageWrapper>
+          ))}
       </div>
     </div>
   );

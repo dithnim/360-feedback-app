@@ -90,26 +90,7 @@ export default function AreasOfImprovementChart({
                   }}
                 >
                   <span className="font-bold text-[15px]" style={{ color }}>
-                    {isEditMode ? (
-                      <input
-                        type="number"
-                        value={area.rating}
-                        onChange={(e) =>
-                          handleDataUpdate(
-                            index,
-                            "rating",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        className="w-[35px] text-center text-[14px] border-none outline-none bg-transparent font-bold"
-                        style={{ color }}
-                        step="0.1"
-                        min="0"
-                        max="5"
-                      />
-                    ) : (
-                      area.rating
-                    )}
+                    {area.rating}
                   </span>
                 </div>
 
@@ -123,32 +104,10 @@ export default function AreasOfImprovementChart({
                       area.isHighlighted ? "text-[#4169e1]" : "text-gray-900"
                     }`}
                   >
-                    {isEditMode ? (
-                      <input
-                        type="text"
-                        value={area.title}
-                        onChange={(e) =>
-                          handleDataUpdate(index, "title", e.target.value)
-                        }
-                        className="w-full border-none outline-none bg-transparent font-bold text-[16px]"
-                      />
-                    ) : (
-                      area.title
-                    )}
+                    {area.title}
                   </h3>
                   <p className="text-gray-700 text-[13px] leading-relaxed">
-                    {isEditMode ? (
-                      <textarea
-                        value={area.description}
-                        onChange={(e) =>
-                          handleDataUpdate(index, "description", e.target.value)
-                        }
-                        className="w-full border-none outline-none bg-transparent text-[13px] resize-none leading-relaxed text-gray-700"
-                        rows={2}
-                      />
-                    ) : (
-                      area.description
-                    )}
+                    {area.description}
                   </p>
                 </div>
               </div>

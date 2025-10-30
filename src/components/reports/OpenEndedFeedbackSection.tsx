@@ -44,38 +44,3 @@ export default function OpenEndedFeedbackSection({
     </>
   );
 }
-
-// Dummy data for component usage
-export const dummyOpenEndedFeedbackData: OpenEndedFeedbackSectionProps = {
-  question:
-    "What are this individual's greatest strengths in their current role?",
-  feedbackItems: [
-    {
-      id: "feedback-1",
-      iconColor: "#2563eb",
-      feedbackText:
-        "I believe I bring strategic thinking and consistency to my work, which helps the team stay focused.",
-    },
-    {
-      id: "feedback-2",
-      iconColor: "#65a30d",
-      feedbackText:
-        "They consistently show initiative and take ownership of key deliverables without needing close supervision.",
-    },
-    {
-      id: "feedback-3",
-      iconColor: "#eab308",
-      feedbackText:
-        "Strong collaborator—always willing to support the team and jump in when help is needed.",
-    },
-    {
-      id: "feedback-4",
-      iconColor: "#b91c1c",
-      feedbackText:
-        "They provide clear direction and make time to coach and develop team members.",
-    },
-  ],
-  organizationName: "Talent Boozt",
-  pageNumber: 12,
-  isEditing: false,
-};

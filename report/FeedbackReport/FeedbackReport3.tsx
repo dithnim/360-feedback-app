@@ -64,7 +64,6 @@ const USER_NAME_LOCAL_STORAGE_KEY = "feedback_user_name";
 const REPORTED_DATE_LOCAL_STORAGE_KEY = "feedback_reported_date";
 const DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY = "feedback_dev_plan_content";
 const TOC_LOCAL_STORAGE_KEY = "feedback_report_toc";
-const NEW_TOC_LOCAL_STORAGE_KEY = "feedback_report_new_toc";
 const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
 
 const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
@@ -812,9 +811,6 @@ const FeedbackReport: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(TOC_LOCAL_STORAGE_KEY, JSON.stringify(TOC));
   }, [TOC]);
-  useEffect(() => {
-    localStorage.setItem(NEW_TOC_LOCAL_STORAGE_KEY, JSON.stringify(newToc));
-  }, [newToc]);
 
   useEffect(() => {
     localStorage.setItem(

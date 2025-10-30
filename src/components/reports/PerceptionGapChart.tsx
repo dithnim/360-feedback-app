@@ -39,68 +39,25 @@ export default function PerceptionGapChart({
 
   return (
     <div className="w-full">
-
       {/* Competency Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {data.map((item, index) => (
           <div key={item.id} className="space-y-3">
             {/* Title */}
             <h3 className="text-lg font-bold text-gray-900">
-              {item.number}.{" "}
-              {isEditMode ? (
-                <input
-                  type="text"
-                  value={item.title}
-                  onChange={(e) =>
-                    handleDataUpdate(index, "title", e.target.value)
-                  }
-                  className="border-b border-gray-300 outline-none bg-transparent w-full"
-                />
-              ) : (
-                item.title
-              )}
+              {item.number}. {item.title}
             </h3>
 
             {/* Description */}
             <p className="text-sm text-gray-600 leading-relaxed">
-              {isEditMode ? (
-                <textarea
-                  value={item.description}
-                  onChange={(e) =>
-                    handleDataUpdate(index, "description", e.target.value)
-                  }
-                  className="w-full border border-gray-300 rounded p-2 outline-none text-sm"
-                  rows={2}
-                />
-              ) : (
-                item.description
-              )}
+              {item.description}
             </p>
 
             {/* Self Rating */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-700">
-                  Your Rating -{" "}
-                  {isEditMode ? (
-                    <input
-                      type="number"
-                      value={item.selfRating}
-                      onChange={(e) =>
-                        handleDataUpdate(
-                          index,
-                          "selfRating",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="w-16 border-b border-gray-300 outline-none text-center"
-                      step="0.1"
-                      min="0"
-                      max="5"
-                    />
-                  ) : (
-                    item.selfRating.toFixed(1)
-                  )}
+                  Your Rating - {item.selfRating.toFixed(1)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
@@ -118,26 +75,7 @@ export default function PerceptionGapChart({
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-700">
-                  Others -{" "}
-                  {isEditMode ? (
-                    <input
-                      type="number"
-                      value={item.othersRating}
-                      onChange={(e) =>
-                        handleDataUpdate(
-                          index,
-                          "othersRating",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="w-16 border-b border-gray-300 outline-none text-center"
-                      step="0.1"
-                      min="0"
-                      max="5"
-                    />
-                  ) : (
-                    item.othersRating.toFixed(1)
-                  )}
+                  Others - {item.othersRating.toFixed(1)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
