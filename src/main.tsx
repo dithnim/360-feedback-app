@@ -14,12 +14,7 @@ const CreateTeam = lazy(() => import("./pages/CreateTeam.tsx"));
 const FeedbackReport = lazy(
   () => import("../report/FeedbackReport/FeedbackReport.tsx")
 );
-const FeedbackReport2 = lazy(
-  () => import("../report/FeedbackReport/FeedbackReport2.tsx")
-);
-const FeedbackReport3 = lazy(
-  () => import("../report/FeedbackReport/FeedbackReport3.tsx")
-);
+// Removed legacy FeedbackReport2 and FeedbackReport3
 const Login = lazy(() => import("./pages/login.tsx"));
 const CurrentProjects = lazy(() => import("./pages/currentProjects.tsx"));
 import { UserProvider, useUser } from "./context/UserContext";
@@ -68,8 +63,7 @@ function AppRoutes() {
       <Route path="/survey-thank-you" element={<SurveyThankYou />} />
       <Route path="/survey-demo" element={<SurveyDemo />} />
       <Route path="/feedback-report" element={<FeedbackReport />} />
-      <Route path="/feedback-report2" element={<FeedbackReport2 />} />
-      <Route path="/feedback-report3" element={<FeedbackReport3 />} />
+      {/* Legacy routes removed: /feedback-report2, /feedback-report3 */}
       <Route
         path="/"
         element={
