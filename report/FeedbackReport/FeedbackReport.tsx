@@ -51,12 +51,16 @@ const PIE_CHARTS_LOCAL_STORAGE_KEY = "feedback_pie_charts_data";
 const RESPONDENT_DATA_LOCAL_STORAGE_KEY = "feedback_respondent_data";
 const USER_NAME_LOCAL_STORAGE_KEY = "feedback_user_name";
 const REPORTED_DATE_LOCAL_STORAGE_KEY = "feedback_reported_date";
-const DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY = "feedback_dev_plan_content";
+// removed unused DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY
 const TOC_LOCAL_STORAGE_KEY = "feedback_report_toc";
 const CUSTOM_COVER_IMAGE_LOCAL_STORAGE_KEY = "feedback_custom_cover_image";
+const DEVELOPMENT_PLAN_ITEMS_LOCAL_STORAGE_KEY =
+  "feedback_development_plan_items";
+const ORGANIZATION_NAME_LOCAL_STORAGE_KEY = "feedback_organization_name";
+const PAGE_NUMBERS_LOCAL_STORAGE_KEY = "feedback_page_numbers";
 
-const LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY = "feedback_leadership_questions";
-import LeadershipQuestionRow from "../../src/components/ui/LeadershipQuestionRow";
+// Removed unused LEADERSHIP_QUESTIONS_LOCAL_STORAGE_KEY constant
+// Removed unused LeadershipQuestionRow import
 import DetailedFeedback from "../../src/components/reports/DetailedFeedback";
 import OpenEndedFeedbackSection from "../../src/components/reports/OpenEndedFeedbackSection";
 import AreasOfImprovementChart from "../../src/components/reports/AreasOfImprovementChart";
@@ -316,15 +320,73 @@ const FeedbackReport: React.FC = () => {
 
   const [userName, setUserName] = useState("John Doe");
   const [reportedDate, setReportedDate] = useState("2025-01-01");
-  const [developmentPlanContent] = useState(
-    "<div>Type your development plan here...</div>"
-  );
+  // removed unused developmentPlanContent state
   const [respondentData, setRespondentData] = useState([
     { relationship: "Self", nominated: 0, completed: 0 },
     { relationship: "Managers", nominated: 0, completed: 0 },
     { relationship: "Peers", nominated: 0, completed: 0 },
     { relationship: "Direct Reports", nominated: 0, completed: 0 },
   ]);
+
+  // Development Plan Items State
+  const [developmentPlanItems, setDevelopmentPlanItems] = useState<
+    Array<{ areaOfImprovement: string; actionToBeTaken: string }>
+  >(() => {
+    try {
+      const saved = localStorage.getItem(
+        DEVELOPMENT_PLAN_ITEMS_LOCAL_STORAGE_KEY
+      );
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error(
+        "Failed to load development plan items from localStorage",
+        e
+      );
+    }
+    return [
+      { areaOfImprovement: "", actionToBeTaken: "" },
+      { areaOfImprovement: "", actionToBeTaken: "" },
+      { areaOfImprovement: "", actionToBeTaken: "" },
+      { areaOfImprovement: "", actionToBeTaken: "" },
+      { areaOfImprovement: "", actionToBeTaken: "" },
+    ];
+  });
+
+  // Footer organization and page numbers state
+  const [organizationName, setOrganizationName] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ORGANIZATION_NAME_LOCAL_STORAGE_KEY);
+      return saved || "TalentBoozt";
+    } catch (e) {
+      return "TalentBoozt";
+    }
+  });
+  const [pageNumbers, setPageNumbers] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(PAGE_NUMBERS_LOCAL_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load page numbers from localStorage", e);
+    }
+    return {
+      toc: 2,
+      introduction: 3,
+      respondentSummary: 4,
+      competencyRatings: 5,
+      competencyComparison1: 7,
+      competencyComparison2: 8,
+      strengths: 9,
+      improvements: 10,
+      hiddenStrengths: 11,
+      blindSpots: 12,
+      openEndedFeedback: 13,
+      developmentPlan: 20,
+    };
+  });
 
   // Edit states for draggable/minimizable panels
   useState<{ [key: string]: EditState }>({
@@ -371,14 +433,11 @@ const FeedbackReport: React.FC = () => {
   const [_paginatedOpenEndedFeedback, setPaginatedOpenEndedFeedback] = useState<
     any[]
   >([]);
-  const [_paginatedDevPlanContent, setPaginatedDevPlanContent] = useState<
-    string[]
-  >([]);
 
   // Constants
   const MAX_SOCR_BLOCKS_PER_PAGE = 3;
   const MAX_OEF_PER_PAGE = 8;
-  const MAX_DEV_PLAN_PAGE_HEIGHT_PX = 2950;
+  // removed legacy dev plan pagination constant
 
   // TOC and categories
   const [TOC, setTOC] = useState<any[]>(() => {
@@ -526,9 +585,8 @@ const FeedbackReport: React.FC = () => {
   useEffect(() => {
     paginateRatings();
     paginateOpenEndedFeedbackRate();
-    paginateDevPlan();
     prepareChartData();
-  }, [reportData, sumOfComRating, openEndedFeedback, developmentPlanContent]);
+  }, [reportData, sumOfComRating, openEndedFeedback]);
 
   // Update all sections from backend data when reportData changes
   useEffect(() => {
@@ -800,34 +858,7 @@ const FeedbackReport: React.FC = () => {
     setPaginatedOpenEndedFeedback(pages);
   };
 
-  const paginateDevPlan = () => {
-    const content = developmentPlanContent;
-    const pages: string[] = [];
-    const words = content.split(" ");
-    let currentPage = "";
-    let currentHeight = 0;
-    void currentHeight;
-
-    for (const word of words) {
-      const testPage = currentPage + (currentPage ? " " : "") + word;
-      const testHeight = testPage.length * 0.5; // Rough estimation
-
-      if (testHeight > MAX_DEV_PLAN_PAGE_HEIGHT_PX) {
-        pages.push(currentPage);
-        currentPage = word;
-        currentHeight = word.length * 0.5;
-      } else {
-        currentPage = testPage;
-        currentHeight = testHeight;
-      }
-    }
-
-    if (currentPage) {
-      pages.push(currentPage);
-    }
-
-    setPaginatedDevPlanContent(pages);
-  };
+  // removed legacy dev plan pagination
 
   const prepareChartData = (feedbacks: any[] = sumOfComRating) => {
     const categories = Array.from(new Set(feedbacks.map((f) => f.category)));
@@ -844,7 +875,7 @@ const FeedbackReport: React.FC = () => {
 
   //! PDF Export functionality
 
-  // Existing exportPdf function stays the same
+  // High-quality PDF export function
   const exportPdf = async () => {
     if (!pdfSectionRef.current) return;
 
@@ -866,34 +897,42 @@ const FeedbackReport: React.FC = () => {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
 
-        await delay(100);
+        await delay(150);
         await idle();
 
+        // High-quality canvas rendering
         const canvas = await html2canvas(page, {
-          // balance quality and memory footprint
-          scale: Math.min(window.devicePixelRatio || 1, 1.5),
+          scale: 3, // High quality scale for crisp text and images
           useCORS: true,
           allowTaint: true,
           backgroundColor: "#ffffff",
           logging: false,
           windowWidth: page.scrollWidth,
           windowHeight: page.scrollHeight,
+          imageTimeout: 0,
+          removeContainer: true,
+          // Optimize rendering for quality
+          foreignObjectRendering: false,
         });
-        const imgData = canvas.toDataURL("image/jpeg", 0.85);
-        const imgWidth = 210;
+
+        // Use PNG for lossless quality
+        const imgData = canvas.toDataURL("image/png", 1.0);
+        const imgWidth = 210; // A4 width in mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         let position = 0;
 
         if (i > 0) pdf.addPage();
+
+        // Use SLOW compression for better quality
         pdf.addImage(
           imgData,
-          "JPEG",
+          "PNG",
           0,
           position,
           imgWidth,
           imgHeight,
           undefined,
-          "FAST"
+          "SLOW"
         );
 
         // Help GC: release large canvas memory
@@ -905,9 +944,12 @@ const FeedbackReport: React.FC = () => {
         setExportProgress(((i + 1) / pages.length) * 100);
       }
 
-      pdf.save("360-feedback-report.pdf");
+      // Save with descriptive filename
+      const timestamp = new Date().toISOString().split("T")[0];
+      pdf.save(`360-feedback-report-${userName}-${timestamp}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
     } finally {
       setIsExporting(false);
       setExportProgress(0);
@@ -1027,12 +1069,7 @@ const FeedbackReport: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(REPORTED_DATE_LOCAL_STORAGE_KEY, reportedDate);
   }, [reportedDate]);
-  useEffect(() => {
-    localStorage.setItem(
-      DEV_PLAN_CONTENT_LOCAL_STORAGE_KEY,
-      developmentPlanContent
-    );
-  }, [developmentPlanContent]);
+  // removed legacy dev plan content persistence
   useEffect(() => {
     localStorage.setItem(
       RESPONDENT_DATA_LOCAL_STORAGE_KEY,
@@ -1042,6 +1079,21 @@ const FeedbackReport: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(TOC_LOCAL_STORAGE_KEY, JSON.stringify(TOC));
   }, [TOC]);
+  useEffect(() => {
+    localStorage.setItem(
+      DEVELOPMENT_PLAN_ITEMS_LOCAL_STORAGE_KEY,
+      JSON.stringify(developmentPlanItems)
+    );
+  }, [developmentPlanItems]);
+  useEffect(() => {
+    localStorage.setItem(ORGANIZATION_NAME_LOCAL_STORAGE_KEY, organizationName);
+  }, [organizationName]);
+  useEffect(() => {
+    localStorage.setItem(
+      PAGE_NUMBERS_LOCAL_STORAGE_KEY,
+      JSON.stringify(pageNumbers)
+    );
+  }, [pageNumbers]);
 
   // Auto-generate TOC from sections
   useEffect(() => {
@@ -1086,31 +1138,7 @@ const FeedbackReport: React.FC = () => {
     generateAutoTOC();
   }, [sumOfComRating, paginatedRatings]);
 
-  const questionsData = [
-    {
-      question: "Demonstrates strong leadership skills",
-      ratings: [
-        { rater: "Self", rating: 4.5, color: "#ff0000" },
-        { rater: "Manager", rating: 4.2, color: "#00ff00" },
-        { rater: "Peers", rating: 4.0, color: "#0000ff" },
-      ],
-    },
-    {
-      question: "Communicates effectively with the team",
-      ratings: [
-        { rater: "Self", rating: 4.0, color: "#ff0000" },
-        { rater: "Manager", rating: 4.3, color: "#00ff00" },
-        { rater: "Peers", rating: 4.1, color: "#0000ff" },
-      ],
-    },
-  ];
-
-  enum Role {
-    Self = "Self",
-    Manager = "Manager",
-    DirectReport = "Direct Report",
-    Peers = "Peers",
-  }
+  // removed sample questions data and unused enum
 
   // Helper function to get all ratings for a question across all roles
   const getRatingsForQuestion = (competencyData: any, questionText: string) => {
@@ -1140,11 +1168,7 @@ const FeedbackReport: React.FC = () => {
     });
   };
 
-  // Insert debugging logs just before return
-  // (place after all state/logic, before component return)
-  console.log("DEBUG: blindSpotsData", blindSpotsData);
-  console.log("DEBUG: hiddenStrengthsData", hiddenStrengthsData);
-  console.log("DEBUG: reportData", reportData);
+  // (debug logs removed)
 
   return (
     <div className="content-wrapper">
@@ -1198,12 +1222,7 @@ const FeedbackReport: React.FC = () => {
           </style>
         </div>
       )}
-      {/* Tailwind CSS Test Block - Remove after confirming Tailwind works */}
-      <div className="warning-overlay">
-        <div className="warning">
-          <p>⚠️ Oops! Your screen is too small to view this report.</p>
-        </div>
-      </div>
+      {/* warning overlay removed */}
 
       <div className="buttons-wrapper">
         <div className="controls">
@@ -1509,7 +1528,15 @@ const FeedbackReport: React.FC = () => {
             </div>
 
             <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={2} isEditing={isEditMode} />
+              <Footer
+                org={organizationName}
+                pageNo={pageNumbers.toc}
+                isEditing={isEditMode}
+                onOrgChange={setOrganizationName}
+                onPageNoChange={(newPageNo) =>
+                  setPageNumbers({ ...pageNumbers, toc: newPageNo })
+                }
+              />
             </div>
           </ReportHeader>
         </div>
@@ -1546,7 +1573,15 @@ const FeedbackReport: React.FC = () => {
               </p>
             </div>
             <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={3} isEditing={isEditMode} />
+              <Footer
+                org={organizationName}
+                pageNo={pageNumbers.introduction}
+                isEditing={isEditMode}
+                onOrgChange={setOrganizationName}
+                onPageNoChange={(newPageNo) =>
+                  setPageNumbers({ ...pageNumbers, introduction: newPageNo })
+                }
+              />
             </div>
           </ReportHeader>
         </div>
@@ -1706,7 +1741,18 @@ const FeedbackReport: React.FC = () => {
               })}
             </div>
             <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={4} isEditing={isEditMode} />
+              <Footer
+                org={organizationName}
+                pageNo={pageNumbers.respondentSummary}
+                isEditing={isEditMode}
+                onOrgChange={setOrganizationName}
+                onPageNoChange={(newPageNo) =>
+                  setPageNumbers({
+                    ...pageNumbers,
+                    respondentSummary: newPageNo,
+                  })
+                }
+              />
             </div>
           </ReportHeader>
         </div>
@@ -1829,9 +1875,16 @@ const FeedbackReport: React.FC = () => {
 
                   <div className="w-full mt-auto">
                     <Footer
-                      org="TalentBoozt"
-                      pageNo={7}
+                      org={organizationName}
+                      pageNo={pageNumbers.competencyComparison1}
                       isEditing={isEditMode}
+                      onOrgChange={setOrganizationName}
+                      onPageNoChange={(newPageNo) =>
+                        setPageNumbers({
+                          ...pageNumbers,
+                          competencyComparison1: newPageNo,
+                        })
+                      }
                     />
                   </div>
                 </ReportHeader>
@@ -1887,9 +1940,16 @@ const FeedbackReport: React.FC = () => {
 
                   <div className="w-full mt-auto">
                     <Footer
-                      org="TalentBoozt"
-                      pageNo={8}
+                      org={organizationName}
+                      pageNo={pageNumbers.competencyComparison2}
                       isEditing={isEditMode}
+                      onOrgChange={setOrganizationName}
+                      onPageNoChange={(newPageNo) =>
+                        setPageNumbers({
+                          ...pageNumbers,
+                          competencyComparison2: newPageNo,
+                        })
+                      }
                     />
                   </div>
                 </ReportHeader>
@@ -2069,7 +2129,18 @@ const FeedbackReport: React.FC = () => {
               </div>
             </ReportHeader>
             <div className="w-full mt-auto">
-              <Footer org="TalentBoozt" pageNo={5} isEditing={isEditMode} />
+              <Footer
+                org={organizationName}
+                pageNo={pageNumbers.competencyRatings}
+                isEditing={isEditMode}
+                onOrgChange={setOrganizationName}
+                onPageNoChange={(newPageNo) =>
+                  setPageNumbers({
+                    ...pageNumbers,
+                    competencyRatings: newPageNo,
+                  })
+                }
+              />
             </div>
           </div>
         ))}
@@ -2122,10 +2193,17 @@ const FeedbackReport: React.FC = () => {
                   key={competencyName}
                   title={`Detailed Feedback - ${competencyName}`}
                   description="This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact."
-                  organizationName="TalentBoozt"
+                  organizationName={organizationName}
                   pageNumber={13 + index}
                   isEditing={isEditMode}
                   borderColor="border-blue-400"
+                  onOrgChange={setOrganizationName}
+                  onPageNoChange={(newPageNo) =>
+                    setPageNumbers({
+                      ...pageNumbers,
+                      [`detailedFeedback${index}`]: newPageNo,
+                    })
+                  }
                 >
                   <DetailedFeedback
                     competency={competencyName}
@@ -2150,9 +2228,13 @@ const FeedbackReport: React.FC = () => {
         <ReportPageWrapper
           title="Strengths"
           description="The diagram below highlights key strengths for each competency, based on high ratings and positive feedback from respondents."
-          organizationName="TalentBoozt"
-          pageNumber={9}
+          organizationName={organizationName}
+          pageNumber={pageNumbers.strengths}
           isEditing={isEditMode}
+          onOrgChange={setOrganizationName}
+          onPageNoChange={(newPageNo) =>
+            setPageNumbers({ ...pageNumbers, strengths: newPageNo })
+          }
         >
           {isEditMode && (
             <div style={{ position: "relative", marginBottom: "1rem" }}>
@@ -2237,9 +2319,13 @@ const FeedbackReport: React.FC = () => {
         <ReportPageWrapper
           title="Areas of Improvement"
           description="The diagram below highlights key development areas based on feedback from respondents. These areas represent opportunities for further growth and enhancement."
-          organizationName="TalentBoozt"
-          pageNumber={10}
+          organizationName={organizationName}
+          pageNumber={pageNumbers.improvements}
           isEditing={isEditMode}
+          onOrgChange={setOrganizationName}
+          onPageNoChange={(newPageNo) =>
+            setPageNumbers({ ...pageNumbers, improvements: newPageNo })
+          }
         >
           {isEditMode && (
             <div style={{ position: "relative", marginBottom: "1rem" }}>
@@ -2324,9 +2410,13 @@ const FeedbackReport: React.FC = () => {
         <ReportPageWrapper
           title="Hidden Strengths"
           description="The following diagram highlights competencies where the individual may underestimate their own abilities, as identified through feedback from others."
-          organizationName="TalentBoozt"
-          pageNumber={11}
+          organizationName={organizationName}
+          pageNumber={pageNumbers.hiddenStrengths}
           isEditing={isEditMode}
+          onOrgChange={setOrganizationName}
+          onPageNoChange={(newPageNo) =>
+            setPageNumbers({ ...pageNumbers, hiddenStrengths: newPageNo })
+          }
         >
           {isEditMode && (
             <div style={{ position: "relative", marginBottom: "1rem" }}>
@@ -2435,9 +2525,13 @@ const FeedbackReport: React.FC = () => {
         <ReportPageWrapper
           title="Blind Spots"
           description="Blind spots occur when there is a misalignment between self-perception and others' perceptions. The diagram below outlines key blind spots identified for each competency:"
-          organizationName="TalentBoozt"
-          pageNumber={12}
+          organizationName={organizationName}
+          pageNumber={pageNumbers.blindSpots}
           isEditing={isEditMode}
+          onOrgChange={setOrganizationName}
+          onPageNoChange={(newPageNo) =>
+            setPageNumbers({ ...pageNumbers, blindSpots: newPageNo })
+          }
         >
           {isEditMode && (
             <div style={{ position: "relative", marginBottom: "1rem" }}>
@@ -2555,10 +2649,17 @@ const FeedbackReport: React.FC = () => {
                   ? `This section captures qualitative insights shared by respondents in their own words. These comments provide valuable context to the numerical ratings, offering specific examples, suggestions, and observations that highlight strengths, opportunities for growth, and overall perceptions of the individual's performance and leadership impact.`
                   : ""
               }
-              organizationName="TalentBoozt"
-              pageNumber={11 + idx}
+              organizationName={organizationName}
+              pageNumber={pageNumbers.openEndedFeedback + idx}
               isEditing={isEditMode}
               borderColor="border-blue-400"
+              onOrgChange={setOrganizationName}
+              onPageNoChange={(newPageNo) =>
+                setPageNumbers({
+                  ...pageNumbers,
+                  openEndedFeedback: newPageNo - idx,
+                })
+              }
             >
               <OpenEndedFeedbackSection
                 question={entry.question || ""}
@@ -2577,6 +2678,108 @@ const FeedbackReport: React.FC = () => {
               />
             </ReportPageWrapper>
           ))}
+
+        {/* ----------------------------- Development Plan Section --------------------------------*/}
+        <div className="pdf-page p flex flex-col min-h-[100vh] text-left">
+          <ReportHeader title="Development Plan">
+            <div className="w-full mt-6">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="border border-gray-400 bg-white p-4 text-center font-bold text-base">
+                      Area of Improvement
+                    </th>
+                    <th className="border border-gray-400 bg-white p-4 text-center font-bold text-base">
+                      Action to be taken
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {developmentPlanItems.map((item, index) => (
+                    <tr key={index}>
+                      <td className="border border-gray-400 p-4 align-top">
+                        {isEditMode ? (
+                          <textarea
+                            className="w-full h-32 p-2 border-none focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                            value={item.areaOfImprovement}
+                            onChange={(e) => {
+                              const newItems = [...developmentPlanItems];
+                              newItems[index].areaOfImprovement =
+                                e.target.value;
+                              setDevelopmentPlanItems(newItems);
+                            }}
+                            placeholder="Enter area of improvement..."
+                          />
+                        ) : (
+                          <div className="min-h-[8rem] whitespace-pre-wrap">
+                            {item.areaOfImprovement}
+                          </div>
+                        )}
+                      </td>
+                      <td className="border border-gray-400 p-4 align-top">
+                        {isEditMode ? (
+                          <textarea
+                            className="w-full h-32 p-2 border-none focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                            value={item.actionToBeTaken}
+                            onChange={(e) => {
+                              const newItems = [...developmentPlanItems];
+                              newItems[index].actionToBeTaken = e.target.value;
+                              setDevelopmentPlanItems(newItems);
+                            }}
+                            placeholder="Enter action to be taken..."
+                          />
+                        ) : (
+                          <div className="min-h-[8rem] whitespace-pre-wrap">
+                            {item.actionToBeTaken}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {isEditMode && (
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => {
+                      setDevelopmentPlanItems([
+                        ...developmentPlanItems,
+                        { areaOfImprovement: "", actionToBeTaken: "" },
+                      ]);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded transition-colors"
+                  >
+                    Add Row
+                  </button>
+                  {developmentPlanItems.length > 1 && (
+                    <button
+                      onClick={() => {
+                        const newItems = [...developmentPlanItems];
+                        newItems.pop();
+                        setDevelopmentPlanItems(newItems);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded transition-colors"
+                    >
+                      Remove Last Row
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="w-full mt-auto">
+              <Footer
+                org={organizationName}
+                pageNo={pageNumbers.developmentPlan}
+                isEditing={isEditMode}
+                onOrgChange={setOrganizationName}
+                onPageNoChange={(newPageNo) =>
+                  setPageNumbers({ ...pageNumbers, developmentPlan: newPageNo })
+                }
+              />
+            </div>
+          </ReportHeader>
+        </div>
       </div>
     </div>
   );

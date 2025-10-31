@@ -13,6 +13,8 @@ interface ReportPageWrapperProps {
   showBorder?: boolean;
   borderColor?: string;
   minHeight?: string;
+  onOrgChange?: (newOrg: string) => void;
+  onPageNoChange?: (newPageNo: number) => void;
 }
 
 export default function ReportPageWrapper({
@@ -25,6 +27,8 @@ export default function ReportPageWrapper({
   showBorder = true,
   borderColor = "border-gray-300",
   minHeight = "100vh",
+  onOrgChange,
+  onPageNoChange,
 }: ReportPageWrapperProps) {
   return (
     <div className={`pdf-page p flex flex-col min-h-[${minHeight}] text-left`}>
@@ -48,6 +52,8 @@ export default function ReportPageWrapper({
             org={organizationName}
             pageNo={pageNumber}
             isEditing={isEditing}
+            onOrgChange={onOrgChange}
+            onPageNoChange={onPageNoChange}
           />
         </div>
       </ReportHeader>
