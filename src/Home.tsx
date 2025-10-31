@@ -39,6 +39,21 @@ function Home() {
 
   const { isSidebarExpanded, setSidebarExpanded } = useSidebar();
 
+  // Clear survey-related data when returning to home page
+  useEffect(() => {
+    localStorage.removeItem("Company");
+    localStorage.removeItem("CompanyUsers");
+    localStorage.removeItem("SurveyUsers");
+    localStorage.removeItem("CompanyFormData");
+    localStorage.removeItem("Participants");
+    localStorage.removeItem("ProjectDetails");
+    localStorage.removeItem("SurveyDetails");
+    localStorage.removeItem("surveyCreationData");
+    localStorage.removeItem("SavedQuestions");
+    localStorage.removeItem("selectedAppraiseeId");
+    localStorage.removeItem("Project");
+  }, []);
+
   useEffect(() => {
     async function fetchOrganizations() {
       try {

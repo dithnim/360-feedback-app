@@ -169,8 +169,38 @@ export default function ProjectParticipants() {
     // Always store the appraisee ID (not the clicked user's ID) for the report component to use
     localStorage.setItem("selectedAppraiseeId", appraiseeId);
 
-    // Navigate to the report page with the appraisee ID as a query parameter
-    navigate(`/view-project?appraiseeId=${encodeURIComponent(appraiseeId)}`);
+    // Get surveyId from localStorage
+    try {
+      const surveyDetailsRaw = localStorage.getItem("SurveyDetails");
+      if (surveyDetailsRaw) {
+        const surveyDetailsData = JSON.parse(surveyDetailsRaw);
+        let currentSurveyId = null;
+
+        // Extract survey ID from the response
+        if (Array.isArray(surveyDetailsData) && surveyDetailsData.length > 0) {
+          currentSurveyId =
+            surveyDetailsData[0].id || surveyDetailsData[0].surveyId;
+        } else if (surveyDetailsData && typeof surveyDetailsData === "object") {
+          currentSurveyId = surveyDetailsData.id || surveyDetailsData.surveyId;
+        }
+
+        if (currentSurveyId) {
+          // Navigate to the feedback report page with both surveyId and appraiseeId
+          navigate(
+            `/feedback-report?surveyId=${currentSurveyId}&appraiseeId=${appraiseeId}`
+          );
+        } else {
+          console.error("Survey ID not found in localStorage");
+          alert("Survey ID not found. Please try again.");
+        }
+      } else {
+        console.error("SurveyDetails not found in localStorage");
+        alert("Survey details not found. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error parsing survey details:", error);
+      alert("Error loading survey details. Please try again.");
+    }
   };
 
   const handleDownloadAllReports = () => {
@@ -328,9 +358,9 @@ export default function ProjectParticipants() {
                             {group.appraisers.map((appraiser, index) => (
                               <div
                                 key={appraiser.id}
-                                className="flex items-center gap-3 px-3 py-5 bg-gray-50 rounded-lg w-full"
+                                className="flex items-center gap-3 px-3 py-5 bg-gray-50 rounded-lg w-full mb-3"
                               >
-                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 ">
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 24 24"
@@ -348,19 +378,6 @@ export default function ProjectParticipants() {
                                     {appraiser.designation}
                                   </div>
                                 </div>
-
-                                {/* Preview Report Button for Appraiser */}
-                                <button
-                                  onClick={() =>
-                                    handlePreviewReport(
-                                      appraiser.id,
-                                      group.appraisee.id
-                                    )
-                                  }
-                                  className="border border-[#ee3f40] text-[#ee3f40] hover:bg-red-50 px-3 py-1 rounded-full font-medium transition-colors text-xs"
-                                >
-                                  Preview Report
-                                </button>
                               </div>
                             ))}
                           </div>

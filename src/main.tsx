@@ -25,9 +25,6 @@ const CurrentProjects = lazy(() => import("./pages/currentProjects.tsx"));
 import { UserProvider, useUser } from "./context/UserContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import Loader from "./components/ui/loader";
-const PreviewCurrentProject = lazy(
-  () => import("./pages/PreviewCurrentProject.tsx")
-);
 const SurveyPreview = lazy(() => import("./pages/SurveyPreview"));
 const CreateFromTemplate = lazy(() => import("./pages/CreateFromTemplate"));
 const SurveyParticipation = lazy(() => import("./pages/SurveyParticipation"));
@@ -166,14 +163,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CurrentProjects />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/view-project"
-        element={
-          <ProtectedRoute>
-            <PreviewCurrentProject />
           </ProtectedRoute>
         }
       />

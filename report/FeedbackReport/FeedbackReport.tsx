@@ -139,15 +139,6 @@ const FeedbackReport: React.FC = () => {
     };
   }, []);
 
-  // Clean up localStorage keys on page load
-  useEffect(() => {
-    // Remove specific localStorage keys when page loads
-    localStorage.removeItem("Company");
-    localStorage.removeItem("ProjectDetails");
-    localStorage.removeItem("Participants");
-    localStorage.removeItem("SurveyDetails");
-  }, []);
-
   // State for new TOC entry
   const [newToc, setNewToc] = useState({ title: "", page: "" });
   const pdfSectionRef = useRef<HTMLDivElement>(null);
