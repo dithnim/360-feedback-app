@@ -208,7 +208,10 @@ const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
         </div>
       </div>
       {/* Competency names on the right side */}
-      <div className="competency-names-container w-40 h-full py-5 px-2 ">
+      <div
+        className="competency-names-container w-40 py-5 px-2"
+        style={{ height: `${height}px`, position: "relative" }}
+      >
         {competencyNames.length > 0
           ? competencyNames.map((name, index) => {
               const yPosition =
@@ -216,7 +219,17 @@ const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
                 (index / (categories.length - 1 || 1)) * (height - padding * 2);
 
               return (
-                <div key={index} className="competency-name-label">
+                <div
+                  key={index}
+                  className="competency-name-label"
+                  style={{
+                    position: "absolute",
+                    top: `${yPosition}px`,
+                    transform: "translateY(-50%)",
+                    fontSize: "11px",
+                    lineHeight: "1.3",
+                  }}
+                >
                   <span style={{ fontWeight: "600", marginRight: "4px" }}>
                     {index + 1}.
                   </span>
@@ -230,7 +243,17 @@ const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
                 (index / (categories.length - 1 || 1)) * (height - padding * 2);
 
               return (
-                <div key={index} className="competency-name-label">
+                <div
+                  key={index}
+                  className="competency-name-label"
+                  style={{
+                    position: "absolute",
+                    top: `${yPosition}px`,
+                    transform: "translateY(-50%)",
+                    fontSize: "11px",
+                    lineHeight: "1.3",
+                  }}
+                >
                   <span style={{ fontWeight: "600", marginRight: "4px" }}>
                     {index + 1}.
                   </span>

@@ -29,3 +29,14 @@
 .legend {
   font-family: inherit;
 }
+
+.competency-names-container {
+  position: relative;
+}
+
+.competency-name-label {
+  width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
