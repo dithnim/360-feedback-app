@@ -11,6 +11,11 @@ const CreateSurvay = () => {
     navigate("/create-from-scratch");
   };
 
+  const navigateToTemplates = () => {
+    // Navigate to preview templates page to view all existing templates
+    navigate("/preview-templates");
+  };
+
   return (
     <div className="h-screen">
       <div>
@@ -21,11 +26,11 @@ const CreateSurvay = () => {
           How do you want to build your Survey ?
         </h2>
 
-        <div
-          className="flex space-x-40 cursor-pointer"
-          onClick={navigateToScratch}
-        >
-          <div className="flex flex-col items-center justify-center p-8 border border-gray-400 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-96 h-96 bg-neutral-100">
+        <div className="flex space-x-40">
+          <div
+            className="flex flex-col items-center justify-center p-8 border border-gray-400 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-96 h-96 bg-neutral-100"
+            onClick={navigateToScratch}
+          >
             <div className="mb-6">
               {/* Placeholder for icon */}
               <img src={Draglogo} alt="drag-logo" />
@@ -37,7 +42,10 @@ const CreateSurvay = () => {
             </p>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-8 border border-gray-400 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-96 h-96 bg-neutral-100">
+          <div
+            className="flex flex-col items-center justify-center p-8 border border-gray-400 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200 w-96 h-96 bg-neutral-100"
+            onClick={navigateToTemplates}
+          >
             <div className="mb-6">
               {/* Placeholder for icon */}
               <img src={WebisteLogo} alt="WebLogo" />

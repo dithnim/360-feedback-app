@@ -7,6 +7,7 @@ const Home = lazy(() => import("./Home.tsx"));
 const Project = lazy(() => import("./pages/Project.tsx"));
 const CreateSurvay = lazy(() => import("./pages/CreateSurvay.tsx"));
 const Templates = lazy(() => import("./pages/Templates.tsx"));
+const PreviewTemplates = lazy(() => import("./pages/PreviewTemplates.tsx"));
 const CreateTemplate = lazy(() => import("./pages/CreateTemplate.tsx"));
 const ViewTeam = lazy(() => import("./pages/ViewTeam.tsx"));
 const SurvayScratch = lazy(() => import("./pages/SurvayScratch.tsx"));
@@ -109,6 +110,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Templates />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/preview-templates"
+        element={
+          <ProtectedRoute>
+            <PreviewTemplates />
           </ProtectedRoute>
         }
       />

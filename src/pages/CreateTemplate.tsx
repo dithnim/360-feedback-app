@@ -435,11 +435,19 @@ const CreateTemplate = () => {
       // Save questions
       const savedQuestions = await saveQuestions(competencyMap);
 
-      // Create template
-      const templateData = {
+      // Create template with the exact data structure required by the API
+      const templateData: {
+        survey: {
+          surveyName: string;
+          projectId: null;
+        };
+        questions: {
+          questionId: string;
+        }[];
+      } = {
         survey: {
           surveyName: templateName,
-          projectId: PROJECT_ID,
+          projectId: null,
         },
         questions: savedQuestions.map((q) => ({ questionId: q.questionId })),
       };

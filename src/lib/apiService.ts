@@ -103,7 +103,7 @@ export interface SurveyCreationData {
 export interface TemplateCreationData {
   survey: {
     surveyName: string;
-    projectId: string;
+    projectId: string | null;
   };
   questions: {
     questionId: string;
