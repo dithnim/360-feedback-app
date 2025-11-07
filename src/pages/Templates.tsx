@@ -26,7 +26,7 @@ const Templates = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiGet<Template[]>("/survey/template/testtest");
+      const response = await apiGet<Template[]>("/survey/template/all");
       setTemplates(Array.isArray(response) ? response : []);
     } catch (err: any) {
       console.error("Error fetching templates:", err);

@@ -4,12 +4,18 @@ import MailImg from "../../imgs/mail.png";
 import PageNav from "@/components/ui/pageNav";
 import { apiGet } from "@/lib/apiService";
 
+interface TemplateQuestion {
+  _id: string | null;
+  competencyName: string | null;
+  question: string | null;
+  optionType: string | null;
+}
+
 interface Template {
-  id: string;
+  surveyId: string;
   surveyName: string;
-  projectId: string | null;
+  questions: TemplateQuestion[];
   createdAt?: string;
-  questionCount?: number;
 }
 
 const PreviewTemplates = () => {
@@ -26,7 +32,7 @@ const PreviewTemplates = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiGet<Template[]>("/survey/template/testtest");
+      const response = await apiGet<Template[]>("/survey/template/all");
       setTemplates(Array.isArray(response) ? response : []);
     } catch (err: any) {
       console.error("Error fetching templates:", err);
@@ -37,10 +43,18 @@ const PreviewTemplates = () => {
   };
 
   const handleTemplateClick = (template: Template) => {
-    // Navigate to use this template for creating a survey
-    console.log("Selected template:", template);
-    // You can add navigation logic here to use the template
-    // navigate(`/create-survey-from-template/${template.id}`);
+    // Navigate to create-from-scratch with the template's survey ID in the URL
+    navigate(`/create-from-scratch?templateId=${template.surveyId}`, {
+      state: { template },
+    });
+  };
+
+  const handleUseTemplate = (template: Template, event: React.MouseEvent) => {
+    event.stopPropagation();
+    // Navigate to create-from-scratch with the template's survey ID in the URL
+    navigate(`/create-from-scratch?templateId=${template.surveyId}`, {
+      state: { template },
+    });
   };
 
   const handleBackToCreate = () => {
@@ -128,7 +142,7 @@ const PreviewTemplates = () => {
             <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {templates.map((template) => (
                 <div
-                  key={template.id}
+                  key={template.surveyId}
                   className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 p-6 flex flex-col items-center justify-between cursor-pointer transform hover:-translate-y-1"
                   onClick={() => handleTemplateClick(template)}
                 >
@@ -143,10 +157,10 @@ const PreviewTemplates = () => {
                     <h3 className="text-gray-800 font-semibold text-lg mb-2 text-center">
                       {template.surveyName}
                     </h3>
-                    {template.questionCount && (
+                    {template.questions && template.questions.length > 0 && (
                       <p className="text-gray-500 text-sm mb-2">
-                        {template.questionCount}{" "}
-                        {template.questionCount === 1
+                        {template.questions.length}{" "}
+                        {template.questions.length === 1
                           ? "question"
                           : "questions"}
                       </p>
@@ -158,7 +172,10 @@ const PreviewTemplates = () => {
                       {new Date(template.createdAt).toLocaleDateString()}
                     </p>
                   )}
-                  <button className="mt-4 w-full bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded-lg py-2 transition-colors">
+                  <button
+                    className="mt-4 w-full bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded-lg py-2 transition-colors"
+                    onClick={(e) => handleUseTemplate(template, e)}
+                  >
                     Use Template
                   </button>
                 </div>

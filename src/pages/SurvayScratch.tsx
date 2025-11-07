@@ -2,9 +2,9 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "../components/ui/Button";
 import PageNav from "../components/ui/pageNav";
 import CompetencySection from "../components/CompetencySection";
-import { createQuestion, createSurveyAll } from "../lib/apiService";
+import { createQuestion, createSurveyAll, apiGet } from "../lib/apiService";
 import { createCompetency } from "@/lib/surveyService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 
 // Types
 type QuestionType =
@@ -31,6 +31,19 @@ interface SurveyData {
   users: { userId: string; appraiser: boolean; role: string; group: string }[];
 }
 
+interface TemplateQuestion {
+  _id: string;
+  competencyName: string;
+  question: string;
+  optionType: string;
+}
+
+interface TemplateData {
+  surveyId: string;
+  surveyName: string;
+  questions: TemplateQuestion[];
+}
+
 // Constants
 const DEFAULT_OPTIONS_MAP: Record<QuestionType, string[]> = {
   "multiple-choice": [
@@ -49,6 +62,9 @@ const LOCAL_STORAGE_KEY = "surveyCreationData";
 
 const SurvayScratch = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const templateId = searchParams.get("templateId");
 
   // Core state
   const [surveyName, setSurveyName] = useState("");
@@ -73,6 +89,8 @@ const SurvayScratch = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
 
   // LocalStorage management
   const saveToLocalStorage = useCallback(() => {
@@ -125,6 +143,103 @@ const SurvayScratch = () => {
   useEffect(() => {
     loadFromLocalStorage();
   }, [loadFromLocalStorage]);
+
+  // Fetch template data if templateId is present
+  useEffect(() => {
+    const fetchTemplateData = async () => {
+      if (!templateId) {
+        setIsDataLoaded(true);
+        return;
+      }
+
+      try {
+        setIsLoadingTemplate(true);
+        setTemplateError(null);
+
+        const templateData = await apiGet<TemplateData>(
+          `/survey/template/${templateId}`
+        );
+
+        if (templateData) {
+          // Set survey name
+          setSurveyName(templateData.surveyName || "");
+
+          // Group questions by competency
+          const competencyGroups = new Map<string, TemplateQuestion[]>();
+
+          templateData.questions.forEach((q) => {
+            const compName = q.competencyName || "Uncategorized";
+            if (!competencyGroups.has(compName)) {
+              competencyGroups.set(compName, []);
+            }
+            competencyGroups.get(compName)?.push(q);
+          });
+
+          // Convert to TemplatePreview format
+          const previews: TemplatePreview[] = [];
+
+          competencyGroups.forEach((questions, competencyName) => {
+            const mappedQuestions: Question[] = questions.map((q, index) => ({
+              id: Date.now() + index + Math.random(),
+              text: q.question || "",
+              type:
+                q.optionType?.toLowerCase() === "likert"
+                  ? "multiple-choice"
+                  : "open-ended",
+              options:
+                q.optionType?.toLowerCase() === "likert"
+                  ? [
+                      "Strongly Agree",
+                      "Agree",
+                      "Neutral",
+                      "Disagree",
+                      "Strongly Disagree",
+                    ]
+                  : [],
+              isRequired: true,
+            }));
+
+            previews.push({
+              SurveyName: templateData.surveyName,
+              competency: competencyName,
+              description: "",
+              questions: mappedQuestions,
+            });
+          });
+
+          console.log("Setting template previews:", previews);
+          setTemplatePreviews(previews);
+
+          // Save to localStorage
+          const surveyData = {
+            surveyName: templateData.surveyName || "",
+            competency: "",
+            description: "",
+            questions: [],
+            input: "",
+            questionType: "multiple-choice" as QuestionType,
+            templatePreviews: previews,
+            editPreviewIndex: null,
+            timestamp: new Date().toISOString(),
+          };
+          console.log("Saving to localStorage:", surveyData);
+          localStorage.setItem(
+            "surveyCreationData",
+            JSON.stringify(surveyData)
+          );
+        }
+      } catch (err: any) {
+        console.error("Error fetching template:", err);
+        setTemplateError(err.message || "Failed to load template");
+      } finally {
+        setIsLoadingTemplate(false);
+        setIsDataLoaded(true);
+      }
+    };
+
+    fetchTemplateData();
+  }, [templateId]);
+
   useEffect(() => {
     if (isDataLoaded) saveToLocalStorage();
   }, [saveToLocalStorage, isDataLoaded]);
@@ -411,6 +526,21 @@ const SurvayScratch = () => {
       setIsSaving(true);
       setSaveError(null);
 
+      console.log("=== SAVE PROCESS STARTED ===");
+      console.log("Survey Name:", surveyName);
+      console.log("Template Previews Count:", templatePreviews.length);
+      console.log(
+        "Template Previews Full Data:",
+        JSON.stringify(templatePreviews, null, 2)
+      );
+
+      // Also check localStorage
+      const storedData = localStorage.getItem("surveyCreationData");
+      console.log(
+        "Data in surveyCreationData:",
+        storedData ? JSON.parse(storedData) : "null"
+      );
+
       if (!surveyName.trim()) throw new Error("Survey name is required.");
       if (!templatePreviews.length)
         throw new Error("Add at least one competency.");
@@ -418,46 +548,100 @@ const SurvayScratch = () => {
       const projectData = JSON.parse(localStorage.getItem("Project") || "{}");
       if (!projectData.id) throw new Error("Project ID not found.");
 
+      console.log("Project ID:", projectData.id);
+
       // Create competencies
       const competencyMap = new Map<string, string>();
+      console.log("Creating competencies...");
+
       for (const template of templatePreviews) {
         if (template.competency.trim()) {
-          const res = await createCompetency(
-            template.competency.trim(),
-            template.description || ""
-          );
-          competencyMap.set(
-            template.competency,
-            typeof res === "string" ? res : res.id
-          );
+          try {
+            // Provide default description if empty (API requires description)
+            const description =
+              template.description?.trim() ||
+              `${template.competency} competency assessment`;
+
+            const res = await createCompetency(
+              template.competency.trim(),
+              description
+            );
+            const competencyId = typeof res === "string" ? res : res.id;
+            competencyMap.set(template.competency, competencyId);
+            console.log(
+              `Created competency "${template.competency}" with ID: ${competencyId}`
+            );
+          } catch (error) {
+            console.error(
+              `Failed to create competency "${template.competency}":`,
+              error
+            );
+            throw new Error(
+              `Failed to create competency "${template.competency}"`
+            );
+          }
         }
       }
+
+      console.log("Competency Map:", Object.fromEntries(competencyMap));
 
       // Create questions
       const savedQuestions: any[] = [];
+      console.log("Creating questions...");
+
       for (const comp of templatePreviews) {
         const competencyId = competencyMap.get(comp.competency);
-        if (!competencyId) continue;
+        if (!competencyId) {
+          console.warn(`No competency ID found for "${comp.competency}"`);
+          continue;
+        }
+
+        console.log(
+          `Processing ${comp.questions.length} questions for competency "${comp.competency}"`
+        );
 
         for (const q of comp.questions) {
-          const res = await createQuestion({
-            competencyId,
-            question: q.text,
-            optionType: q.type === "open-ended" ? "text" : "string",
-            options: q.options,
-          });
-          savedQuestions.push({
-            questionId: typeof res === "string" ? res : res.id,
-            competencyId,
-            questionText: q.text,
-            competencyName: comp.competency,
-          });
+          try {
+            const questionData = {
+              competencyId,
+              question: q.text,
+              optionType: q.type === "open-ended" ? "text" : "string",
+              options: q.options,
+            };
+
+            console.log("Creating question:", questionData);
+            const res = await createQuestion(questionData);
+
+            const questionId = typeof res === "string" ? res : res.id;
+            const savedQuestion = {
+              questionId,
+              competencyId,
+              questionText: q.text,
+              competencyName: comp.competency,
+            };
+
+            savedQuestions.push(savedQuestion);
+            console.log("Created question:", savedQuestion);
+          } catch (error) {
+            console.error(`Failed to create question "${q.text}":`, error);
+            throw new Error(`Failed to create question: ${q.text}`);
+          }
         }
       }
 
+      console.log("All questions created:", savedQuestions);
       localStorage.setItem("savedQuestions", JSON.stringify(savedQuestions));
+      console.log("Saved to localStorage");
+
+      setSaveError(null);
+      alert(
+        `Survey saved successfully! Created ${savedQuestions.length} questions.`
+      );
     } catch (err: any) {
+      console.error("Save error:", err);
       setSaveError(err.message || "Failed to save");
+      // Save empty array for debugging
+      localStorage.setItem("savedQuestions", JSON.stringify([]));
     } finally {
       setIsSaving(false);
     }
@@ -521,302 +705,333 @@ const SurvayScratch = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <PageNav position="HR Manager" title="Create From Scratch" />
+      <PageNav
+        position="HR Manager"
+        title={templateId ? "Create From Template" : "Create From Scratch"}
+      />
 
       <main className="flex flex-col py-6 pt-12 px-2 sm:px-6 md:px-12 lg:px-24 xl:px-36 2xl:px-64 overflow-y-auto bg-white w-full">
-        <div className="flex flex-col rounded-lg w-full">
-          {/* Survey Name & Competency */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 mb-6 w-full">
-            <div>
-              <label className="mb-2 block text-md font-medium text-gray-700">
-                Survey Name*
-              </label>
-              <input
-                type="text"
-                className="border border-gray-300 rounded-lg p-2 w-full"
-                value={surveyName}
-                onChange={(e) => setSurveyName(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-md font-medium text-gray-700">
-                Competency*
-              </label>
-              <input
-                type="text"
-                className="border border-gray-300 rounded-lg p-2 w-full"
-                value={competency}
-                onChange={(e) => setCompetency(e.target.value)}
-                required
-              />
+        {isLoadingTemplate ? (
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1C13] mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading template...</p>
             </div>
           </div>
-
-          {/* Description */}
-          <div>
-            <label className="mb-2 block text-md font-medium text-gray-700">
-              Description{" "}
-            </label>
-            <textarea
-              className="border border-gray-300 rounded-lg p-2 w-full mb-4"
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+        ) : templateError ? (
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center bg-red-50 p-8 rounded-lg max-w-md">
+              <p className="text-red-600 font-semibold mb-2 text-lg">
+                Error Loading Template
+              </p>
+              <p className="text-red-500 text-sm mb-6">{templateError}</p>
+              <button
+                onClick={() => navigate("/preview-templates")}
+                className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded-lg px-6 py-2 transition-colors"
+              >
+                Back to Templates
+              </button>
+            </div>
           </div>
-
-          {/* Question Type */}
-          <div className="mb-4">
-            <label className="mb-2 block text-md font-medium text-gray-700">
-              Question Type*
-            </label>
-            <select
-              className="border border-gray-300 rounded-lg p-2 w-full mb-4"
-              value={questionType}
-              onChange={(e) => setQuestionType(e.target.value as QuestionType)}
-            >
-              <option value="multiple-choice">Multiple Choice</option>
-              <option value="open-ended">Open Ended</option>
-              <option value="rating-scale" disabled>
-                Rating Scale (1-5)
-              </option>
-              <option value="yes-no" disabled>
-                Yes/No
-              </option>
-            </select>
-          </div>
-
-          {/* Question Input */}
-          <div className="mb-4">
-            <label className="mb-2 block text-md font-medium text-gray-700">
-              Questions*
-            </label>
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        ) : (
+          <div className="flex flex-col rounded-lg w-full">
+            {/* Survey Name & Competency */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 mb-6 w-full">
+              <div>
+                <label className="mb-2 block text-md font-medium text-gray-700">
+                  Survey Name*
+                </label>
                 <input
                   type="text"
                   className="border border-gray-300 rounded-lg p-2 w-full"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleQuestionAdd()}
-                  placeholder="Enter question..."
+                  value={surveyName}
+                  onChange={(e) => setSurveyName(e.target.value)}
+                  required
                 />
-                <button
-                  type="button"
-                  className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-2 flex items-center justify-center cursor-pointer w-full sm:w-auto"
-                  onClick={handleQuestionAdd}
-                >
-                  +
-                </button>
               </div>
-              {questionType !== "open-ended" && (
-                <div className="text-sm text-gray-600 ml-1">
-                  Preview: {getDefaultOptionsForType(questionType).join(", ")}
-                </div>
-              )}
+              <div>
+                <label className="mb-2 block text-md font-medium text-gray-700">
+                  Competency*
+                </label>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded-lg p-2 w-full"
+                  value={competency}
+                  onChange={(e) => setCompetency(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Questions List */}
-          <div className="space-y-6">
-            {questions.map((q) => (
-              <div key={q.id} className="mb-2">
-                {editId === q.id ? (
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-1">
-                    <input
-                      type="text"
-                      className="border border-gray-300 rounded-lg p-2 w-full"
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                    />
-                    <button
-                      className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-2 cursor-pointer"
-                      onClick={() => handleEditSave(q.id)}
-                    >
-                      Save
-                    </button>
+            {/* Description */}
+            <div>
+              <label className="mb-2 block text-md font-medium text-gray-700">
+                Description{" "}
+              </label>
+              <textarea
+                className="border border-gray-300 rounded-lg p-2 w-full mb-4"
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            {/* Question Type */}
+            <div className="mb-4">
+              <label className="mb-2 block text-md font-medium text-gray-700">
+                Question Type*
+              </label>
+              <select
+                className="border border-gray-300 rounded-lg p-2 w-full mb-4"
+                value={questionType}
+                onChange={(e) =>
+                  setQuestionType(e.target.value as QuestionType)
+                }
+              >
+                <option value="multiple-choice">Multiple Choice</option>
+                <option value="open-ended">Open Ended</option>
+                <option value="rating-scale" disabled>
+                  Rating Scale (1-5)
+                </option>
+                <option value="yes-no" disabled>
+                  Yes/No
+                </option>
+              </select>
+            </div>
+
+            {/* Question Input */}
+            <div className="mb-4">
+              <label className="mb-2 block text-md font-medium text-gray-700">
+                Questions*
+              </label>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded-lg p-2 w-full"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleQuestionAdd()}
+                    placeholder="Enter question..."
+                  />
+                  <button
+                    type="button"
+                    className="bg-red-700 hover:bg-red-800 text-white rounded px-3 py-2 flex items-center justify-center cursor-pointer w-full sm:w-auto"
+                    onClick={handleQuestionAdd}
+                  >
+                    +
+                  </button>
+                </div>
+                {questionType !== "open-ended" && (
+                  <div className="text-sm text-gray-600 ml-1">
+                    Preview: {getDefaultOptionsForType(questionType).join(", ")}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center sm:flex-row sm:items-start gap-4 mb-1">
-                    <div className="flex w-full items-center justify-center">
-                      <div className="flex flex-col w-full">
-                        <input
-                          type="text"
-                          className="border border-gray-300 rounded-lg p-2 w-full"
-                          value={q.text}
-                          readOnly
-                        />
-                        <div className="text-xs text-gray-500 mt-1 ml-2">
-                          Type:{" "}
-                          {q.type.charAt(0).toUpperCase() +
-                            q.type.slice(1).replace("-", " ")}
-                          {q.isRequired && " • Required"}
+                )}
+              </div>
+            </div>
+
+            {/* Questions List */}
+            <div className="space-y-6">
+              {questions.map((q) => (
+                <div key={q.id} className="mb-2">
+                  {editId === q.id ? (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-1">
+                      <input
+                        type="text"
+                        className="border border-gray-300 rounded-lg p-2 w-full"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                      />
+                      <button
+                        className="bg-green-600 hover:bg-green-700 text-white rounded px-2 py-2 cursor-pointer"
+                        onClick={() => handleEditSave(q.id)}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center sm:flex-row sm:items-start gap-4 mb-1">
+                      <div className="flex w-full items-center justify-center">
+                        <div className="flex flex-col w-full">
+                          <input
+                            type="text"
+                            className="border border-gray-300 rounded-lg p-2 w-full"
+                            value={q.text}
+                            readOnly
+                          />
+                          <div className="text-xs text-gray-500 mt-1 ml-2">
+                            Type:{" "}
+                            {q.type.charAt(0).toUpperCase() +
+                              q.type.slice(1).replace("-", " ")}
+                            {q.isRequired && " • Required"}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
+                          style={{ width: 40, height: 40 }}
+                          onClick={() => handleDelete(q.id)}
+                        >
+                          –
+                        </button>
+                        <button
+                          className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
+                          style={{ width: 40, height: 40 }}
+                          onClick={() => handleEdit(q.id, q.text)}
+                        >
+                          ✎
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                  )}
+
+                  {q.type !== "open-ended" && (
+                    <div className="flex flex-wrap gap-4 ml-2 text-gray-700 text-md items-center">
+                      {q.options.map((opt) => (
+                        <span key={opt}>• {opt}</span>
+                      ))}
                       <button
-                        className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
-                        style={{ width: 40, height: 40 }}
-                        onClick={() => handleDelete(q.id)}
-                      >
-                        –
-                      </button>
-                      <button
-                        className="bg-[#EE3E41] text-white rounded p-2 flex items-center justify-center cursor-pointer"
-                        style={{ width: 40, height: 40 }}
-                        onClick={() => handleEdit(q.id, q.text)}
+                        className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center ml-2 cursor-pointer"
+                        style={{ width: 32, height: 32 }}
+                        onClick={() => handleEditOpts(q.id, q.options)}
                       >
                         ✎
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {q.type !== "open-ended" && (
-                  <div className="flex flex-wrap gap-4 ml-2 text-gray-700 text-md items-center">
-                    {q.options.map((opt) => (
-                      <span key={opt}>• {opt}</span>
-                    ))}
-                    <button
-                      className="bg-[#EE3E41] text-white rounded p-1 flex items-center justify-center ml-2 cursor-pointer"
-                      style={{ width: 32, height: 32 }}
-                      onClick={() => handleEditOpts(q.id, q.options)}
-                    >
-                      ✎
-                    </button>
-                  </div>
-                )}
-
-                {/* Options Edit Modal */}
-                {editOptsId === q.id && (
-                  <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
-                    onClick={() => setEditOptsId(null)}
-                  >
+                  {/* Options Edit Modal */}
+                  {editOptsId === q.id && (
                     <div
-                      className="bg-white rounded-lg p-8 min-w-[90vw] max-w-xs w-full flex flex-col items-center sm:min-w-[350px]"
-                      onClick={(e) => e.stopPropagation()}
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
+                      onClick={() => setEditOptsId(null)}
                     >
-                      {editOptsValues.map((val, idx) => (
-                        <div key={idx} className="flex w-full mb-4 gap-2">
-                          <input
-                            type="text"
-                            className="border border-gray-300 rounded-lg p-2 flex-1"
-                            value={val}
-                            onChange={(e) => {
-                              const newVals = [...editOptsValues];
-                              newVals[idx] = e.target.value;
-                              setEditOptsValues(newVals);
-                            }}
-                          />
-                          <input
-                            type="text"
-                            className="border border-gray-300 rounded-lg p-2 w-12 text-center"
-                            value={idx + 1}
-                            readOnly
-                          />
+                      <div
+                        className="bg-white rounded-lg p-8 min-w-[90vw] max-w-xs w-full flex flex-col items-center sm:min-w-[350px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {editOptsValues.map((val, idx) => (
+                          <div key={idx} className="flex w-full mb-4 gap-2">
+                            <input
+                              type="text"
+                              className="border border-gray-300 rounded-lg p-2 flex-1"
+                              value={val}
+                              onChange={(e) => {
+                                const newVals = [...editOptsValues];
+                                newVals[idx] = e.target.value;
+                                setEditOptsValues(newVals);
+                              }}
+                            />
+                            <input
+                              type="text"
+                              className="border border-gray-300 rounded-lg p-2 w-12 text-center"
+                              value={idx + 1}
+                              readOnly
+                            />
+                          </div>
+                        ))}
+                        <div className="flex w-full flex-col sm:flex-row justify-start gap-2">
+                          <button
+                            className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 mt-2 cursor-pointer"
+                            onClick={() => handleEditOptsSave(editOptsId)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 mt-2 cursor-pointer"
+                            onClick={() => setEditOptsId(null)}
+                          >
+                            Cancel
+                          </button>
                         </div>
-                      ))}
-                      <div className="flex w-full flex-col sm:flex-row justify-start gap-2">
-                        <button
-                          className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 mt-2 cursor-pointer"
-                          onClick={() => handleEditOptsSave(editOptsId)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 mt-2 cursor-pointer"
-                          onClick={() => setEditOptsId(null)}
-                        >
-                          Cancel
-                        </button>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row mt-6 gap-2">
+              <button
+                type="button"
+                className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer w-full sm:w-auto"
+                onClick={handleAdd}
+                style={{ minWidth: 80 }}
+              >
+                {editPreviewIndex !== null ? "Update" : "Add"}
+              </button>
+              <button
+                type="button"
+                className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer w-full sm:w-auto"
+                onClick={clearAll}
+                style={{ minWidth: 80 }}
+              >
+                Clear All
+              </button>
+            </div>
+
+            {/* Preview Section */}
+            <div className="mt-12 border-t border-gray-300/50 pt-8">
+              <h3 className="text-lg font-semibold mb-4">
+                {surveyName ? `${surveyName} Preview` : "Survey Preview"}
+              </h3>
+              {!templatePreviews.length ? (
+                <p className="text-gray-500 italic">
+                  No competencies added yet.
+                </p>
+              ) : (
+                <div>
+                  {templatePreviews.map((item, idx) => (
+                    <PreviewItem key={idx} item={item} idx={idx} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Competency Sections */}
+            {templatePreviews.map((item, idx) => (
+              <CompetencySection
+                key={idx}
+                title={item.competency}
+                description={item.description}
+                questions={item.questions.map((q) => ({
+                  id: q.id.toString(),
+                  text: q.text,
+                  type: q.type,
+                  options: q.options,
+                }))}
+                commentLabel="Additional Comments"
+              />
             ))}
+
+            {/* Final Actions */}
+            <div className="flex flex-col sm:flex-row items-center mt-8 gap-2">
+              <Button
+                variant="edit"
+                className="bg-[#8B1C13] font-medium text-md w-full sm:w-auto"
+                onClick={handleSaveClick}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Survey"}
+              </Button>
+              <Button
+                className="bg-transparent border border-[#ed3f41] text-[#ed3f41] font-semibold px-2 py-1 rounded-lg text-md w-full sm:w-auto"
+                variant="next"
+                onClick={() => {
+                  if (isDataLoaded) saveToLocalStorage();
+                  navigate("/survey-preview", {
+                    state: { templatePreviews, surveyName },
+                  });
+                }}
+              >
+                Preview
+              </Button>
+            </div>
+            {saveError && <div className="text-red-600 mt-2">{saveError}</div>}
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row mt-6 gap-2">
-            <button
-              type="button"
-              className="bg-[#8B1C13] hover:bg-[#a12a22] text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer w-full sm:w-auto"
-              onClick={handleAdd}
-              style={{ minWidth: 80 }}
-            >
-              {editPreviewIndex !== null ? "Update" : "Add"}
-            </button>
-            <button
-              type="button"
-              className="bg-gray-400 hover:bg-gray-500 text-white rounded px-6 py-2 text-lg font-semibold cursor-pointer w-full sm:w-auto"
-              onClick={clearAll}
-              style={{ minWidth: 80 }}
-            >
-              Clear All
-            </button>
-          </div>
-
-          {/* Preview Section */}
-          <div className="mt-12 border-t border-gray-300/50 pt-8">
-            <h3 className="text-lg font-semibold mb-4">
-              {surveyName ? `${surveyName} Preview` : "Survey Preview"}
-            </h3>
-            {!templatePreviews.length ? (
-              <p className="text-gray-500 italic">No competencies added yet.</p>
-            ) : (
-              <div>
-                {templatePreviews.map((item, idx) => (
-                  <PreviewItem key={idx} item={item} idx={idx} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Competency Sections */}
-        {templatePreviews.map((item, idx) => (
-          <CompetencySection
-            key={idx}
-            title={item.competency}
-            description={item.description}
-            questions={item.questions.map((q) => ({
-              id: q.id.toString(),
-              text: q.text,
-              type: q.type,
-              options: q.options,
-            }))}
-            commentLabel="Additional Comments"
-          />
-        ))}
-
-        {/* Final Actions */}
-        <div className="flex flex-col sm:flex-row items-center mt-8 gap-2">
-          <Button
-            variant="edit"
-            className="bg-[#8B1C13] font-medium text-md w-full sm:w-auto"
-            onClick={handleSaveClick}
-            disabled={isSaving}
-          >
-            {isSaving ? "Saving..." : "Save Survey"}
-          </Button>
-          <Button
-            className="bg-transparent border border-[#ed3f41] text-[#ed3f41] font-semibold px-2 py-1 rounded-lg text-md w-full sm:w-auto"
-            variant="next"
-            onClick={() => {
-              if (isDataLoaded) saveToLocalStorage();
-              navigate("/survey-preview", {
-                state: { templatePreviews, surveyName },
-              });
-            }}
-          >
-            Preview
-          </Button>
-        </div>
-        {saveError && <div className="text-red-600 mt-2">{saveError}</div>}
+        )}
       </main>
     </div>
   );
