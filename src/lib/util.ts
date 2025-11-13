@@ -43,6 +43,7 @@ export const storeUserData = (userData: any, token: string) => {
       id: userData.id,
       name: userData.name,
       email: userData.email,
+      role: userData.role,
       loginTime: new Date().toISOString(),
     };
 

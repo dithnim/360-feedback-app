@@ -6,6 +6,7 @@ import {
   clearAuthData,
   getStoredUserData,
 } from "../lib/util";
+import { getCurrentUser } from "../lib/apiService";
 
 // Define the shape of user data (customize as needed)
 export interface User {
@@ -41,7 +42,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Initialize user from localStorage on app start
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       const token = localStorage.getItem("token");
       const storedUserData = getStoredUserData();
 
@@ -66,11 +67,34 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (userData) {
+            // Try to fetch additional user data from API
+            try {
+              const fullUserData = await getCurrentUser();
+              if (fullUserData) {
+                userData = {
+                  ...userData,
+                  ...fullUserData,
+                  // Keep JWT fields
+                  id: userData.id,
+                  email: userData.email,
+                };
+              }
+            } catch (error) {
+              console.warn("Failed to fetch user details:", error);
+              // Continue with JWT data
+            }
+
+            // Temporary: Set role based on email for specific user
+            if (userData.email === "team@daashglobal.com") {
+              userData.role = "User";
+            }
+
             setUser(userData);
             console.log("User authenticated from stored token:", {
               userId: userData.id,
               userName: userData.name,
               userEmail: userData.email,
+              userRole: userData.role,
             });
           } else {
             clearAuthData();

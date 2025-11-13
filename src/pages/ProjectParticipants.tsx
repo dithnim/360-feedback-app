@@ -3,6 +3,7 @@ import PageNav from "../components/ui/pageNav";
 import { useNavigate } from "react-router-dom";
 import { Download } from "lucide-react";
 import { Button } from "../components/ui/Button";
+import { useUser } from "../context/UserContext";
 
 type UserGroup = {
   groupId: string;
@@ -25,6 +26,7 @@ type UserGroup = {
 
 export default function ProjectParticipants() {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [userGroups, setUserGroups] = useState<UserGroup[]>([]);
   const [projectName, setProjectName] = useState<string>("");
   const [selectedReports, setSelectedReports] = useState<Set<string>>(
@@ -217,7 +219,7 @@ export default function ProjectParticipants() {
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
-        <PageNav position="Current Projects" title="Current Projects" />
+        <PageNav position={user?.role || "Current Projects"} title="Current Projects" />
 
         <main className="flex-1 p-8 bg-gray-50 overflow-auto">
           <div className="flex justify-between items-center mb-8">

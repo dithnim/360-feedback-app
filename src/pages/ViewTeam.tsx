@@ -75,7 +75,7 @@ const ViewTeam = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Navbar */}
-      <PageNav position="HR Manager" title="View All Teams" />
+      <PageNav title="View All Teams" />
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto bg-white">

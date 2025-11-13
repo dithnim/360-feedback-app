@@ -64,7 +64,7 @@ const PreviewTemplates = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Navbar */}
-      <PageNav title="Select Template" position="HR Manager" />
+      <PageNav title="Select Template" />
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">

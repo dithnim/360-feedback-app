@@ -561,7 +561,7 @@ export default function CurrentProjectsPage() {
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
-        <PageNav position="CEO" title="Current Projects" />
+        <PageNav title="Current Projects" />
         <main className="p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-semibold">

@@ -12,13 +12,16 @@ import team from "../../../imgs/team.png";
 import homeVector from "../../../imgs/Home-Vector.png";
 
 type PageNavProps = {
-  position: string;
+  position?: string;
   title: string;
 };
 
 const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
   const { user } = useUser();
   const { isSidebarExpanded, toggleSidebar } = useSidebar();
+  
+  // Use role from user context, fallback to position prop, then to default
+  const displayRole = user?.role || position || "User";
   const navigate = useNavigate();
 
   // Add custom styles for animations
@@ -294,7 +297,7 @@ const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
             <span className="text-lg font-semibold text-black leading-tight">
               {user?.name}
             </span>
-            <span className="text-md text-[#444]">{position}</span>
+            <span className="text-md text-[#444]">{displayRole}</span>
           </div>
         </div>
       </nav>

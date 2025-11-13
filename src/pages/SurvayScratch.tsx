@@ -706,7 +706,6 @@ const SurvayScratch = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <PageNav
-        position="HR Manager"
         title={templateId ? "Create From Template" : "Create From Scratch"}
       />
 

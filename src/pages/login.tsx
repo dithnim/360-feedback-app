@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiPost } from "../lib/apiService";
 import { useUser } from "../context/UserContext";
 import { getUserFromToken, storeUserData } from "../lib/util";
+import { getCurrentUser } from "../lib/apiService";
 import Loader from "../components/ui/loader";
 import dashLogo from "../../imgs/dash-logo.png";
 
@@ -86,10 +87,35 @@ const Login: React.FC = () => {
       // Update user context
       setUser(userData);
 
+      // Try to fetch additional user data
+      try {
+        const fullUserData = await getCurrentUser();
+        if (fullUserData) {
+          const updatedUserData = {
+            ...userData,
+            ...fullUserData,
+            // Keep JWT fields
+            id: userData.id,
+            email: userData.email,
+          };
+          setUser(updatedUserData);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch user details after login:", error);
+        // Continue with JWT data
+      }
+
+      // Temporary: Set role based on email for specific user
+      if (userData.email === "team@daashglobal.com") {
+        userData.role = "User";
+        setUser(userData);
+      }
+
       console.log("Login successful:", {
         userId: userData.id,
         userName: userData.name,
         userEmail: userData.email,
+        userRole: userData.role,
       });
 
       // Let the useEffect handle navigation when isAuthenticated becomes true

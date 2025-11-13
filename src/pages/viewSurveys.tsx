@@ -307,7 +307,7 @@ export default function ViewSurveys() {
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
-        <PageNav position="HR Manager" title="View Surveys" />
+        <PageNav title="View Surveys" />
         <main className="p-8">
           <div className="flex justify-between items-center mb-6">
             <div>

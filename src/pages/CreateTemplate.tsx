@@ -478,7 +478,7 @@ const CreateTemplate = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <PageNav position="HR Manager" title="Create Template" />
+      <PageNav title="Create Template" />
 
       <main className="flex-1 p-8 overflow-y-auto bg-white">
         <div className="mx-auto rounded-lg">

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MailImg from "../../imgs/mail.png";
 import PageNav from "@/components/ui/pageNav";
 import { apiGet } from "@/lib/apiService";
+import { useUser } from "@/context/UserContext";
 
 interface Template {
   id: string;
@@ -14,6 +15,7 @@ interface Template {
 
 const Templates = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ const Templates = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Navbar */}
-      <PageNav title="View Templates" position="HR Manager" />
+      <PageNav title="View Templates" position={user?.role || "HR Manager"} />
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">

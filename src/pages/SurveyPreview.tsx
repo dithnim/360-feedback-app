@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PageNav from "../components/ui/pageNav";
 import { createSurveyAll } from "../lib/apiService";
 import { sendBulkEmails } from "../lib/mailService";
+import { useUser } from "../context/UserContext";
 import type { BulkEmailRecipient, SurveyUserDetails } from "../lib/mailService";
 
 interface SurveyData {
@@ -24,6 +25,7 @@ interface SurveyData {
 const SurveyPreview = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useUser();
 
   // State for submission
   const [isSaving, setIsSaving] = useState(false);
@@ -532,7 +534,7 @@ const SurveyPreview = () => {
 
   return (
     <div className=" flex flex-col">
-      <PageNav position="HR Manager" title="Preview Survey" />
+      <PageNav position={user?.role || "HR Manager"} title="Preview Survey" />
 
       {/* Main Content */}
       <div className="py-20 bg-white flex items-center justify-center">

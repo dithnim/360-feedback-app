@@ -329,6 +329,10 @@ export async function createCompanyUsers(
   return apiClient.post("/company/user/set", users);
 }
 
+export async function getCurrentUser(): Promise<any> {
+  return apiClient.get("/auth/me");
+}
+
 export async function createSurveyUsers(
   users: CreateUserData[]
 ): Promise<string> {

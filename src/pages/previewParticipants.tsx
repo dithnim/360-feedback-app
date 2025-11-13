@@ -234,7 +234,7 @@ export default function PreviewParticipants() {
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
-        <PageNav position="HR Manager" title="All Users" />
+        <PageNav title="All Users" />
 
         <main className="flex-1 p-8 bg-gray-50">
           <div className="flex justify-between items-center mb-8">
