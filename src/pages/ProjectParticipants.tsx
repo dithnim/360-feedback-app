@@ -219,7 +219,10 @@ export default function ProjectParticipants() {
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col">
-        <PageNav position={user?.role || "Current Projects"} title="Current Projects" />
+        <PageNav
+          position={user?.role || "Current Projects"}
+          title="Current Projects"
+        />
 
         <main className="flex-1 p-8 bg-gray-50 overflow-auto">
           <div className="flex justify-between items-center mb-8">

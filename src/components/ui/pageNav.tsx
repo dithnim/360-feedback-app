@@ -19,7 +19,7 @@ type PageNavProps = {
 const pageNav: React.FC<PageNavProps> = ({ position, title }) => {
   const { user } = useUser();
   const { isSidebarExpanded, toggleSidebar } = useSidebar();
-  
+
   // Use role from user context, fallback to position prop, then to default
   const displayRole = user?.role || position || "User";
   const navigate = useNavigate();
