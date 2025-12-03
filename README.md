@@ -71,3 +71,6 @@ The authentication system is fully integrated into the app. Users will:
 - Be automatically logged out when their token expires
 - See loading indicators during authentication checks
 - Be redirected to login when accessing protected routes without authentication
+
+<img width="1919" height="933" alt="image" src="https://github.com/user-attachments/assets/395f4e8c-9def-4a04-a497-d04a7970ce63" />
+
